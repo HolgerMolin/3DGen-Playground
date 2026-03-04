@@ -62,6 +62,20 @@ from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
 # ---------------------------------------------------------------------------
+# Compatibility patch: transformers>=4.45 removed DynamicCache.get_usable_length
+# (renamed to get_seq_length). GTE-Qwen2's custom modeling code still calls the
+# old name, so we restore it here if missing.
+# ---------------------------------------------------------------------------
+try:
+    from transformers import DynamicCache
+    if not hasattr(DynamicCache, "get_usable_length"):
+        DynamicCache.get_usable_length = (
+            lambda self, new_seq_length, layer_idx=0: self.get_seq_length(layer_idx)
+        )
+except ImportError:
+    pass
+
+# ---------------------------------------------------------------------------
 # Defaults (overridden by .env, then by CLI flags)
 # ---------------------------------------------------------------------------
 _REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -82,6 +96,10 @@ _MODELS: dict[str, dict] = {
     "gte-qwen2": {
         "hf_id": "Alibaba-NLP/gte-Qwen2-1.5B-instruct",
         "trust_remote_code": True,
+        # eager attention avoids the DynamicCache.get_usable_length() call that
+        # was removed in transformers>=4.45, keeping compatibility with Python 3.13
+        # environments where downgrading transformers is not possible.
+        "model_kwargs": {"attn_implementation": "eager"},
         "prompt": (
             "Instruct: Retrieve semantically similar 3D model descriptions "
             "for the purpose of grouping them into a functional object taxonomy.\n"
@@ -278,12 +296,14 @@ def main() -> None:
     # --- Load model ----------------------------------------------------------
     hf_id = model_cfg["hf_id"]
     print(f"\nLoading model {hf_id!r} …")
-    model_kwargs: dict = {}
+    st_kwargs: dict = {}
     if args.device:
-        model_kwargs["device"] = args.device
+        st_kwargs["device"] = args.device
     if model_cfg["trust_remote_code"]:
-        model_kwargs["trust_remote_code"] = True
-    model = SentenceTransformer(hf_id, **model_kwargs)
+        st_kwargs["trust_remote_code"] = True
+    if model_cfg.get("model_kwargs"):
+        st_kwargs["model_kwargs"] = model_cfg["model_kwargs"]
+    model = SentenceTransformer(hf_id, **st_kwargs)
     print(f"  Embedding dimension : {model.get_sentence_embedding_dimension()}")
     if args.device:
         print(f"  Device              : {args.device}")
@@ -315,3 +335,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
