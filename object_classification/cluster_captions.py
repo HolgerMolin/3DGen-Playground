@@ -7,6 +7,14 @@ Loads caption_embeddings.npz produced by encode_captions.py, reduces the
   - cluster_plot.png    — 2-D scatter coloured by cluster
   - cluster_summary.txt — top captions / object keys per cluster
 
+UMAP is the slow step. Its output is automatically cached in the output
+directory as:
+
+  umap_coords__neighbors{N}__mindist{D}__metric{M}.npz
+
+On subsequent runs with the same UMAP settings the cached file is loaded
+instead of recomputing. Delete or rename the file to force a fresh run.
+
 Usage examples
 --------------
 # Default paths (reads from same folder as this script):
@@ -119,6 +127,23 @@ def load_embeddings(path: str) -> tuple[np.ndarray, list[str], list[str]]:
     return embeddings, keys, captions
 
 
+def umap_cache_path(output_dir: Path, n_neighbors: int, min_dist: float, metric: str) -> Path:
+    """Return the path for the UMAP coordinate cache file for the given params."""
+    return output_dir / f"umap_coords__neighbors{n_neighbors}__mindist{min_dist}__metric{metric}.npz"
+
+
+def load_umap_cache(path: Path) -> np.ndarray:
+    data = np.load(path)
+    coords = data["umap_coords"]
+    print(f"Loaded cached UMAP coords  shape={coords.shape}  from {path}")
+    return coords
+
+
+def save_umap_cache(path: Path, coords: np.ndarray) -> None:
+    np.savez(path, umap_coords=coords)
+    print(f"Saved UMAP cache  → {path}")
+
+
 def run_umap(
     embeddings: np.ndarray,
     n_neighbors: int,
@@ -137,7 +162,7 @@ def run_umap(
         verbose=True,
     )
     coords = reducer.fit_transform(embeddings)
-    print(f"  UMAP done. Output shape: {coords.shape}") 
+    print(f"  UMAP done. Output shape: {coords.shape}")
     return coords.astype(np.float32)
 
 
@@ -302,12 +327,22 @@ def main() -> None:
 
     embeddings, keys, captions = load_embeddings(args.embeddings)
 
-    coords = run_umap(
-        embeddings,
+    cache_path = umap_cache_path(
+        output_dir,
         n_neighbors=args.umap_neighbors,
         min_dist=args.umap_min_dist,
         metric=args.umap_metric,
     )
+    if cache_path.exists():
+        coords = load_umap_cache(cache_path)
+    else:
+        coords = run_umap(
+            embeddings,
+            n_neighbors=args.umap_neighbors,
+            min_dist=args.umap_min_dist,
+            metric=args.umap_metric,
+        )
+        save_umap_cache(cache_path, coords)
 
     labels = run_hdbscan(
         coords,

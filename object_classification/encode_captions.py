@@ -101,8 +101,7 @@ _MODELS: dict[str, dict] = {
         # environments where downgrading transformers is not possible.
         "model_kwargs": {"attn_implementation": "eager"},
         "prompt": (
-            "Instruct: Retrieve semantically similar 3D model descriptions "
-            "for the purpose of grouping them into a functional object taxonomy.\n"
+            "Instruct: Retrieve 3D model descriptions that share the same broad functional category and primary use case. Ignore specific subtypes or aesthetic variations to create a high-level object taxonomy.\n"
             "Query: "
         ),
         # Qwen2 is much larger — smaller batches avoid OOM on most GPUs.
