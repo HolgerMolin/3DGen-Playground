@@ -35,7 +35,8 @@ logger = logging.getLogger(__name__)
 
 FULL_3DGS_FEATURE_DIM = 59
 DC_ONLY_FEATURE_INDICES = (0, 1, 2, 3, 4, 20, 36, 52, 53, 54, 55, 56, 57, 58)
-PRELOAD_CACHE_VERSION = 2
+PRELOAD_CACHE_VERSION = 4
+LAZY_CACHE_LOCK_STRIPES = 256
 _PRELOAD_WORKER_STATE = {}
 
 
@@ -271,6 +272,7 @@ class Class3DGenDataset(Dataset):
         feature_indices: Optional[torch.Tensor] = None,
         return_full_for_render: bool = False,
         preload_to_cpu: bool = False,
+        lazy_cache_to_cpu: bool = False,
         preload_workers: int = 0,
     ):
         """
@@ -284,21 +286,33 @@ class Class3DGenDataset(Dataset):
                 the full 59-channel plane grid for render loss GT.
             preload_to_cpu: If True, eagerly materialize the transformed training
                 samples in CPU memory during initialization.
+            lazy_cache_to_cpu: If True, create a shared CPU cache that fills on
+                first access instead of preloading everything up front.
             preload_workers: Number of worker processes to use while building the
                 shared preload cache. `0` selects an automatic value.
         """
+        if preload_to_cpu and lazy_cache_to_cpu:
+            raise ValueError("preload_to_cpu and lazy_cache_to_cpu are mutually exclusive")
         self.base_dataset = base_dataset
         self.class_map = class_map
         self.plane_to_sphere = plane_to_sphere
         self.feature_indices = feature_indices
         self.return_full_for_render = return_full_for_render and (feature_indices is not None)
         self.preload_to_cpu = preload_to_cpu
+        self.lazy_cache_to_cpu = lazy_cache_to_cpu
         self.preload_workers = preload_workers
         self.cached_pc = None
         self.cached_pc_full = None
         self.cached_labels = None
         self.cached_hash_keys = None
+        self.cached_ready = None
+        self.cache_dir = None
+        self.cache_mode = None
         self._cache_backing = {}
+        self._plane_to_sphere_np = self.plane_to_sphere.cpu().numpy()
+        self._feature_indices_np = (
+            self.feature_indices.cpu().numpy() if self.feature_indices is not None else None
+        )
 
         # Build index of valid samples (class label != -1)
         self.valid_indices = []
@@ -322,6 +336,8 @@ class Class3DGenDataset(Dataset):
 
         if self.preload_to_cpu:
             self._attach_or_build_preload_cache()
+        elif self.lazy_cache_to_cpu:
+            self._attach_or_build_lazy_cache()
 
     def __len__(self):
         return len(self.valid_indices)
@@ -354,9 +370,10 @@ class Class3DGenDataset(Dataset):
 
         return pc, label, hash_key
 
-    def _build_preload_cache_key(self) -> str:
+    def _build_cache_key(self, cache_mode: str) -> str:
         hasher = hashlib.sha256()
         hasher.update(f"class3dgen_preload_v{PRELOAD_CACHE_VERSION}".encode("utf-8"))
+        hasher.update(f"cache_mode:{cache_mode}".encode("utf-8"))
         _hash_strings(hasher, self.base_dataset.keys)
         _hash_strings(hasher, [self.base_dataset.obj_data[key] for key in self.base_dataset.keys])
         _hash_array(hasher, np.asarray(self.valid_indices, dtype=np.int64))
@@ -383,10 +400,10 @@ class Class3DGenDataset(Dataset):
         hasher.update(b"return_full:1" if self.return_full_for_render else b"return_full:0")
         return hasher.hexdigest()[:32]
 
-    def _cache_paths(self):
+    def _cache_paths(self, cache_mode: str):
         cache_root = _default_preload_cache_root()
         cache_root.mkdir(parents=True, exist_ok=True)
-        cache_key = self._build_preload_cache_key()
+        cache_key = self._build_cache_key(cache_mode)
         cache_dir = cache_root / cache_key
         return cache_root, cache_dir, cache_root / f"{cache_key}.lock"
 
@@ -398,12 +415,16 @@ class Class3DGenDataset(Dataset):
         cpu_count = os.cpu_count() or 1
         return min(dataset_len, max(1, cpu_count))
 
-    def _attach_shared_cache(self, meta_path: Path) -> None:
+    def _attach_shared_cache(self, meta_path: Path, expected_mode: str) -> None:
         with open(meta_path, "r", encoding="utf-8") as f:
             meta = json.load(f)
         if meta.get("version") != PRELOAD_CACHE_VERSION:
             raise ValueError(
                 f"Unsupported preload cache version {meta.get('version')} at {meta_path}"
+            )
+        if meta.get("cache_mode") != expected_mode:
+            raise ValueError(
+                f"Expected cache_mode={expected_mode}, got {meta.get('cache_mode')} at {meta_path}"
             )
 
         pc_memmap = np.memmap(
@@ -418,15 +439,25 @@ class Class3DGenDataset(Dataset):
             dtype=np.dtype(meta["labels_dtype"]),
             shape=tuple(meta["labels_shape"]),
         )
+        ready_memmap = np.memmap(
+            meta["ready_path"],
+            mode="r+",
+            dtype=np.dtype(meta["ready_dtype"]),
+            shape=tuple(meta["ready_shape"]),
+        )
         with open(meta["hash_keys_path"], "r", encoding="utf-8") as f:
             hash_keys = json.load(f)
 
         self.cached_pc = torch.from_numpy(pc_memmap)
         self.cached_labels = torch.from_numpy(labels_memmap)
         self.cached_hash_keys = hash_keys
+        self.cached_ready = ready_memmap
+        self.cache_dir = meta_path.parent
+        self.cache_mode = expected_mode
         self._cache_backing = {
             "pc": pc_memmap,
             "labels": labels_memmap,
+            "ready": ready_memmap,
         }
 
         if self.return_full_for_render:
@@ -455,17 +486,13 @@ class Class3DGenDataset(Dataset):
         first_label = self.valid_labels[0]
         first_hash_key = self.base_dataset.keys[first_real_idx]
         first_tar_gz_path = self.base_dataset.obj_data[first_hash_key]
-        plane_to_sphere_np = self.plane_to_sphere.cpu().numpy()
-        feature_indices_np = (
-            self.feature_indices.cpu().numpy() if self.feature_indices is not None else None
-        )
         first_pc, first_pc_full = _build_preload_planes(
             tar_gz_path=first_tar_gz_path,
             gs_path=str(self.base_dataset.gs_path),
             mean=self.base_dataset.mean,
             std=self.base_dataset.std,
-            plane_to_sphere=plane_to_sphere_np,
-            feature_indices=feature_indices_np,
+            plane_to_sphere=self._plane_to_sphere_np,
+            feature_indices=self._feature_indices_np,
             return_full_for_render=self.return_full_for_render,
         )
         dataset_len = len(self.valid_indices)
@@ -474,13 +501,14 @@ class Class3DGenDataset(Dataset):
         pc_dtype = first_pc.dtype
         pc_path = cache_dir / "pc.dat"
         labels_path = cache_dir / "labels.dat"
+        ready_path = cache_dir / "ready.dat"
         hash_keys_path = cache_dir / "hash_keys.json"
 
         pc_memmap = np.memmap(pc_path, mode="w+", dtype=pc_dtype, shape=pc_shape)
         labels_memmap = np.memmap(labels_path, mode="w+", dtype=np.int64, shape=(dataset_len,))
+        ready_memmap = np.memmap(ready_path, mode="w+", dtype=np.uint8, shape=(dataset_len,))
 
         pc_full_memmap = None
-        pc_full_tensor = None
         pc_full_path = None
         pc_full_shape = None
         pc_full_dtype = None
@@ -492,6 +520,8 @@ class Class3DGenDataset(Dataset):
                 pc_full_path, mode="w+", dtype=pc_full_dtype, shape=pc_full_shape
             )
         hash_keys = [self.base_dataset.keys[real_idx] for real_idx in self.valid_indices]
+        labels_memmap[:] = np.asarray(self.valid_labels, dtype=np.int64)
+        ready_memmap[:] = 0
 
         def write_sample(slot: int, pc_plane: np.ndarray, label: int, pc_full_plane: Optional[np.ndarray]) -> None:
             pc_memmap[slot] = pc_plane
@@ -529,8 +559,8 @@ class Class3DGenDataset(Dataset):
                         gs_path=str(self.base_dataset.gs_path),
                         mean=self.base_dataset.mean,
                         std=self.base_dataset.std,
-                        plane_to_sphere=plane_to_sphere_np,
-                        feature_indices=feature_indices_np,
+                        plane_to_sphere=self._plane_to_sphere_np,
+                        feature_indices=self._feature_indices_np,
                         return_full_for_render=self.return_full_for_render,
                     )
                     write_sample(task[0], _preload_worker_write_sample_local[0], task[2], _preload_worker_write_sample_local[1])
@@ -544,8 +574,8 @@ class Class3DGenDataset(Dataset):
                         str(self.base_dataset.gs_path),
                         self.base_dataset.mean,
                         self.base_dataset.std,
-                        plane_to_sphere_np,
-                        feature_indices_np,
+                        self._plane_to_sphere_np,
+                        self._feature_indices_np,
                         self.return_full_for_render,
                         str(pc_path),
                         pc_shape,
@@ -584,8 +614,10 @@ class Class3DGenDataset(Dataset):
             if progress is not None:
                 progress.close()
 
+        ready_memmap[:] = 1
         pc_memmap.flush()
         labels_memmap.flush()
+        ready_memmap.flush()
         if pc_full_memmap is not None:
             pc_full_memmap.flush()
 
@@ -596,12 +628,16 @@ class Class3DGenDataset(Dataset):
 
         meta = {
             "version": PRELOAD_CACHE_VERSION,
+            "cache_mode": "preload",
             "pc_path": str(pc_path),
             "pc_dtype": str(pc_dtype),
             "pc_shape": list(pc_shape),
             "labels_path": str(labels_path),
             "labels_dtype": "int64",
             "labels_shape": [dataset_len],
+            "ready_path": str(ready_path),
+            "ready_dtype": "uint8",
+            "ready_shape": [dataset_len],
             "hash_keys_path": str(hash_keys_path),
             "return_full_for_render": self.return_full_for_render,
         }
@@ -630,14 +666,117 @@ class Class3DGenDataset(Dataset):
             total_bytes / (1024 ** 3),
         )
 
+    def _build_lazy_cache(self, cache_dir: Path, meta_path: Path) -> None:
+        lazy_start = time.time()
+        logger.info(
+            "Initializing lazy class-conditioned CPU cache at %s",
+            cache_dir,
+        )
+
+        first_real_idx = self.valid_indices[0]
+        first_label = self.valid_labels[0]
+        first_hash_key = self.base_dataset.keys[first_real_idx]
+        first_tar_gz_path = self.base_dataset.obj_data[first_hash_key]
+        first_pc, first_pc_full = _build_preload_planes(
+            tar_gz_path=first_tar_gz_path,
+            gs_path=str(self.base_dataset.gs_path),
+            mean=self.base_dataset.mean,
+            std=self.base_dataset.std,
+            plane_to_sphere=self._plane_to_sphere_np,
+            feature_indices=self._feature_indices_np,
+            return_full_for_render=self.return_full_for_render,
+        )
+        dataset_len = len(self.valid_indices)
+
+        pc_shape = (dataset_len,) + tuple(first_pc.shape)
+        pc_dtype = first_pc.dtype
+        pc_path = cache_dir / "pc.dat"
+        labels_path = cache_dir / "labels.dat"
+        ready_path = cache_dir / "ready.dat"
+        hash_keys_path = cache_dir / "hash_keys.json"
+
+        pc_memmap = np.memmap(pc_path, mode="w+", dtype=pc_dtype, shape=pc_shape)
+        labels_memmap = np.memmap(labels_path, mode="w+", dtype=np.int64, shape=(dataset_len,))
+        ready_memmap = np.memmap(ready_path, mode="w+", dtype=np.uint8, shape=(dataset_len,))
+
+        pc_full_memmap = None
+        pc_full_path = None
+        pc_full_shape = None
+        pc_full_dtype = None
+        if self.return_full_for_render:
+            pc_full_shape = (dataset_len,) + tuple(first_pc_full.shape)
+            pc_full_dtype = first_pc_full.dtype
+            pc_full_path = cache_dir / "pc_full.dat"
+            pc_full_memmap = np.memmap(
+                pc_full_path, mode="w+", dtype=pc_full_dtype, shape=pc_full_shape
+            )
+
+        labels_memmap[:] = np.asarray(self.valid_labels, dtype=np.int64)
+        ready_memmap[:] = 0
+        pc_memmap[0] = first_pc
+        if self.return_full_for_render:
+            pc_full_memmap[0] = first_pc_full
+        ready_memmap[0] = 1
+
+        pc_memmap.flush()
+        labels_memmap.flush()
+        ready_memmap.flush()
+        if pc_full_memmap is not None:
+            pc_full_memmap.flush()
+
+        hash_keys = [self.base_dataset.keys[real_idx] for real_idx in self.valid_indices]
+        hash_keys_tmp = hash_keys_path.with_suffix(".json.tmp")
+        with open(hash_keys_tmp, "w", encoding="utf-8") as f:
+            json.dump(hash_keys, f)
+        os.replace(hash_keys_tmp, hash_keys_path)
+
+        meta = {
+            "version": PRELOAD_CACHE_VERSION,
+            "cache_mode": "lazy",
+            "pc_path": str(pc_path),
+            "pc_dtype": str(pc_dtype),
+            "pc_shape": list(pc_shape),
+            "labels_path": str(labels_path),
+            "labels_dtype": "int64",
+            "labels_shape": [dataset_len],
+            "ready_path": str(ready_path),
+            "ready_dtype": "uint8",
+            "ready_shape": [dataset_len],
+            "hash_keys_path": str(hash_keys_path),
+            "return_full_for_render": self.return_full_for_render,
+        }
+        if self.return_full_for_render:
+            meta.update(
+                {
+                    "pc_full_path": str(pc_full_path),
+                    "pc_full_dtype": str(pc_full_dtype),
+                    "pc_full_shape": list(pc_full_shape),
+                }
+            )
+
+        meta_tmp = meta_path.with_suffix(".tmp")
+        with open(meta_tmp, "w", encoding="utf-8") as f:
+            json.dump(meta, f)
+        os.replace(meta_tmp, meta_path)
+
+        total_bytes = first_pc.nbytes * dataset_len
+        if self.return_full_for_render:
+            total_bytes += first_pc_full.nbytes * dataset_len
+        elapsed = time.time() - lazy_start
+        logger.info(
+            "Initialized lazy shared CPU cache in %.1fs (reserved tensor storage %.2f GiB)",
+            elapsed,
+            total_bytes / (1024 ** 3),
+        )
+
     def _attach_or_build_preload_cache(self) -> None:
-        cache_root, cache_dir, lock_path = self._cache_paths()
+        cache_root, cache_dir, lock_path = self._cache_paths("preload")
         meta_path = cache_dir / "meta.json"
         with open(lock_path, "a+b") as lock_file:
             fcntl.flock(lock_file, fcntl.LOCK_EX)
             if meta_path.exists():
                 try:
-                    self._attach_shared_cache(meta_path)
+                    self._attach_shared_cache(meta_path, expected_mode="preload")
                     logger.info("Attached to existing shared CPU preload cache: %s", cache_dir)
                     return
                 except (FileNotFoundError, KeyError, OSError, ValueError, json.JSONDecodeError) as exc:
@@ -650,10 +789,66 @@ class Class3DGenDataset(Dataset):
 
             cache_dir.mkdir(parents=True, exist_ok=True)
             self._build_shared_cache(cache_dir, meta_path)
-            self._attach_shared_cache(meta_path)
+            self._attach_shared_cache(meta_path, expected_mode="preload")
+
+    def _attach_or_build_lazy_cache(self) -> None:
+        cache_root, cache_dir, lock_path = self._cache_paths("lazy")
+        meta_path = cache_dir / "meta.json"
+        with open(lock_path, "a+b") as lock_file:
+            fcntl.flock(lock_file, fcntl.LOCK_EX)
+            if meta_path.exists():
+                try:
+                    self._attach_shared_cache(meta_path, expected_mode="lazy")
+                    logger.info("Attached to existing lazy shared CPU cache: %s", cache_dir)
+                    return
+                except (FileNotFoundError, KeyError, OSError, ValueError, json.JSONDecodeError) as exc:
+                    logger.warning(
+                        "Lazy shared CPU cache at %s is invalid (%s); rebuilding",
+                        cache_dir,
+                        exc,
+                    )
+                    meta_path.unlink(missing_ok=True)
+
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            self._build_lazy_cache(cache_dir, meta_path)
+            self._attach_shared_cache(meta_path, expected_mode="lazy")
+
+    def _lazy_cache_lock_path(self, idx: int) -> Path:
+        stripe = idx % LAZY_CACHE_LOCK_STRIPES
+        return self.cache_dir / f"lazy_cache_{stripe:03d}.lock"
+
+    def _ensure_lazy_sample_cached(self, idx: int) -> None:
+        if not self.lazy_cache_to_cpu or self.cached_pc is None:
+            return
+        if int(self.cached_ready[idx]) == 1:
+            return
+
+        lock_path = self._lazy_cache_lock_path(idx)
+        with open(lock_path, "a+b") as lock_file:
+            fcntl.flock(lock_file, fcntl.LOCK_EX)
+            if int(self.cached_ready[idx]) == 1:
+                return
+
+            real_idx = self.valid_indices[idx]
+            tar_gz_path = self.base_dataset.obj_data[self.base_dataset.keys[real_idx]]
+            pc_plane, pc_full_plane = _build_preload_planes(
+                tar_gz_path=tar_gz_path,
+                gs_path=str(self.base_dataset.gs_path),
+                mean=self.base_dataset.mean,
+                std=self.base_dataset.std,
+                plane_to_sphere=self._plane_to_sphere_np,
+                feature_indices=self._feature_indices_np,
+                return_full_for_render=self.return_full_for_render,
+            )
+            self._cache_backing["pc"][idx] = pc_plane
+            if self.return_full_for_render:
+                self._cache_backing["pc_full"][idx] = pc_full_plane
+            self.cached_ready[idx] = 1
 
     def __getitem__(self, idx):
         if self.cached_pc is not None:
+            if self.lazy_cache_to_cpu and int(self.cached_ready[idx]) == 0:
+                self._ensure_lazy_sample_cached(idx)
             label = int(self.cached_labels[idx])
             hash_key = self.cached_hash_keys[idx]
             if self.return_full_for_render:
