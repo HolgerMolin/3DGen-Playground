@@ -737,6 +737,7 @@ def main(args):
         plane_to_sphere=plane_to_sphere,
         feature_indices=feature_indices,
         return_full_for_render=((use_render_loss or enable_train_render_log) and feature_indices is not None),
+        preload_to_cpu=args.preload_to_cpu,
     )
 
     # DataLoader — accelerate will inject DistributedSampler automatically
@@ -1141,6 +1142,9 @@ if __name__ == '__main__':
     parser.add_argument('--max_grad_norm', type=float, default=1.0,
                         help='Max gradient norm for clipping (0 = disabled)')
     parser.add_argument('--num_workers', type=int, default=4)
+    parser.add_argument('--preload_to_cpu', action=argparse.BooleanOptionalAction, default=False,
+                        help='Preload the transformed class-conditioned training dataset into a shared RAM cache in /dev/shm at startup. '
+                             'All local GPU processes attach to the same in-memory cache; this does not fall back to disk.')
     parser.add_argument('--seed', type=int, default=0)
 
     # Logging / Checkpoints / Validation
