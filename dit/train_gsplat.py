@@ -603,6 +603,7 @@ def _run_validation_render(
 
     # Full sampling from pure Gaussian noise
     shape = (1, in_channels, 128, 128)
+    was_training = model.training
     model.eval()
     with torch.no_grad():
         sample = val_diffusion.p_sample_loop(
@@ -612,7 +613,8 @@ def _run_validation_render(
             model_kwargs=dict(y=y),
             device=device,
         )
-    model.train()
+    if was_training:
+        model.train()
 
     # Build GS inputs from generated sample.
     pred_pc = _plane_to_point_cloud_batch(sample.float(), plane_to_sphere)
@@ -745,14 +747,19 @@ def main(args):
     )
 
     # DataLoader — accelerate will inject DistributedSampler automatically
-    loader = DataLoader(
-        dataset,
+    loader_kwargs = dict(
+        dataset=dataset,
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.num_workers,
         pin_memory=True,
         drop_last=True,
     )
+    if args.num_workers > 0:
+        loader_kwargs["persistent_workers"] = args.persistent_workers
+        if args.prefetch_factor > 0:
+            loader_kwargs["prefetch_factor"] = args.prefetch_factor
+    loader = DataLoader(**loader_kwargs)
     if is_main:
         logger.info(f"Dataset size: {len(dataset)}, Per-GPU batch size: {args.batch_size}")
 
@@ -775,6 +782,7 @@ def main(args):
     # Create EMA model (lives on device, not wrapped by accelerate)
     ema = deepcopy(model).to(device)
     requires_grad(ema, False)
+    ema.eval()
 
     # Create diffusion
     diffusion = create_diffusion(
@@ -853,6 +861,7 @@ def main(args):
         ckpt = torch.load(args.resume, map_location=device, weights_only=False)
         accelerator.unwrap_model(model).load_state_dict(ckpt['model'])
         ema.load_state_dict(ckpt['ema'])
+        ema.eval()
         opt.load_state_dict(ckpt['opt'])
         start_step = ckpt['step']
         start_epoch = start_step // len(loader)
@@ -1056,7 +1065,7 @@ def main(args):
             # Validation render (main process only)
             if enable_val and step % args.val_every == 0 and is_main:
                 _run_validation_render(
-                    model=accelerator.unwrap_model(model),
+                    model=ema,
                     plane_to_sphere=plane_to_sphere,
                     norm_mean=norm_mean,
                     norm_std=norm_std,
@@ -1156,6 +1165,11 @@ if __name__ == '__main__':
                              'When used with --preload_to_cpu, training is restricted to that cached subset.')
     parser.add_argument('--preload_workers', type=int, default=0,
                         help='Worker processes used to build the shared preload cache (0 = auto, uses all available CPU workers).')
+    parser.add_argument('--persistent_workers', action=argparse.BooleanOptionalAction, default=True,
+                        help='Keep DataLoader worker processes alive across epochs when num_workers > 0.')
+    parser.add_argument('--prefetch_factor', type=int, default=2,
+                        help='Number of batches each DataLoader worker prefetches ahead when num_workers > 0. '
+                             'Set <= 0 to disable the explicit override.')
     parser.add_argument('--seed', type=int, default=0)
 
     # Logging / Checkpoints / Validation
