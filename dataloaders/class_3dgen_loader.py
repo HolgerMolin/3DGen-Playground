@@ -5,6 +5,7 @@ filter out invalid classes, optionally select a subset of feature channels,
 and remap points from sphere order to a 2D plane grid via sphere2plane permutation.
 """
 
+from concurrent.futures import ProcessPoolExecutor
 import fcntl
 import hashlib
 import json
@@ -19,7 +20,11 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-from dataloaders.standard_3dgen_loader import Standard3DGenDataset
+from dataloaders.standard_3dgen_loader import (
+    Standard3DGenDataset,
+    extract_directory_info,
+    load_ply,
+)
 
 try:
     from tqdm.auto import tqdm
@@ -31,6 +36,8 @@ logger = logging.getLogger(__name__)
 FULL_3DGS_FEATURE_DIM = 59
 DC_ONLY_FEATURE_INDICES = (0, 1, 2, 3, 4, 20, 36, 52, 53, 54, 55, 56, 57, 58)
 PRELOAD_CACHE_VERSION = 2
+AUTO_PRELOAD_WORKERS_CAP = 8
+_PRELOAD_WORKER_STATE = {}
 
 
 def _default_preload_cache_root() -> Path:
@@ -65,6 +72,128 @@ def _hash_array(hasher: "hashlib._Hash", array) -> None:
 
 def _torch_dtype_to_numpy(dtype: torch.dtype) -> np.dtype:
     return np.dtype(torch.empty((), dtype=dtype).numpy().dtype)
+
+
+def _point_cloud_to_plane_numpy(point_cloud: np.ndarray, plane_to_sphere: np.ndarray) -> np.ndarray:
+    """Convert sphere-ordered (N, D) point cloud to plane grid (D, H, W) in numpy."""
+    n, d = point_cloud.shape
+    side = int(math.isqrt(n))
+    if side * side != n:
+        raise ValueError(f"N={n} is not a perfect square")
+    plane = point_cloud[plane_to_sphere]
+    return np.ascontiguousarray(plane.reshape(side, side, d).transpose(2, 0, 1))
+
+
+def _load_preload_point_cloud(
+    tar_gz_path: str,
+    gs_path: str,
+    mean: Optional[np.ndarray],
+    std: Optional[np.ndarray],
+) -> np.ndarray:
+    """Load and normalize a single point cloud in sphere order."""
+    directory_number, filename = extract_directory_info(tar_gz_path)
+    data_dir = Path(gs_path) / directory_number / filename
+
+    gs2sphere = np.load(str(data_dir / "gs2sphere.npy"))
+    point_cloud = load_ply(str(data_dir / "point_cloud.ply"))
+
+    if gs2sphere.ndim != 1:
+        raise ValueError(f"Expected 1D gs2sphere, got shape {gs2sphere.shape}")
+    if gs2sphere.shape[0] != point_cloud.shape[0]:
+        raise ValueError(
+            f"Point count mismatch: point_cloud={point_cloud.shape[0]} vs gs2sphere={gs2sphere.shape[0]}"
+        )
+    sphere_to_gs = np.empty_like(gs2sphere)
+    sphere_to_gs[gs2sphere] = np.arange(gs2sphere.shape[0], dtype=gs2sphere.dtype)
+    point_cloud = point_cloud[sphere_to_gs]
+
+    if mean is not None and std is not None:
+        point_cloud = (point_cloud - mean[None]) / (std[None] + 1e-8)
+
+    return point_cloud.astype(np.float32, copy=False)
+
+
+def _build_preload_planes(
+    tar_gz_path: str,
+    gs_path: str,
+    mean: Optional[np.ndarray],
+    std: Optional[np.ndarray],
+    plane_to_sphere: np.ndarray,
+    feature_indices: Optional[np.ndarray],
+    return_full_for_render: bool,
+) -> tuple[np.ndarray, Optional[np.ndarray]]:
+    """Build plane-ordered arrays for the shared preload cache."""
+    pc_full = _load_preload_point_cloud(tar_gz_path, gs_path, mean, std)
+    if feature_indices is not None:
+        pc = pc_full[:, feature_indices]
+    else:
+        pc = pc_full
+
+    pc_plane = _point_cloud_to_plane_numpy(pc, plane_to_sphere)
+    if return_full_for_render:
+        return pc_plane, _point_cloud_to_plane_numpy(pc_full, plane_to_sphere)
+    return pc_plane, None
+
+
+def _init_preload_worker(
+    gs_path: str,
+    mean: Optional[np.ndarray],
+    std: Optional[np.ndarray],
+    plane_to_sphere: np.ndarray,
+    feature_indices: Optional[np.ndarray],
+    return_full_for_render: bool,
+    pc_path: str,
+    pc_shape: tuple[int, ...],
+    pc_dtype: str,
+    labels_path: str,
+    labels_shape: tuple[int, ...],
+    labels_dtype: str,
+    pc_full_path: Optional[str],
+    pc_full_shape: Optional[tuple[int, ...]],
+    pc_full_dtype: Optional[str],
+) -> None:
+    """Initialize per-process state for parallel preload workers."""
+    global _PRELOAD_WORKER_STATE
+    _PRELOAD_WORKER_STATE = {
+        "gs_path": gs_path,
+        "mean": mean,
+        "std": std,
+        "plane_to_sphere": plane_to_sphere,
+        "feature_indices": feature_indices,
+        "return_full_for_render": return_full_for_render,
+        "pc_memmap": np.memmap(pc_path, mode="r+", dtype=np.dtype(pc_dtype), shape=tuple(pc_shape)),
+        "labels_memmap": np.memmap(
+            labels_path, mode="r+", dtype=np.dtype(labels_dtype), shape=tuple(labels_shape)
+        ),
+        "pc_full_memmap": None,
+    }
+    if return_full_for_render:
+        _PRELOAD_WORKER_STATE["pc_full_memmap"] = np.memmap(
+            pc_full_path,
+            mode="r+",
+            dtype=np.dtype(pc_full_dtype),
+            shape=tuple(pc_full_shape),
+        )
+
+
+def _preload_worker_write_sample(task: tuple[int, str, int]) -> int:
+    """Write one sample directly into the shared preload memmaps."""
+    slot, tar_gz_path, label = task
+    state = _PRELOAD_WORKER_STATE
+    pc_plane, pc_full_plane = _build_preload_planes(
+        tar_gz_path=tar_gz_path,
+        gs_path=state["gs_path"],
+        mean=state["mean"],
+        std=state["std"],
+        plane_to_sphere=state["plane_to_sphere"],
+        feature_indices=state["feature_indices"],
+        return_full_for_render=state["return_full_for_render"],
+    )
+    state["pc_memmap"][slot] = pc_plane
+    state["labels_memmap"][slot] = int(label)
+    if state["return_full_for_render"]:
+        state["pc_full_memmap"][slot] = pc_full_plane
+    return slot
 
 
 def load_sphere2plane(sphere2plane_path: str, expected_points: int) -> torch.Tensor:
@@ -143,6 +272,7 @@ class Class3DGenDataset(Dataset):
         feature_indices: Optional[torch.Tensor] = None,
         return_full_for_render: bool = False,
         preload_to_cpu: bool = False,
+        preload_workers: int = 0,
     ):
         """
         Args:
@@ -155,6 +285,8 @@ class Class3DGenDataset(Dataset):
                 the full 59-channel plane grid for render loss GT.
             preload_to_cpu: If True, eagerly materialize the transformed training
                 samples in CPU memory during initialization.
+            preload_workers: Number of worker processes to use while building the
+                shared preload cache. `0` selects an automatic value.
         """
         self.base_dataset = base_dataset
         self.class_map = class_map
@@ -162,6 +294,7 @@ class Class3DGenDataset(Dataset):
         self.feature_indices = feature_indices
         self.return_full_for_render = return_full_for_render and (feature_indices is not None)
         self.preload_to_cpu = preload_to_cpu
+        self.preload_workers = preload_workers
         self.cached_pc = None
         self.cached_pc_full = None
         self.cached_labels = None
@@ -258,6 +391,14 @@ class Class3DGenDataset(Dataset):
         cache_dir = cache_root / cache_key
         return cache_root, cache_dir, cache_root / f"{cache_key}.lock"
 
+    def _resolved_preload_workers(self, dataset_len: int) -> int:
+        if dataset_len <= 1:
+            return 1
+        if self.preload_workers > 0:
+            return min(self.preload_workers, dataset_len)
+        cpu_count = os.cpu_count() or 1
+        return min(dataset_len, max(1, min(cpu_count, AUTO_PRELOAD_WORKERS_CAP)))
+
     def _attach_shared_cache(self, meta_path: Path) -> None:
         with open(meta_path, "r", encoding="utf-8") as f:
             meta = json.load(f)
@@ -303,28 +444,41 @@ class Class3DGenDataset(Dataset):
 
     def _build_shared_cache(self, cache_dir: Path, meta_path: Path) -> None:
         preload_start = time.time()
+        worker_count = self._resolved_preload_workers(len(self.valid_indices))
         logger.info(
-            "Preloading %d class-conditioned samples into shared CPU cache at %s",
+            "Preloading %d class-conditioned samples into shared CPU cache at %s using %d worker(s)",
             len(self.valid_indices),
             cache_dir,
+            worker_count,
         )
 
         first_real_idx = self.valid_indices[0]
         first_label = self.valid_labels[0]
-        first_sample = self._build_sample(first_real_idx, label=first_label)
-        first_pc = first_sample[0]
+        first_hash_key = self.base_dataset.keys[first_real_idx]
+        first_tar_gz_path = self.base_dataset.obj_data[first_hash_key]
+        plane_to_sphere_np = self.plane_to_sphere.cpu().numpy()
+        feature_indices_np = (
+            self.feature_indices.cpu().numpy() if self.feature_indices is not None else None
+        )
+        first_pc, first_pc_full = _build_preload_planes(
+            tar_gz_path=first_tar_gz_path,
+            gs_path=str(self.base_dataset.gs_path),
+            mean=self.base_dataset.mean,
+            std=self.base_dataset.std,
+            plane_to_sphere=plane_to_sphere_np,
+            feature_indices=feature_indices_np,
+            return_full_for_render=self.return_full_for_render,
+        )
         dataset_len = len(self.valid_indices)
 
         pc_shape = (dataset_len,) + tuple(first_pc.shape)
-        pc_dtype = _torch_dtype_to_numpy(first_pc.dtype)
+        pc_dtype = first_pc.dtype
         pc_path = cache_dir / "pc.dat"
         labels_path = cache_dir / "labels.dat"
         hash_keys_path = cache_dir / "hash_keys.json"
 
         pc_memmap = np.memmap(pc_path, mode="w+", dtype=pc_dtype, shape=pc_shape)
         labels_memmap = np.memmap(labels_path, mode="w+", dtype=np.int64, shape=(dataset_len,))
-        pc_tensor = torch.from_numpy(pc_memmap)
-        labels_tensor = torch.from_numpy(labels_memmap)
 
         pc_full_memmap = None
         pc_full_tensor = None
@@ -332,25 +486,19 @@ class Class3DGenDataset(Dataset):
         pc_full_shape = None
         pc_full_dtype = None
         if self.return_full_for_render:
-            first_pc_full = first_sample[2]
             pc_full_shape = (dataset_len,) + tuple(first_pc_full.shape)
-            pc_full_dtype = _torch_dtype_to_numpy(first_pc_full.dtype)
+            pc_full_dtype = first_pc_full.dtype
             pc_full_path = cache_dir / "pc_full.dat"
             pc_full_memmap = np.memmap(
                 pc_full_path, mode="w+", dtype=pc_full_dtype, shape=pc_full_shape
             )
-            pc_full_tensor = torch.from_numpy(pc_full_memmap)
+        hash_keys = [self.base_dataset.keys[real_idx] for real_idx in self.valid_indices]
 
-        hash_keys = [None] * dataset_len
-
-        def write_sample(slot: int, cached_sample) -> None:
-            pc_tensor[slot].copy_(cached_sample[0])
-            labels_tensor[slot] = int(cached_sample[1])
+        def write_sample(slot: int, pc_plane: np.ndarray, label: int, pc_full_plane: Optional[np.ndarray]) -> None:
+            pc_memmap[slot] = pc_plane
+            labels_memmap[slot] = int(label)
             if self.return_full_for_render:
-                pc_full_tensor[slot].copy_(cached_sample[2])
-                hash_keys[slot] = cached_sample[3]
-            else:
-                hash_keys[slot] = cached_sample[2]
+                pc_full_memmap[slot] = pc_full_plane
 
         progress = None
         if tqdm is not None:
@@ -362,15 +510,59 @@ class Class3DGenDataset(Dataset):
             )
 
         try:
-            write_sample(0, first_sample)
+            write_sample(0, first_pc, first_label, first_pc_full)
             if progress is not None:
                 progress.update(1)
-            for slot, (real_idx, label) in enumerate(
-                zip(self.valid_indices[1:], self.valid_labels[1:]), start=1
-            ):
-                write_sample(slot, self._build_sample(real_idx, label=label))
-                if progress is not None:
-                    progress.update(1)
+            task_iter = (
+                (
+                    slot,
+                    self.base_dataset.obj_data[self.base_dataset.keys[real_idx]],
+                    label,
+                )
+                for slot, (real_idx, label) in enumerate(
+                    zip(self.valid_indices[1:], self.valid_labels[1:]), start=1
+                )
+            )
+            if worker_count == 1:
+                for task in task_iter:
+                    _preload_worker_write_sample_local = _build_preload_planes(
+                        tar_gz_path=task[1],
+                        gs_path=str(self.base_dataset.gs_path),
+                        mean=self.base_dataset.mean,
+                        std=self.base_dataset.std,
+                        plane_to_sphere=plane_to_sphere_np,
+                        feature_indices=feature_indices_np,
+                        return_full_for_render=self.return_full_for_render,
+                    )
+                    write_sample(task[0], _preload_worker_write_sample_local[0], task[2], _preload_worker_write_sample_local[1])
+                    if progress is not None:
+                        progress.update(1)
+            else:
+                chunksize = max(1, (dataset_len - 1) // (worker_count * 4))
+                with ProcessPoolExecutor(
+                    max_workers=worker_count,
+                    initializer=_init_preload_worker,
+                    initargs=(
+                        str(self.base_dataset.gs_path),
+                        self.base_dataset.mean,
+                        self.base_dataset.std,
+                        plane_to_sphere_np,
+                        feature_indices_np,
+                        self.return_full_for_render,
+                        str(pc_path),
+                        pc_shape,
+                        str(pc_dtype),
+                        str(labels_path),
+                        (dataset_len,),
+                        "int64",
+                        str(pc_full_path) if pc_full_path is not None else None,
+                        pc_full_shape,
+                        str(pc_full_dtype) if pc_full_dtype is not None else None,
+                    ),
+                ) as executor:
+                    for _ in executor.map(_preload_worker_write_sample, task_iter, chunksize=chunksize):
+                        if progress is not None:
+                            progress.update(1)
         finally:
             if progress is not None:
                 progress.close()
@@ -410,9 +602,9 @@ class Class3DGenDataset(Dataset):
             json.dump(meta, f)
         os.replace(meta_tmp, meta_path)
 
-        total_bytes = first_pc.numel() * first_pc.element_size() * dataset_len
+        total_bytes = first_pc.nbytes * dataset_len
         if self.return_full_for_render:
-            total_bytes += first_sample[2].numel() * first_sample[2].element_size() * dataset_len
+            total_bytes += first_pc_full.nbytes * dataset_len
         elapsed = time.time() - preload_start
         logger.info(
             "Finished shared CPU preload: %d samples cached in %.1fs (tensor storage %.2f GiB)",
