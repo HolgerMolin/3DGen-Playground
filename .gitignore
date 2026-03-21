@@ -56,3 +56,6 @@ config.env.example
 # Temporary files
 *.tmp
 *.bak
+
+tests/
+dit3d/

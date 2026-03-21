@@ -162,7 +162,7 @@ class Standard3DGenDataset(Dataset):
         self,
         obj_list: List[str],
         gs_path: str,
-        caption_path: str,
+        caption_path: Optional[str] = None,
         rendering_path: Optional[str] = None,
         num_images: int = 1,
         mean_file: Optional[str] = None,
@@ -190,7 +190,10 @@ class Standard3DGenDataset(Dataset):
         self.keys = list(self.obj_data.keys())
         
         # Load captions
-        self.captions = load_captions(caption_path)
+        if caption_path is not None:
+            self.captions = load_captions(caption_path)
+        else:
+            self.captions = {}
         
         # Load normalization statistics if provided
         self.mean = None
@@ -236,11 +239,9 @@ class Standard3DGenDataset(Dataset):
             raise ValueError(
                 f"Point count mismatch: point_cloud={point_cloud.shape[0]} vs gs2sphere={gs2sphere.shape[0]}"
             )
-        # sphere_to_gs = np.empty_like(gs2sphere)
-        # sphere_to_gs[gs2sphere] = np.arange(gs2sphere.shape[0], dtype=gs2sphere.dtype)
-        # point_cloud = point_cloud[sphere_to_gs]
-
-        point_cloud = point_cloud[gs2sphere]
+        sphere_to_gs = np.empty_like(gs2sphere)
+        sphere_to_gs[gs2sphere] = np.arange(gs2sphere.shape[0], dtype=gs2sphere.dtype)
+        point_cloud = point_cloud[sphere_to_gs]
         
         return point_cloud, gs2sphere
     
@@ -447,7 +448,7 @@ class Standard3DGenDataset(Dataset):
 def create_dataloader(
     obj_list: List[str],
     gs_path: str,
-    caption_path: str,
+    caption_path: Optional[str] = None,
     rendering_path: Optional[str] = None,
     num_images: int = 1,
     mean_file: Optional[str] = None,
