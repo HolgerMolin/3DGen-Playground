@@ -663,6 +663,8 @@ def main(args):
         return_full_for_render=((use_render_loss or enable_train_render_log) and feature_indices is not None),
         preload_to_cpu=args.preload_to_cpu,
         lazy_cache_to_cpu=args.lazy_cache_to_cpu,
+        cache_dtype=(torch.bfloat16 if args.mixed_precision == 'bf16' else torch.float32),
+        preload_max_samples=args.preload_max_samples,
         preload_workers=args.preload_workers,
     )
 
@@ -1074,6 +1076,9 @@ if __name__ == '__main__':
                              'All local GPU processes attach to the same in-memory cache; this does not fall back to disk.')
     parser.add_argument('--lazy_cache_to_cpu', action=argparse.BooleanOptionalAction, default=False,
                         help='Cache samples into the shared /dev/shm CPU cache on first access so training speeds up progressively instead of paying the full preload cost up front.')
+    parser.add_argument('--preload_max_samples', type=int, default=0,
+                        help='Cap eager CPU preloading to the first N samples (0 = preload the full dataset). '
+                             'Samples beyond the cap are loaded from disk on demand.')
     parser.add_argument('--preload_workers', type=int, default=0,
                         help='Worker processes used to build the shared preload cache (0 = auto, uses all available CPU workers).')
     parser.add_argument('--seed', type=int, default=0)

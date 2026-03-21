@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 FULL_3DGS_FEATURE_DIM = 59
 DC_ONLY_FEATURE_INDICES = (0, 1, 2, 3, 4, 20, 36, 52, 53, 54, 55, 56, 57, 58)
-PRELOAD_CACHE_VERSION = 4
+PRELOAD_CACHE_VERSION = 6
 LAZY_CACHE_LOCK_STRIPES = 256
 _PRELOAD_WORKER_STATE = {}
 
@@ -72,6 +72,41 @@ def _hash_array(hasher: "hashlib._Hash", array) -> None:
 
 def _torch_dtype_to_numpy(dtype: torch.dtype) -> np.dtype:
     return np.dtype(torch.empty((), dtype=dtype).numpy().dtype)
+
+
+def _torch_dtype_to_name(dtype: torch.dtype) -> str:
+    if dtype == torch.float32:
+        return "float32"
+    if dtype == torch.bfloat16:
+        return "bfloat16"
+    raise ValueError(f"Unsupported cache dtype: {dtype}")
+
+
+def _dtype_name_to_torch(name: str) -> torch.dtype:
+    if name == "float32":
+        return torch.float32
+    if name == "bfloat16":
+        return torch.bfloat16
+    raise ValueError(f"Unsupported cache dtype name: {name}")
+
+
+def _element_size_bytes(dtype: torch.dtype) -> int:
+    return torch.empty((), dtype=dtype).element_size()
+
+
+def _open_tensor_memmap(
+    path: str,
+    mode: str,
+    tensor_dtype: torch.dtype,
+    shape: tuple[int, ...],
+) -> tuple[np.memmap, torch.Tensor]:
+    if tensor_dtype == torch.bfloat16:
+        backing = np.memmap(path, mode=mode, dtype=np.uint16, shape=shape)
+        tensor = torch.from_numpy(backing).view(torch.bfloat16)
+    else:
+        backing = np.memmap(path, mode=mode, dtype=_torch_dtype_to_numpy(tensor_dtype), shape=shape)
+        tensor = torch.from_numpy(backing)
+    return backing, tensor
 
 
 def _point_cloud_to_plane_numpy(point_cloud: np.ndarray, plane_to_sphere: np.ndarray) -> np.ndarray:
@@ -144,13 +179,13 @@ def _init_preload_worker(
     return_full_for_render: bool,
     pc_path: str,
     pc_shape: tuple[int, ...],
-    pc_dtype: str,
+    pc_dtype_name: str,
     labels_path: str,
     labels_shape: tuple[int, ...],
     labels_dtype: str,
     pc_full_path: Optional[str],
     pc_full_shape: Optional[tuple[int, ...]],
-    pc_full_dtype: Optional[str],
+    pc_full_dtype_name: Optional[str],
 ) -> None:
     """Initialize per-process state for parallel preload workers."""
     global _PRELOAD_WORKER_STATE
@@ -161,19 +196,24 @@ def _init_preload_worker(
         "plane_to_sphere": plane_to_sphere,
         "feature_indices": feature_indices,
         "return_full_for_render": return_full_for_render,
-        "pc_memmap": np.memmap(pc_path, mode="r+", dtype=np.dtype(pc_dtype), shape=tuple(pc_shape)),
+        "pc_tensor": _open_tensor_memmap(
+            pc_path,
+            mode="r+",
+            tensor_dtype=_dtype_name_to_torch(pc_dtype_name),
+            shape=tuple(pc_shape),
+        )[1],
         "labels_memmap": np.memmap(
             labels_path, mode="r+", dtype=np.dtype(labels_dtype), shape=tuple(labels_shape)
         ),
-        "pc_full_memmap": None,
+        "pc_full_tensor": None,
     }
     if return_full_for_render:
-        _PRELOAD_WORKER_STATE["pc_full_memmap"] = np.memmap(
+        _PRELOAD_WORKER_STATE["pc_full_tensor"] = _open_tensor_memmap(
             pc_full_path,
             mode="r+",
-            dtype=np.dtype(pc_full_dtype),
+            tensor_dtype=_dtype_name_to_torch(pc_full_dtype_name),
             shape=tuple(pc_full_shape),
-        )
+        )[1]
 
 
 def _preload_worker_write_sample(task: tuple[int, str, int]) -> int:
@@ -189,10 +229,12 @@ def _preload_worker_write_sample(task: tuple[int, str, int]) -> int:
         feature_indices=state["feature_indices"],
         return_full_for_render=state["return_full_for_render"],
     )
-    state["pc_memmap"][slot] = pc_plane
+    state["pc_tensor"][slot].copy_(torch.from_numpy(pc_plane).to(dtype=state["pc_tensor"].dtype))
     state["labels_memmap"][slot] = int(label)
     if state["return_full_for_render"]:
-        state["pc_full_memmap"][slot] = pc_full_plane
+        state["pc_full_tensor"][slot].copy_(
+            torch.from_numpy(pc_full_plane).to(dtype=state["pc_full_tensor"].dtype)
+        )
     return slot
 
 
@@ -273,6 +315,8 @@ class Class3DGenDataset(Dataset):
         return_full_for_render: bool = False,
         preload_to_cpu: bool = False,
         lazy_cache_to_cpu: bool = False,
+        cache_dtype: torch.dtype = torch.float32,
+        preload_max_samples: int = 0,
         preload_workers: int = 0,
     ):
         """
@@ -288,11 +332,16 @@ class Class3DGenDataset(Dataset):
                 samples in CPU memory during initialization.
             lazy_cache_to_cpu: If True, create a shared CPU cache that fills on
                 first access instead of preloading everything up front.
+            cache_dtype: Tensor dtype used for the shared CPU cache payload.
+            preload_max_samples: Limit eager CPU preload to the first N samples.
+                `0` means preload the full dataset.
             preload_workers: Number of worker processes to use while building the
                 shared preload cache. `0` selects an automatic value.
         """
         if preload_to_cpu and lazy_cache_to_cpu:
             raise ValueError("preload_to_cpu and lazy_cache_to_cpu are mutually exclusive")
+        if preload_max_samples < 0:
+            raise ValueError("preload_max_samples must be >= 0")
         self.base_dataset = base_dataset
         self.class_map = class_map
         self.plane_to_sphere = plane_to_sphere
@@ -300,12 +349,15 @@ class Class3DGenDataset(Dataset):
         self.return_full_for_render = return_full_for_render and (feature_indices is not None)
         self.preload_to_cpu = preload_to_cpu
         self.lazy_cache_to_cpu = lazy_cache_to_cpu
+        self.cache_dtype = cache_dtype
+        self.preload_max_samples = preload_max_samples
         self.preload_workers = preload_workers
         self.cached_pc = None
         self.cached_pc_full = None
         self.cached_labels = None
         self.cached_hash_keys = None
         self.cached_ready = None
+        self.cached_sample_count = 0
         self.cache_dir = None
         self.cache_mode = None
         self._cache_backing = {}
@@ -398,6 +450,8 @@ class Class3DGenDataset(Dataset):
         )
         hasher.update(str(self.base_dataset.num_images).encode("utf-8"))
         hasher.update(b"return_full:1" if self.return_full_for_render else b"return_full:0")
+        hasher.update(f"cache_dtype:{_torch_dtype_to_name(self.cache_dtype)}".encode("utf-8"))
+        hasher.update(f"preload_max_samples:{self.preload_max_samples}".encode("utf-8"))
         return hasher.hexdigest()[:32]
 
     def _cache_paths(self, cache_mode: str):
@@ -415,6 +469,11 @@ class Class3DGenDataset(Dataset):
         cpu_count = os.cpu_count() or 1
         return min(dataset_len, max(1, cpu_count))
 
+    def _resolved_preload_sample_count(self, dataset_len: int) -> int:
+        if self.preload_max_samples > 0:
+            return min(dataset_len, self.preload_max_samples)
+        return dataset_len
+
     def _attach_shared_cache(self, meta_path: Path, expected_mode: str) -> None:
         with open(meta_path, "r", encoding="utf-8") as f:
             meta = json.load(f)
@@ -427,10 +486,10 @@ class Class3DGenDataset(Dataset):
                 f"Expected cache_mode={expected_mode}, got {meta.get('cache_mode')} at {meta_path}"
             )
 
-        pc_memmap = np.memmap(
+        pc_memmap, pc_tensor = _open_tensor_memmap(
             meta["pc_path"],
             mode="r+",
-            dtype=np.dtype(meta["pc_dtype"]),
+            tensor_dtype=_dtype_name_to_torch(meta["pc_dtype"]),
             shape=tuple(meta["pc_shape"]),
         )
         labels_memmap = np.memmap(
@@ -448,10 +507,11 @@ class Class3DGenDataset(Dataset):
         with open(meta["hash_keys_path"], "r", encoding="utf-8") as f:
             hash_keys = json.load(f)
 
-        self.cached_pc = torch.from_numpy(pc_memmap)
+        self.cached_pc = pc_tensor
         self.cached_labels = torch.from_numpy(labels_memmap)
         self.cached_hash_keys = hash_keys
         self.cached_ready = ready_memmap
+        self.cached_sample_count = int(meta.get("cached_sample_count", len(hash_keys)))
         self.cache_dir = meta_path.parent
         self.cache_mode = expected_mode
         self._cache_backing = {
@@ -461,26 +521,32 @@ class Class3DGenDataset(Dataset):
         }
 
         if self.return_full_for_render:
-            pc_full_memmap = np.memmap(
+            pc_full_memmap, pc_full_tensor = _open_tensor_memmap(
                 meta["pc_full_path"],
                 mode="r+",
-                dtype=np.dtype(meta["pc_full_dtype"]),
+                tensor_dtype=_dtype_name_to_torch(meta["pc_full_dtype"]),
                 shape=tuple(meta["pc_full_shape"]),
             )
-            self.cached_pc_full = torch.from_numpy(pc_full_memmap)
+            self.cached_pc_full = pc_full_tensor
             self._cache_backing["pc_full"] = pc_full_memmap
         else:
             self.cached_pc_full = None
 
     def _build_shared_cache(self, cache_dir: Path, meta_path: Path) -> None:
         preload_start = time.time()
-        worker_count = self._resolved_preload_workers(len(self.valid_indices))
+        dataset_len = len(self.valid_indices)
+        preload_len = self._resolved_preload_sample_count(dataset_len)
+        worker_count = self._resolved_preload_workers(preload_len)
         logger.info(
-            "Preloading %d class-conditioned samples into shared CPU cache at %s using %d worker(s)",
-            len(self.valid_indices),
+            "Preloading %d/%d class-conditioned samples into shared CPU cache at %s using %d worker(s)",
+            preload_len,
+            dataset_len,
             cache_dir,
             worker_count,
         )
+
+        if preload_len == 0:
+            raise ValueError("preload_to_cpu is enabled but resolved preload sample count is 0")
 
         first_real_idx = self.valid_indices[0]
         first_label = self.valid_labels[0]
@@ -495,39 +561,44 @@ class Class3DGenDataset(Dataset):
             feature_indices=self._feature_indices_np,
             return_full_for_render=self.return_full_for_render,
         )
-        dataset_len = len(self.valid_indices)
 
-        pc_shape = (dataset_len,) + tuple(first_pc.shape)
-        pc_dtype = first_pc.dtype
+        pc_shape = (preload_len,) + tuple(first_pc.shape)
+        cache_dtype_name = _torch_dtype_to_name(self.cache_dtype)
         pc_path = cache_dir / "pc.dat"
         labels_path = cache_dir / "labels.dat"
         ready_path = cache_dir / "ready.dat"
         hash_keys_path = cache_dir / "hash_keys.json"
 
-        pc_memmap = np.memmap(pc_path, mode="w+", dtype=pc_dtype, shape=pc_shape)
-        labels_memmap = np.memmap(labels_path, mode="w+", dtype=np.int64, shape=(dataset_len,))
-        ready_memmap = np.memmap(ready_path, mode="w+", dtype=np.uint8, shape=(dataset_len,))
+        pc_memmap, pc_tensor = _open_tensor_memmap(
+            str(pc_path), mode="w+", tensor_dtype=self.cache_dtype, shape=pc_shape
+        )
+        labels_memmap = np.memmap(labels_path, mode="w+", dtype=np.int64, shape=(preload_len,))
+        ready_memmap = np.memmap(ready_path, mode="w+", dtype=np.uint8, shape=(preload_len,))
 
         pc_full_memmap = None
+        pc_full_tensor = None
         pc_full_path = None
         pc_full_shape = None
-        pc_full_dtype = None
+        pc_full_dtype_name = None
         if self.return_full_for_render:
-            pc_full_shape = (dataset_len,) + tuple(first_pc_full.shape)
-            pc_full_dtype = first_pc_full.dtype
+            pc_full_shape = (preload_len,) + tuple(first_pc_full.shape)
+            pc_full_dtype_name = cache_dtype_name
             pc_full_path = cache_dir / "pc_full.dat"
-            pc_full_memmap = np.memmap(
-                pc_full_path, mode="w+", dtype=pc_full_dtype, shape=pc_full_shape
+            pc_full_memmap, pc_full_tensor = _open_tensor_memmap(
+                str(pc_full_path),
+                mode="w+",
+                tensor_dtype=self.cache_dtype,
+                shape=pc_full_shape,
             )
-        hash_keys = [self.base_dataset.keys[real_idx] for real_idx in self.valid_indices]
-        labels_memmap[:] = np.asarray(self.valid_labels, dtype=np.int64)
+        hash_keys = [self.base_dataset.keys[real_idx] for real_idx in self.valid_indices[:preload_len]]
+        labels_memmap[:] = np.asarray(self.valid_labels[:preload_len], dtype=np.int64)
         ready_memmap[:] = 0
 
         def write_sample(slot: int, pc_plane: np.ndarray, label: int, pc_full_plane: Optional[np.ndarray]) -> None:
-            pc_memmap[slot] = pc_plane
+            pc_tensor[slot].copy_(torch.from_numpy(pc_plane).to(dtype=pc_tensor.dtype))
             labels_memmap[slot] = int(label)
             if self.return_full_for_render:
-                pc_full_memmap[slot] = pc_full_plane
+                pc_full_tensor[slot].copy_(torch.from_numpy(pc_full_plane).to(dtype=pc_full_tensor.dtype))
 
         progress = None
         if tqdm is not None:
@@ -549,7 +620,7 @@ class Class3DGenDataset(Dataset):
                     label,
                 )
                 for slot, (real_idx, label) in enumerate(
-                    zip(self.valid_indices[1:], self.valid_labels[1:]), start=1
+                    zip(self.valid_indices[1:preload_len], self.valid_labels[1:preload_len]), start=1
                 )
             )
             if worker_count == 1:
@@ -579,13 +650,13 @@ class Class3DGenDataset(Dataset):
                         self.return_full_for_render,
                         str(pc_path),
                         pc_shape,
-                        str(pc_dtype),
+                        cache_dtype_name,
                         str(labels_path),
-                        (dataset_len,),
+                        (preload_len,),
                         "int64",
                         str(pc_full_path) if pc_full_path is not None else None,
                         pc_full_shape,
-                        str(pc_full_dtype) if pc_full_dtype is not None else None,
+                        pc_full_dtype_name,
                     ),
                 ) as executor:
                     pending = set()
@@ -630,14 +701,15 @@ class Class3DGenDataset(Dataset):
             "version": PRELOAD_CACHE_VERSION,
             "cache_mode": "preload",
             "pc_path": str(pc_path),
-            "pc_dtype": str(pc_dtype),
+            "pc_dtype": cache_dtype_name,
             "pc_shape": list(pc_shape),
             "labels_path": str(labels_path),
             "labels_dtype": "int64",
-            "labels_shape": [dataset_len],
+            "labels_shape": [preload_len],
             "ready_path": str(ready_path),
             "ready_dtype": "uint8",
-            "ready_shape": [dataset_len],
+            "ready_shape": [preload_len],
+            "cached_sample_count": preload_len,
             "hash_keys_path": str(hash_keys_path),
             "return_full_for_render": self.return_full_for_render,
         }
@@ -645,7 +717,7 @@ class Class3DGenDataset(Dataset):
             meta.update(
                 {
                     "pc_full_path": str(pc_full_path),
-                    "pc_full_dtype": str(pc_full_dtype),
+                    "pc_full_dtype": pc_full_dtype_name,
                     "pc_full_shape": list(pc_full_shape),
                 }
             )
@@ -655,14 +727,16 @@ class Class3DGenDataset(Dataset):
             json.dump(meta, f)
         os.replace(meta_tmp, meta_path)
 
-        total_bytes = first_pc.nbytes * dataset_len
+        total_bytes = int(np.prod(pc_shape)) * _element_size_bytes(self.cache_dtype)
         if self.return_full_for_render:
-            total_bytes += first_pc_full.nbytes * dataset_len
+            total_bytes += int(np.prod(pc_full_shape)) * _element_size_bytes(self.cache_dtype)
         elapsed = time.time() - preload_start
         logger.info(
-            "Finished shared CPU preload: %d samples cached in %.1fs (tensor storage %.2f GiB)",
+            "Finished shared CPU preload: %d/%d samples cached in %.1fs (dtype=%s, tensor storage %.2f GiB)",
+            preload_len,
             dataset_len,
             elapsed,
+            cache_dtype_name,
             total_bytes / (1024 ** 3),
         )
 
@@ -689,33 +763,39 @@ class Class3DGenDataset(Dataset):
         dataset_len = len(self.valid_indices)
 
         pc_shape = (dataset_len,) + tuple(first_pc.shape)
-        pc_dtype = first_pc.dtype
+        cache_dtype_name = _torch_dtype_to_name(self.cache_dtype)
         pc_path = cache_dir / "pc.dat"
         labels_path = cache_dir / "labels.dat"
         ready_path = cache_dir / "ready.dat"
         hash_keys_path = cache_dir / "hash_keys.json"
 
-        pc_memmap = np.memmap(pc_path, mode="w+", dtype=pc_dtype, shape=pc_shape)
+        pc_memmap, pc_tensor = _open_tensor_memmap(
+            str(pc_path), mode="w+", tensor_dtype=self.cache_dtype, shape=pc_shape
+        )
         labels_memmap = np.memmap(labels_path, mode="w+", dtype=np.int64, shape=(dataset_len,))
         ready_memmap = np.memmap(ready_path, mode="w+", dtype=np.uint8, shape=(dataset_len,))
 
         pc_full_memmap = None
+        pc_full_tensor = None
         pc_full_path = None
         pc_full_shape = None
-        pc_full_dtype = None
+        pc_full_dtype_name = None
         if self.return_full_for_render:
             pc_full_shape = (dataset_len,) + tuple(first_pc_full.shape)
-            pc_full_dtype = first_pc_full.dtype
+            pc_full_dtype_name = cache_dtype_name
             pc_full_path = cache_dir / "pc_full.dat"
-            pc_full_memmap = np.memmap(
-                pc_full_path, mode="w+", dtype=pc_full_dtype, shape=pc_full_shape
+            pc_full_memmap, pc_full_tensor = _open_tensor_memmap(
+                str(pc_full_path),
+                mode="w+",
+                tensor_dtype=self.cache_dtype,
+                shape=pc_full_shape,
             )
 
         labels_memmap[:] = np.asarray(self.valid_labels, dtype=np.int64)
         ready_memmap[:] = 0
-        pc_memmap[0] = first_pc
+        pc_tensor[0].copy_(torch.from_numpy(first_pc).to(dtype=pc_tensor.dtype))
         if self.return_full_for_render:
-            pc_full_memmap[0] = first_pc_full
+            pc_full_tensor[0].copy_(torch.from_numpy(first_pc_full).to(dtype=pc_full_tensor.dtype))
         ready_memmap[0] = 1
 
         pc_memmap.flush()
@@ -734,7 +814,7 @@ class Class3DGenDataset(Dataset):
             "version": PRELOAD_CACHE_VERSION,
             "cache_mode": "lazy",
             "pc_path": str(pc_path),
-            "pc_dtype": str(pc_dtype),
+            "pc_dtype": cache_dtype_name,
             "pc_shape": list(pc_shape),
             "labels_path": str(labels_path),
             "labels_dtype": "int64",
@@ -742,6 +822,7 @@ class Class3DGenDataset(Dataset):
             "ready_path": str(ready_path),
             "ready_dtype": "uint8",
             "ready_shape": [dataset_len],
+            "cached_sample_count": dataset_len,
             "hash_keys_path": str(hash_keys_path),
             "return_full_for_render": self.return_full_for_render,
         }
@@ -749,7 +830,7 @@ class Class3DGenDataset(Dataset):
             meta.update(
                 {
                     "pc_full_path": str(pc_full_path),
-                    "pc_full_dtype": str(pc_full_dtype),
+                    "pc_full_dtype": pc_full_dtype_name,
                     "pc_full_shape": list(pc_full_shape),
                 }
             )
@@ -759,13 +840,14 @@ class Class3DGenDataset(Dataset):
             json.dump(meta, f)
         os.replace(meta_tmp, meta_path)
 
-        total_bytes = first_pc.nbytes * dataset_len
+        total_bytes = int(np.prod(pc_shape)) * _element_size_bytes(self.cache_dtype)
         if self.return_full_for_render:
-            total_bytes += first_pc_full.nbytes * dataset_len
+            total_bytes += int(np.prod(pc_full_shape)) * _element_size_bytes(self.cache_dtype)
         elapsed = time.time() - lazy_start
         logger.info(
-            "Initialized lazy shared CPU cache in %.1fs (reserved tensor storage %.2f GiB)",
+            "Initialized lazy shared CPU cache in %.1fs (dtype=%s, reserved tensor storage %.2f GiB)",
             elapsed,
+            cache_dtype_name,
             total_bytes / (1024 ** 3),
         )
 
@@ -840,13 +922,18 @@ class Class3DGenDataset(Dataset):
                 feature_indices=self._feature_indices_np,
                 return_full_for_render=self.return_full_for_render,
             )
-            self._cache_backing["pc"][idx] = pc_plane
+            self.cached_pc[idx].copy_(torch.from_numpy(pc_plane).to(dtype=self.cached_pc.dtype))
             if self.return_full_for_render:
-                self._cache_backing["pc_full"][idx] = pc_full_plane
+                self.cached_pc_full[idx].copy_(
+                    torch.from_numpy(pc_full_plane).to(dtype=self.cached_pc_full.dtype)
+                )
             self.cached_ready[idx] = 1
 
     def __getitem__(self, idx):
         if self.cached_pc is not None:
+            if idx >= self.cached_sample_count:
+                real_idx = self.valid_indices[idx]
+                return self._build_sample(real_idx, label=self.valid_labels[idx])
             if self.lazy_cache_to_cpu and int(self.cached_ready[idx]) == 0:
                 self._ensure_lazy_sample_cached(idx)
             label = int(self.cached_labels[idx])
