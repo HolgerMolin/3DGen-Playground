@@ -1078,7 +1078,7 @@ if __name__ == '__main__':
                         help='Cache samples into the shared /dev/shm CPU cache on first access so training speeds up progressively instead of paying the full preload cost up front.')
     parser.add_argument('--preload_max_samples', type=int, default=0,
                         help='Cap eager CPU preloading to the first N samples (0 = preload the full dataset). '
-                             'Samples beyond the cap are loaded from disk on demand.')
+                             'When used with --preload_to_cpu, training is restricted to that cached subset.')
     parser.add_argument('--preload_workers', type=int, default=0,
                         help='Worker processes used to build the shared preload cache (0 = auto, uses all available CPU workers).')
     parser.add_argument('--seed', type=int, default=0)

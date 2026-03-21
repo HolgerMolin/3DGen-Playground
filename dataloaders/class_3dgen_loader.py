@@ -392,6 +392,8 @@ class Class3DGenDataset(Dataset):
             self._attach_or_build_lazy_cache()
 
     def __len__(self):
+        if self.preload_to_cpu and self.cached_sample_count > 0:
+            return self.cached_sample_count
         return len(self.valid_indices)
 
     def _build_sample(self, real_idx, label: Optional[int] = None):
@@ -932,6 +934,11 @@ class Class3DGenDataset(Dataset):
     def __getitem__(self, idx):
         if self.cached_pc is not None:
             if idx >= self.cached_sample_count:
+                if self.preload_to_cpu:
+                    raise IndexError(
+                        f"idx={idx} is outside the eagerly preloaded range "
+                        f"(cached_sample_count={self.cached_sample_count})"
+                    )
                 real_idx = self.valid_indices[idx]
                 return self._build_sample(real_idx, label=self.valid_labels[idx])
             if self.lazy_cache_to_cpu and int(self.cached_ready[idx]) == 0:
