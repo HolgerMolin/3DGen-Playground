@@ -1072,7 +1072,7 @@ if __name__ == '__main__':
                         help='Preload the transformed class-conditioned training dataset into a shared RAM cache in /dev/shm at startup. '
                              'All local GPU processes attach to the same in-memory cache; this does not fall back to disk.')
     parser.add_argument('--preload_workers', type=int, default=0,
-                        help='Worker processes used to build the shared preload cache (0 = auto, capped).')
+                        help='Worker processes used to build the shared preload cache (0 = auto, uses all available CPU workers).')
     parser.add_argument('--seed', type=int, default=0)
 
     # Logging / Checkpoints / Validation

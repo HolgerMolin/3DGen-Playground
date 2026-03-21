@@ -5,7 +5,7 @@ filter out invalid classes, optionally select a subset of feature channels,
 and remap points from sphere order to a 2D plane grid via sphere2plane permutation.
 """
 
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 import fcntl
 import hashlib
 import json
@@ -36,7 +36,6 @@ logger = logging.getLogger(__name__)
 FULL_3DGS_FEATURE_DIM = 59
 DC_ONLY_FEATURE_INDICES = (0, 1, 2, 3, 4, 20, 36, 52, 53, 54, 55, 56, 57, 58)
 PRELOAD_CACHE_VERSION = 2
-AUTO_PRELOAD_WORKERS_CAP = 8
 _PRELOAD_WORKER_STATE = {}
 
 
@@ -397,7 +396,7 @@ class Class3DGenDataset(Dataset):
         if self.preload_workers > 0:
             return min(self.preload_workers, dataset_len)
         cpu_count = os.cpu_count() or 1
-        return min(dataset_len, max(1, min(cpu_count, AUTO_PRELOAD_WORKERS_CAP)))
+        return min(dataset_len, max(1, cpu_count))
 
     def _attach_shared_cache(self, meta_path: Path) -> None:
         with open(meta_path, "r", encoding="utf-8") as f:
@@ -538,7 +537,6 @@ class Class3DGenDataset(Dataset):
                     if progress is not None:
                         progress.update(1)
             else:
-                chunksize = max(1, (dataset_len - 1) // (worker_count * 4))
                 with ProcessPoolExecutor(
                     max_workers=worker_count,
                     initializer=_init_preload_worker,
@@ -560,9 +558,28 @@ class Class3DGenDataset(Dataset):
                         str(pc_full_dtype) if pc_full_dtype is not None else None,
                     ),
                 ) as executor:
-                    for _ in executor.map(_preload_worker_write_sample, task_iter, chunksize=chunksize):
-                        if progress is not None:
-                            progress.update(1)
+                    pending = set()
+                    max_pending = max(1, worker_count * 2)
+
+                    def submit_next_task() -> bool:
+                        try:
+                            task = next(task_iter)
+                        except StopIteration:
+                            return False
+                        pending.add(executor.submit(_preload_worker_write_sample, task))
+                        return True
+
+                    for _ in range(max_pending):
+                        if not submit_next_task():
+                            break
+
+                    while pending:
+                        done, pending = wait(pending, return_when=FIRST_COMPLETED)
+                        for future in done:
+                            future.result()
+                            if progress is not None:
+                                progress.update(1)
+                            submit_next_task()
         finally:
             if progress is not None:
                 progress.close()
