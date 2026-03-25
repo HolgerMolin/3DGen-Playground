@@ -418,9 +418,6 @@ def _constrain_denormalized_point_cloud_for_render(
     dc_only: bool = False,
 ) -> torch.Tensor:
     """Project denormalized predictions into canonical 3DGS parameter space for rendering."""
-    constrained = torch.nan_to_num(point_cloud.clone(), nan=0.0, posinf=0.0, neginf=0.0)
-    constrained[..., 3] = torch.sigmoid(constrained[..., 3])
-
     if dc_only:
         scale_slice = slice(7, 10)
         rotation_slice = slice(10, 14)
@@ -428,14 +425,21 @@ def _constrain_denormalized_point_cloud_for_render(
         scale_slice = slice(52, 55)
         rotation_slice = slice(55, 59)
 
-    constrained[..., scale_slice] = torch.exp(
-        constrained[..., scale_slice].clamp(RENDER_SCALE_RAW_MIN, RENDER_SCALE_RAW_MAX)
+    # Keep this path fully out-of-place so autograd does not see view-based slices
+    # being mutated after they have already participated in the computation graph.
+    safe_point_cloud = torch.nan_to_num(point_cloud, nan=0.0, posinf=0.0, neginf=0.0)
+    xyz = safe_point_cloud[..., :3]
+    opacity = torch.sigmoid(safe_point_cloud[..., 3:4])
+    middle = safe_point_cloud[..., 4:scale_slice.start]
+    scales = torch.exp(
+        safe_point_cloud[..., scale_slice].clamp(RENDER_SCALE_RAW_MIN, RENDER_SCALE_RAW_MAX)
     )
-    constrained[..., rotation_slice] = _normalize_quaternions_with_identity_fallback(
-        constrained[..., rotation_slice]
+    rotations = _normalize_quaternions_with_identity_fallback(
+        safe_point_cloud[..., rotation_slice]
     )
+    tail = safe_point_cloud[..., rotation_slice.stop:]
 
-    return constrained
+    return torch.cat((xyz, opacity, middle, scales, rotations, tail), dim=-1)
 
 
 def _compute_render_loss_for_batch(
