@@ -1,6 +1,5 @@
 #!/bin/bash
-eval "$(conda shell.bash hook)"
-conda activate 3dgen
+
 source .env
 
 # Usage: ./unet/train_gsplat_unet.sh [UNet-S|UNet-B|UNet-L]
@@ -61,12 +60,12 @@ $CMD unet/train_gsplat_unet.py \
     --render_loss_num_cam 1 \
     --train_render_size 256 \
     --ref_camera_tar $REF_CAMERA_TAR \
-    --epochs 5 \
-    --batch_size 4 \
+    --epochs 1000 \
+    --batch_size 128 \
     --lr 3e-5 \
     --weight_decay 1e-2 \
     --lr_warmup_steps 500 \
-    --lr_total_steps 100000 \
+    --lr_total_steps 200000 \
     --lr_final_ratio 0.01 \
     --ema_decay 0.9999 \
     --mixed_precision $MIXED_PRECISION \
@@ -85,4 +84,6 @@ $CMD unet/train_gsplat_unet.py \
     --train_render_log_num_cam $TRAIN_RENDER_LOG_NUM_CAM \
     --val_every 1000 \
     --results_dir $RESULTS_DIR \
+    --preload_to_cpu \
+    --preload_workers 64 \
     2>&1 | tee "$LOG_FILE"

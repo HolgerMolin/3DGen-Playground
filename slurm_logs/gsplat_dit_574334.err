@@ -1,0 +1,298 @@
+cpu-bind=MASK - he-h200-1, task  0  0 [2248783]: mask 0xff000000000000000000000000000000ff set
+2026-03-21 03:11:04,689 - INFO - Accelerator: num_processes=8, mixed_precision=bf16, device=cuda:0
+2026-03-21 03:11:06,700 - INFO - Loading class map from object_labels/object_to_class.json
+2026-03-21 03:11:06,889 - INFO - Loading obj list from /data/scratch/xtiange/gaussianverse//all_obj_list.json
+2026-03-21 03:11:06,890 - INFO - Loading obj list from /data/scratch/xtiange/gaussianverse//all_obj_list.json
+2026-03-21 03:11:06,891 - INFO - Loading obj list from /data/scratch/xtiange/gaussianverse//all_obj_list.json
+2026-03-21 03:11:06,891 - INFO - Loading obj list from /data/scratch/xtiange/gaussianverse//all_obj_list.json
+2026-03-21 03:11:06,939 - INFO - Loading obj list from /data/scratch/xtiange/gaussianverse//all_obj_list.json
+2026-03-21 03:11:06,941 - INFO - Number of classes: 87
+2026-03-21 03:11:06,941 - INFO - Creating base dataset...
+2026-03-21 03:11:06,942 - INFO - Loading obj list from /data/scratch/xtiange/gaussianverse//all_obj_list.json
+2026-03-21 03:11:06,942 - INFO - Loading obj list from /data/scratch/xtiange/gaussianverse//all_obj_list.json
+2026-03-21 03:11:06,943 - INFO - Loading obj list from /data/scratch/xtiange/gaussianverse//all_obj_list.json
+2026-03-21 03:11:07,157 - INFO - Loaded 254371 entries from /data/scratch/xtiange/gaussianverse//all_obj_list.json
+2026-03-21 03:11:07,157 - INFO - Loaded 254371 entries from /data/scratch/xtiange/gaussianverse//all_obj_list.json
+2026-03-21 03:11:07,157 - INFO - Loaded 254371 entries from /data/scratch/xtiange/gaussianverse//all_obj_list.json
+2026-03-21 03:11:07,160 - INFO - Total merged entries: 254371
+2026-03-21 03:11:07,161 - INFO - Total merged entries: 254371
+2026-03-21 03:11:07,161 - INFO - Total merged entries: 254371
+2026-03-21 03:11:07,164 - INFO - Loading normalization statistics from /data/scratch/xtiange/gaussianverse//gaussianverse_mean.pt and /data/scratch/xtiange/gaussianverse//gaussianverse_std.pt
+2026-03-21 03:11:07,164 - INFO - Loading normalization statistics from /data/scratch/xtiange/gaussianverse//gaussianverse_mean.pt and /data/scratch/xtiange/gaussianverse//gaussianverse_std.pt
+2026-03-21 03:11:07,164 - INFO - Loading normalization statistics from /data/scratch/xtiange/gaussianverse//gaussianverse_mean.pt and /data/scratch/xtiange/gaussianverse//gaussianverse_std.pt
+2026-03-21 03:11:07,168 - INFO - Loaded 254371 entries from /data/scratch/xtiange/gaussianverse//all_obj_list.json
+2026-03-21 03:11:07,172 - INFO - Total merged entries: 254371
+2026-03-21 03:11:07,176 - INFO - Loading normalization statistics from /data/scratch/xtiange/gaussianverse//gaussianverse_mean.pt and /data/scratch/xtiange/gaussianverse//gaussianverse_std.pt
+2026-03-21 03:11:07,177 - INFO - Initialized dataset with 254371 samples
+2026-03-21 03:11:07,177 - INFO - Initialized dataset with 254371 samples
+2026-03-21 03:11:07,177 - INFO - sh_degree0_only: selecting 14 features from 59
+2026-03-21 03:11:07,179 - INFO - Initialized dataset with 254371 samples
+2026-03-21 03:11:07,187 - INFO - Initialized dataset with 254371 samples
+2026-03-21 03:11:07,206 - INFO - Loaded 254371 entries from /data/scratch/xtiange/gaussianverse//all_obj_list.json
+2026-03-21 03:11:07,210 - INFO - Total merged entries: 254371
+2026-03-21 03:11:07,214 - INFO - Loading normalization statistics from /data/scratch/xtiange/gaussianverse//gaussianverse_mean.pt and /data/scratch/xtiange/gaussianverse//gaussianverse_std.pt
+2026-03-21 03:11:07,215 - INFO - Loaded 254371 entries from /data/scratch/xtiange/gaussianverse//all_obj_list.json
+2026-03-21 03:11:07,215 - INFO - Loaded 254371 entries from /data/scratch/xtiange/gaussianverse//all_obj_list.json
+2026-03-21 03:11:07,219 - INFO - Loaded 254371 entries from /data/scratch/xtiange/gaussianverse//all_obj_list.json
+2026-03-21 03:11:07,221 - INFO - Total merged entries: 254371
+2026-03-21 03:11:07,222 - INFO - Total merged entries: 254371
+2026-03-21 03:11:07,225 - INFO - Total merged entries: 254371
+2026-03-21 03:11:07,227 - INFO - Initialized dataset with 254371 samples
+2026-03-21 03:11:07,228 - INFO - Loading normalization statistics from /data/scratch/xtiange/gaussianverse//gaussianverse_mean.pt and /data/scratch/xtiange/gaussianverse//gaussianverse_std.pt
+2026-03-21 03:11:07,229 - INFO - Loading normalization statistics from /data/scratch/xtiange/gaussianverse//gaussianverse_mean.pt and /data/scratch/xtiange/gaussianverse//gaussianverse_std.pt
+2026-03-21 03:11:07,229 - INFO - Loading normalization statistics from /data/scratch/xtiange/gaussianverse//gaussianverse_mean.pt and /data/scratch/xtiange/gaussianverse//gaussianverse_std.pt
+2026-03-21 03:11:07,237 - INFO - Initialized dataset with 254371 samples
+2026-03-21 03:11:07,239 - INFO - Initialized dataset with 254371 samples
+2026-03-21 03:11:07,241 - INFO - Initialized dataset with 254371 samples
+2026-03-21 03:11:07,320 - INFO - Loaded sphere2plane permutation: 16384 points
+2026-03-21 03:11:07,320 - INFO - [render-loss] disabled because enable_render_loss_after < 0
+2026-03-21 03:11:07,458 - INFO - Class3DGenDataset: 254363 valid samples, 8 skipped (class -1 or missing)
+2026-03-21 03:11:07,459 - INFO - Class3DGenDataset: 254363 valid samples, 8 skipped (class -1 or missing)
+2026-03-21 03:11:07,528 - INFO - Class3DGenDataset: 254363 valid samples, 8 skipped (class -1 or missing)
+2026-03-21 03:11:07,540 - INFO - Class3DGenDataset: 254363 valid samples, 8 skipped (class -1 or missing)
+2026-03-21 03:11:07,542 - INFO - Class3DGenDataset: 254363 valid samples, 8 skipped (class -1 or missing)
+2026-03-21 03:11:07,542 - INFO - Class3DGenDataset: 254363 valid samples, 8 skipped (class -1 or missing)
+2026-03-21 03:11:07,544 - INFO - Class3DGenDataset: 254363 valid samples, 8 skipped (class -1 or missing)
+2026-03-21 03:11:07,551 - INFO - Dataset size: 254363, Per-GPU batch size: 128
+2026-03-21 03:11:07,551 - INFO - Creating model: DiT-B/8
+2026-03-21 03:11:07,554 - INFO - Class3DGenDataset: 254363 valid samples, 8 skipped (class -1 or missing)
+2026-03-21 03:11:08,872 - INFO - Model parameters: 131,151,488 (131.2M)
+2026-03-21 03:11:09,348 - INFO - Diffusion timesteps: 1000, predict=x0
+2026-03-21 03:11:09,708 - INFO - Loaded 52 reference cameras from artifacts/ref_camera.tar.gz
+2026-03-21 03:11:09,820 - INFO - Starting training from epoch 0, step 0...
+2026-03-21 03:11:48,263 - INFO - [train-render] saved: output/dit_results_gsplat/dit_train_renders/epoch_000_step_0000000_class042_t0528.png (left=gt, right=pred, class=42, t=528)
+2026-03-21 03:18:38,370 - INFO - Step     100 | Epoch   0 | MSE: 0.7532 | Steps/sec: 0.22
+2026-03-21 03:26:08,314 - INFO - Step     200 | Epoch   0 | MSE: 1.1278 | Steps/sec: 0.22
+2026-03-21 03:32:07,985 - INFO - Step     300 | Epoch   1 | MSE: 1.5146 | Steps/sec: 0.28
+2026-03-21 03:38:44,950 - INFO - Step     400 | Epoch   1 | MSE: 0.5135 | Steps/sec: 0.25
+2026-03-21 03:45:03,186 - INFO - Step     500 | Epoch   2 | MSE: 0.8329 | Steps/sec: 0.26
+2026-03-21 03:51:25,166 - INFO - Step     600 | Epoch   2 | MSE: 0.5766 | Steps/sec: 0.26
+2026-03-21 03:58:30,550 - INFO - Step     700 | Epoch   2 | MSE: 1.1026 | Steps/sec: 0.24
+2026-03-21 04:04:40,430 - INFO - Step     800 | Epoch   3 | MSE: 0.4749 | Steps/sec: 0.27
+2026-03-21 04:11:00,634 - INFO - Step     900 | Epoch   3 | MSE: 0.4659 | Steps/sec: 0.26
+2026-03-21 04:18:38,462 - INFO - Step    1000 | Epoch   4 | MSE: 2.3553 | Steps/sec: 0.22
+2026-03-21 04:18:38,802 - INFO - [train-render] saved: output/dit_results_gsplat/dit_train_renders/epoch_004_step_0001000_class040_t0818.png (left=gt, right=pred, class=40, t=818)
+2026-03-21 04:24:07,886 - INFO - Step    1100 | Epoch   4 | MSE: 0.6279 | Steps/sec: 0.30
+2026-03-21 04:31:12,491 - INFO - Step    1200 | Epoch   4 | MSE: 0.7114 | Steps/sec: 0.24
+2026-03-21 04:37:20,496 - INFO - Step    1300 | Epoch   5 | MSE: 0.5037 | Steps/sec: 0.27
+2026-03-21 04:43:41,664 - INFO - Step    1400 | Epoch   5 | MSE: 0.6879 | Steps/sec: 0.26
+2026-03-21 04:50:40,485 - INFO - Step    1500 | Epoch   6 | MSE: 1.1575 | Steps/sec: 0.24
+2026-03-21 04:56:26,603 - INFO - Step    1600 | Epoch   6 | MSE: 0.4553 | Steps/sec: 0.29
+2026-03-21 05:03:01,595 - INFO - Step    1700 | Epoch   6 | MSE: 1.0785 | Steps/sec: 0.25
+2026-03-21 05:09:17,994 - INFO - Step    1800 | Epoch   7 | MSE: 0.6886 | Steps/sec: 0.27
+2026-03-21 05:15:20,310 - INFO - Step    1900 | Epoch   7 | MSE: 0.5028 | Steps/sec: 0.28
+2026-03-21 05:22:32,887 - INFO - Step    2000 | Epoch   8 | MSE: 0.4580 | Steps/sec: 0.23
+2026-03-21 05:22:33,598 - INFO - [train-render] saved: output/dit_results_gsplat/dit_train_renders/epoch_008_step_0002000_class032_t0195.png (left=gt, right=pred, class=32, t=195)
+2026-03-21 05:28:00,534 - INFO - Step    2100 | Epoch   8 | MSE: 0.4501 | Steps/sec: 0.31
+2026-03-21 05:34:47,772 - INFO - Step    2200 | Epoch   8 | MSE: 0.4497 | Steps/sec: 0.25
+2026-03-21 05:40:19,050 - INFO - Step    2300 | Epoch   9 | MSE: 0.6472 | Steps/sec: 0.30
+2026-03-21 05:46:39,317 - INFO - Step    2400 | Epoch   9 | MSE: 0.6199 | Steps/sec: 0.26
+2026-03-21 05:53:29,013 - INFO - Step    2500 | Epoch  10 | MSE: 0.4619 | Steps/sec: 0.24
+2026-03-21 05:59:17,692 - INFO - Step    2600 | Epoch  10 | MSE: 0.4968 | Steps/sec: 0.29
+2026-03-21 06:05:38,483 - INFO - Step    2700 | Epoch  10 | MSE: 0.6752 | Steps/sec: 0.26
+2026-03-21 06:11:27,083 - INFO - Step    2800 | Epoch  11 | MSE: 0.4550 | Steps/sec: 0.29
+2026-03-21 06:17:26,273 - INFO - Step    2900 | Epoch  11 | MSE: 0.9466 | Steps/sec: 0.28
+2026-03-21 06:24:44,414 - INFO - Step    3000 | Epoch  12 | MSE: 0.4570 | Steps/sec: 0.23
+2026-03-21 06:24:44,904 - INFO - [train-render] saved: output/dit_results_gsplat/dit_train_renders/epoch_012_step_0003000_class033_t0490.png (left=gt, right=pred, class=33, t=490)
+2026-03-21 06:30:22,568 - INFO - Step    3100 | Epoch  12 | MSE: 0.4586 | Steps/sec: 0.30
+2026-03-21 06:37:33,893 - INFO - Step    3200 | Epoch  12 | MSE: 1.4026 | Steps/sec: 0.23
+2026-03-21 06:42:57,321 - INFO - Step    3300 | Epoch  13 | MSE: 0.4580 | Steps/sec: 0.31
+2026-03-21 06:49:24,891 - INFO - Step    3400 | Epoch  13 | MSE: 0.4503 | Steps/sec: 0.26
+2026-03-21 06:55:53,538 - INFO - Step    3500 | Epoch  14 | MSE: 1.6329 | Steps/sec: 0.26
+2026-03-21 07:01:46,964 - INFO - Step    3600 | Epoch  14 | MSE: 1.0919 | Steps/sec: 0.28
+2026-03-21 07:08:54,864 - INFO - Step    3700 | Epoch  14 | MSE: 0.4498 | Steps/sec: 0.23
+2026-03-21 07:14:43,278 - INFO - Step    3800 | Epoch  15 | MSE: 0.4802 | Steps/sec: 0.29
+2026-03-21 07:21:08,624 - INFO - Step    3900 | Epoch  15 | MSE: 0.6326 | Steps/sec: 0.26
+2026-03-21 07:27:58,306 - INFO - Step    4000 | Epoch  16 | MSE: 0.4455 | Steps/sec: 0.24
+2026-03-21 07:27:58,854 - INFO - [train-render] saved: output/dit_results_gsplat/dit_train_renders/epoch_016_step_0004000_class022_t0890.png (left=gt, right=pred, class=22, t=890)
+2026-03-21 07:33:41,207 - INFO - Step    4100 | Epoch  16 | MSE: 0.4465 | Steps/sec: 0.29
+2026-03-21 07:41:06,879 - INFO - Step    4200 | Epoch  16 | MSE: 1.2013 | Steps/sec: 0.22
+2026-03-21 07:46:38,889 - INFO - Step    4300 | Epoch  17 | MSE: 0.4500 | Steps/sec: 0.30
+2026-03-21 07:53:21,585 - INFO - Step    4400 | Epoch  17 | MSE: 0.5332 | Steps/sec: 0.25
+2026-03-21 07:59:50,863 - INFO - Step    4500 | Epoch  18 | MSE: 0.9300 | Steps/sec: 0.26
+2026-03-21 08:05:46,573 - INFO - Step    4600 | Epoch  18 | MSE: 0.4845 | Steps/sec: 0.28
+2026-03-21 08:13:00,638 - INFO - Step    4700 | Epoch  18 | MSE: 0.5443 | Steps/sec: 0.23
+2026-03-21 08:18:38,782 - INFO - Step    4800 | Epoch  19 | MSE: 1.1755 | Steps/sec: 0.30
+2026-03-21 08:24:53,365 - INFO - Step    4900 | Epoch  19 | MSE: 1.3225 | Steps/sec: 0.27
+2026-03-21 08:31:35,025 - INFO - Step    5000 | Epoch  20 | MSE: 0.4616 | Steps/sec: 0.25
+2026-03-21 08:31:47,797 - INFO - [validation] saved: output/dit_results_gsplat/dit_validation/epoch_020_step_0005000_class032.png (class=32, steps=250)
+2026-03-21 08:31:48,153 - INFO - [train-render] saved: output/dit_results_gsplat/dit_train_renders/epoch_020_step_0005000_class019_t0584.png (left=gt, right=pred, class=19, t=584)
+2026-03-21 08:37:19,328 - INFO - Step    5100 | Epoch  20 | MSE: 0.4666 | Steps/sec: 0.29
+2026-03-21 08:44:22,461 - INFO - Step    5200 | Epoch  20 | MSE: 1.4093 | Steps/sec: 0.24
+2026-03-21 08:49:49,980 - INFO - Step    5300 | Epoch  21 | MSE: 0.4622 | Steps/sec: 0.31
+2026-03-21 08:56:44,606 - INFO - Step    5400 | Epoch  21 | MSE: 0.9763 | Steps/sec: 0.24
+2026-03-21 09:03:05,563 - INFO - Step    5500 | Epoch  22 | MSE: 0.4616 | Steps/sec: 0.26
+2026-03-21 09:09:05,584 - INFO - Step    5600 | Epoch  22 | MSE: 0.5928 | Steps/sec: 0.28
+2026-03-21 09:16:21,309 - INFO - Step    5700 | Epoch  22 | MSE: 0.6353 | Steps/sec: 0.23
+2026-03-21 09:22:22,948 - INFO - Step    5800 | Epoch  23 | MSE: 0.4496 | Steps/sec: 0.28
+2026-03-21 09:29:00,051 - INFO - Step    5900 | Epoch  23 | MSE: 0.4483 | Steps/sec: 0.25
+2026-03-21 09:35:48,453 - INFO - Step    6000 | Epoch  24 | MSE: 1.3078 | Steps/sec: 0.24
+2026-03-21 09:35:48,989 - INFO - [train-render] saved: output/dit_results_gsplat/dit_train_renders/epoch_024_step_0006000_class033_t0469.png (left=gt, right=pred, class=33, t=469)
+2026-03-21 09:42:03,416 - INFO - Step    6100 | Epoch  24 | MSE: 0.9108 | Steps/sec: 0.27
+2026-03-21 09:49:13,353 - INFO - Step    6200 | Epoch  24 | MSE: 0.4459 | Steps/sec: 0.23
+2026-03-21 09:55:09,427 - INFO - Step    6300 | Epoch  25 | MSE: 0.4474 | Steps/sec: 0.28
+2026-03-21 10:02:31,943 - INFO - Step    6400 | Epoch  25 | MSE: 0.4581 | Steps/sec: 0.23
+2026-03-21 10:08:31,056 - INFO - Step    6500 | Epoch  26 | MSE: 0.4439 | Steps/sec: 0.28
+2026-03-21 10:14:55,747 - INFO - Step    6600 | Epoch  26 | MSE: 0.4620 | Steps/sec: 0.26
+2026-03-21 10:22:28,342 - INFO - Step    6700 | Epoch  27 | MSE: 1.2014 | Steps/sec: 0.22
+2026-03-21 10:28:32,054 - INFO - Step    6800 | Epoch  27 | MSE: 0.4494 | Steps/sec: 0.27
+2026-03-21 10:35:21,556 - INFO - Step    6900 | Epoch  27 | MSE: 0.4497 | Steps/sec: 0.24
+2026-03-21 10:41:40,312 - INFO - Step    7000 | Epoch  28 | MSE: 0.4737 | Steps/sec: 0.26
+2026-03-21 10:41:41,019 - INFO - [train-render] saved: output/dit_results_gsplat/dit_train_renders/epoch_028_step_0007000_class086_t0006.png (left=gt, right=pred, class=86, t=6)
+2026-03-21 10:47:52,730 - INFO - Step    7100 | Epoch  28 | MSE: 0.5938 | Steps/sec: 0.27
+2026-03-21 10:55:37,942 - INFO - Step    7200 | Epoch  29 | MSE: 0.8936 | Steps/sec: 0.21
+2026-03-21 11:01:21,947 - INFO - Step    7300 | Epoch  29 | MSE: 0.4513 | Steps/sec: 0.29
+2026-03-21 11:10:01,377 - INFO - Step    7400 | Epoch  29 | MSE: 0.5977 | Steps/sec: 0.19
+2026-03-21 11:16:14,399 - INFO - Step    7500 | Epoch  30 | MSE: 0.4469 | Steps/sec: 0.27
+2026-03-21 11:22:57,481 - INFO - Step    7600 | Epoch  30 | MSE: 0.4532 | Steps/sec: 0.25
+2026-03-21 11:31:06,230 - INFO - Step    7700 | Epoch  31 | MSE: 0.4518 | Steps/sec: 0.20
+2026-03-21 11:37:19,605 - INFO - Step    7800 | Epoch  31 | MSE: 0.4530 | Steps/sec: 0.27
+2026-03-21 11:44:23,860 - INFO - Step    7900 | Epoch  31 | MSE: 0.4532 | Steps/sec: 0.24
+2026-03-21 11:51:19,185 - INFO - Step    8000 | Epoch  32 | MSE: 0.4554 | Steps/sec: 0.24
+2026-03-21 11:51:19,580 - INFO - [train-render] saved: output/dit_results_gsplat/dit_train_renders/epoch_032_step_0008000_class037_t0739.png (left=gt, right=pred, class=37, t=739)
+2026-03-21 11:57:33,103 - INFO - Step    8100 | Epoch  32 | MSE: 0.5864 | Steps/sec: 0.27
+2026-03-21 12:04:50,358 - INFO - Step    8200 | Epoch  33 | MSE: 0.8528 | Steps/sec: 0.23
+2026-03-21 12:10:27,020 - INFO - Step    8300 | Epoch  33 | MSE: 0.5891 | Steps/sec: 0.30
+2026-03-21 12:20:22,926 - INFO - Step    8400 | Epoch  33 | MSE: 0.4466 | Steps/sec: 0.17
+2026-03-21 12:25:38,247 - INFO - Step    8500 | Epoch  34 | MSE: 0.4507 | Steps/sec: 0.32
+2026-03-21 12:33:01,280 - INFO - Step    8600 | Epoch  34 | MSE: 0.4497 | Steps/sec: 0.23
+2026-03-21 12:40:28,119 - INFO - Step    8700 | Epoch  35 | MSE: 0.4644 | Steps/sec: 0.22
+2026-03-21 12:46:41,234 - INFO - Step    8800 | Epoch  35 | MSE: 0.4502 | Steps/sec: 0.27
+2026-03-21 12:54:34,187 - INFO - Step    8900 | Epoch  35 | MSE: 0.4454 | Steps/sec: 0.21
+2026-03-21 13:00:50,078 - INFO - Step    9000 | Epoch  36 | MSE: 0.4486 | Steps/sec: 0.27
+2026-03-21 13:00:50,524 - INFO - [train-render] saved: output/dit_results_gsplat/dit_train_renders/epoch_036_step_0009000_class034_t0312.png (left=gt, right=pred, class=34, t=312)
+2026-03-21 13:07:46,259 - INFO - Step    9100 | Epoch  36 | MSE: 0.4530 | Steps/sec: 0.24
+2026-03-21 13:15:13,175 - INFO - Step    9200 | Epoch  37 | MSE: 0.4821 | Steps/sec: 0.22
+2026-03-21 13:21:04,730 - INFO - Step    9300 | Epoch  37 | MSE: 0.4522 | Steps/sec: 0.28
+2026-03-21 13:30:56,483 - INFO - Step    9400 | Epoch  37 | MSE: 0.4672 | Steps/sec: 0.17
+2026-03-21 13:36:17,097 - INFO - Step    9500 | Epoch  38 | MSE: 0.6522 | Steps/sec: 0.31
+2026-03-21 13:43:56,888 - INFO - Step    9600 | Epoch  38 | MSE: 0.4512 | Steps/sec: 0.22
+2026-03-21 13:50:58,986 - INFO - Step    9700 | Epoch  39 | MSE: 0.5824 | Steps/sec: 0.24
+2026-03-21 13:57:35,713 - INFO - Step    9800 | Epoch  39 | MSE: 1.2716 | Steps/sec: 0.25
+2026-03-21 14:05:26,202 - INFO - Step    9900 | Epoch  39 | MSE: 0.6733 | Steps/sec: 0.21
+2026-03-21 14:11:30,994 - INFO - Step   10000 | Epoch  40 | MSE: 0.4584 | Steps/sec: 0.27
+2026-03-21 14:11:45,687 - INFO - Saved checkpoint to output/dit_results_gsplat/0010000.pt
+2026-03-21 14:12:00,814 - INFO - [validation] saved: output/dit_results_gsplat/dit_validation/epoch_040_step_0010000_class033.png (class=33, steps=250)
+2026-03-21 14:12:01,000 - INFO - [train-render] saved: output/dit_results_gsplat/dit_train_renders/epoch_040_step_0010000_class078_t0728.png (left=gt, right=pred, class=78, t=728)
+2026-03-21 14:19:30,796 - INFO - Step   10100 | Epoch  40 | MSE: 0.4476 | Steps/sec: 0.21
+2026-03-21 14:26:14,758 - INFO - Step   10200 | Epoch  41 | MSE: 0.4654 | Steps/sec: 0.25
+2026-03-21 14:32:16,199 - INFO - Step   10300 | Epoch  41 | MSE: 0.4485 | Steps/sec: 0.28
+2026-03-21 14:41:06,927 - INFO - Step   10400 | Epoch  41 | MSE: 0.6723 | Steps/sec: 0.19
+2026-03-21 14:46:40,359 - INFO - Step   10500 | Epoch  42 | MSE: 0.4541 | Steps/sec: 0.30
+2026-03-21 14:53:54,131 - INFO - Step   10600 | Epoch  42 | MSE: 0.4936 | Steps/sec: 0.23
+2026-03-21 15:00:31,422 - INFO - Step   10700 | Epoch  43 | MSE: 0.4906 | Steps/sec: 0.25
+2026-03-21 15:07:23,857 - INFO - Step   10800 | Epoch  43 | MSE: 0.4493 | Steps/sec: 0.24
+2026-03-21 15:15:45,958 - INFO - Step   10900 | Epoch  43 | MSE: 0.4478 | Steps/sec: 0.20
+2026-03-21 15:22:00,001 - INFO - Step   11000 | Epoch  44 | MSE: 0.5595 | Steps/sec: 0.27
+2026-03-21 15:22:01,128 - INFO - [train-render] saved: output/dit_results_gsplat/dit_train_renders/epoch_044_step_0011000_class033_t0079.png (left=gt, right=pred, class=33, t=79)
+2026-03-21 15:29:36,786 - INFO - Step   11100 | Epoch  44 | MSE: 0.4437 | Steps/sec: 0.22
+2026-03-21 15:36:48,630 - INFO - Step   11200 | Epoch  45 | MSE: 0.4501 | Steps/sec: 0.23
+2026-03-21 15:43:06,459 - INFO - Step   11300 | Epoch  45 | MSE: 0.4456 | Steps/sec: 0.26
+2026-03-21 15:52:01,099 - INFO - Step   11400 | Epoch  45 | MSE: 0.4497 | Steps/sec: 0.19
+2026-03-21 15:58:09,246 - INFO - Step   11500 | Epoch  46 | MSE: 0.4497 | Steps/sec: 0.27
+2026-03-21 16:05:34,232 - INFO - Step   11600 | Epoch  46 | MSE: 0.6294 | Steps/sec: 0.22
+2026-03-21 16:12:31,348 - INFO - Step   11700 | Epoch  47 | MSE: 0.4848 | Steps/sec: 0.24
+2026-03-21 16:19:20,412 - INFO - Step   11800 | Epoch  47 | MSE: 0.5807 | Steps/sec: 0.24
+2026-03-21 16:27:26,145 - INFO - Step   11900 | Epoch  47 | MSE: 0.4469 | Steps/sec: 0.21
+2026-03-21 16:33:55,229 - INFO - Step   12000 | Epoch  48 | MSE: 0.4530 | Steps/sec: 0.26
+2026-03-21 16:33:55,797 - INFO - [train-render] saved: output/dit_results_gsplat/dit_train_renders/epoch_048_step_0012000_class033_t0840.png (left=gt, right=pred, class=33, t=840)
+2026-03-21 16:42:08,746 - INFO - Step   12100 | Epoch  48 | MSE: 0.4548 | Steps/sec: 0.20
+2026-03-21 16:48:39,547 - INFO - Step   12200 | Epoch  49 | MSE: 0.4461 | Steps/sec: 0.26
+2026-03-21 16:55:21,675 - INFO - Step   12300 | Epoch  49 | MSE: 0.6406 | Steps/sec: 0.25
+2026-03-21 17:02:54,712 - INFO - Step   12400 | Epoch  49 | MSE: 0.4577 | Steps/sec: 0.22
+2026-03-21 17:09:07,653 - INFO - Step   12500 | Epoch  50 | MSE: 0.4453 | Steps/sec: 0.27
+2026-03-21 17:16:48,391 - INFO - Step   12600 | Epoch  50 | MSE: 0.5348 | Steps/sec: 0.22
+2026-03-21 17:23:32,912 - INFO - Step   12700 | Epoch  51 | MSE: 0.4547 | Steps/sec: 0.25
+2026-03-21 17:30:19,755 - INFO - Step   12800 | Epoch  51 | MSE: 0.4459 | Steps/sec: 0.25
+2026-03-21 17:38:31,979 - INFO - Step   12900 | Epoch  52 | MSE: 0.4439 | Steps/sec: 0.20
+2026-03-21 17:44:30,458 - INFO - Step   13000 | Epoch  52 | MSE: 0.4442 | Steps/sec: 0.28
+2026-03-21 17:44:30,816 - INFO - [train-render] saved: output/dit_results_gsplat/dit_train_renders/epoch_052_step_0013000_class004_t0259.png (left=gt, right=pred, class=4, t=259)
+2026-03-21 17:53:20,276 - INFO - Step   13100 | Epoch  52 | MSE: 0.5461 | Steps/sec: 0.19
+2026-03-21 17:59:25,385 - INFO - Step   13200 | Epoch  53 | MSE: 0.5068 | Steps/sec: 0.27
+2026-03-21 18:05:41,147 - INFO - Step   13300 | Epoch  53 | MSE: 0.5388 | Steps/sec: 0.27
+2026-03-21 18:13:12,459 - INFO - Step   13400 | Epoch  54 | MSE: 0.4490 | Steps/sec: 0.22
+2026-03-21 18:19:04,818 - INFO - Step   13500 | Epoch  54 | MSE: 1.5108 | Steps/sec: 0.28
+2026-03-21 18:26:58,494 - INFO - Step   13600 | Epoch  54 | MSE: 0.4531 | Steps/sec: 0.21
+2026-03-21 18:33:38,291 - INFO - Step   13700 | Epoch  55 | MSE: 0.5321 | Steps/sec: 0.25
+2026-03-21 18:41:24,237 - INFO - Step   13800 | Epoch  55 | MSE: 0.4550 | Steps/sec: 0.21
+2026-03-21 18:48:54,835 - INFO - Step   13900 | Epoch  56 | MSE: 1.2615 | Steps/sec: 0.22
+2026-03-21 18:55:08,517 - INFO - Step   14000 | Epoch  56 | MSE: 0.4529 | Steps/sec: 0.27
+2026-03-21 18:55:09,243 - INFO - [train-render] saved: output/dit_results_gsplat/dit_train_renders/epoch_056_step_0014000_class069_t0097.png (left=gt, right=pred, class=69, t=97)
+2026-03-21 19:04:37,026 - INFO - Step   14100 | Epoch  56 | MSE: 0.4524 | Steps/sec: 0.18
+2026-03-21 19:10:27,401 - INFO - Step   14200 | Epoch  57 | MSE: 0.4444 | Steps/sec: 0.29
+2026-03-21 19:17:15,653 - INFO - Step   14300 | Epoch  57 | MSE: 0.4424 | Steps/sec: 0.24
+2026-03-21 19:25:15,582 - INFO - Step   14400 | Epoch  58 | MSE: 0.4520 | Steps/sec: 0.21
+2026-03-21 19:31:10,344 - INFO - Step   14500 | Epoch  58 | MSE: 0.4549 | Steps/sec: 0.28
+2026-03-21 19:39:11,932 - INFO - Step   14600 | Epoch  58 | MSE: 0.4542 | Steps/sec: 0.21
+2026-03-21 19:45:40,235 - INFO - Step   14700 | Epoch  59 | MSE: 0.8854 | Steps/sec: 0.26
+2026-03-21 19:53:11,314 - INFO - Step   14800 | Epoch  59 | MSE: 0.4739 | Steps/sec: 0.22
+2026-03-21 20:00:45,538 - INFO - Step   14900 | Epoch  60 | MSE: 0.4461 | Steps/sec: 0.22
+2026-03-21 20:07:08,983 - INFO - Step   15000 | Epoch  60 | MSE: 0.5224 | Steps/sec: 0.26
+2026-03-21 20:07:20,133 - INFO - [validation] saved: output/dit_results_gsplat/dit_validation/epoch_060_step_0015000_class018.png (class=18, steps=250)
+2026-03-21 20:07:20,277 - INFO - [train-render] saved: output/dit_results_gsplat/dit_train_renders/epoch_060_step_0015000_class086_t0385.png (left=gt, right=pred, class=86, t=385)
+2026-03-21 20:16:57,946 - INFO - Step   15100 | Epoch  60 | MSE: 0.4461 | Steps/sec: 0.17
+2026-03-21 20:22:44,415 - INFO - Step   15200 | Epoch  61 | MSE: 0.6050 | Steps/sec: 0.29
+2026-03-21 20:29:40,838 - INFO - Step   15300 | Epoch  61 | MSE: 0.4524 | Steps/sec: 0.24
+2026-03-21 20:37:38,669 - INFO - Step   15400 | Epoch  62 | MSE: 0.4435 | Steps/sec: 0.21
+2026-03-21 20:43:57,784 - INFO - Step   15500 | Epoch  62 | MSE: 0.4993 | Steps/sec: 0.26
+2026-03-21 20:52:32,928 - INFO - Step   15600 | Epoch  62 | MSE: 0.4545 | Steps/sec: 0.19
+2026-03-21 20:58:27,652 - INFO - Step   15700 | Epoch  63 | MSE: 0.4398 | Steps/sec: 0.28
+2026-03-21 21:06:49,229 - INFO - Step   15800 | Epoch  63 | MSE: 0.4462 | Steps/sec: 0.20
+2026-03-21 21:13:54,148 - INFO - Step   15900 | Epoch  64 | MSE: 0.4492 | Steps/sec: 0.24
+2026-03-21 21:20:19,367 - INFO - Step   16000 | Epoch  64 | MSE: 0.4576 | Steps/sec: 0.26
+2026-03-21 21:20:20,121 - INFO - [train-render] saved: output/dit_results_gsplat/dit_train_renders/epoch_064_step_0016000_class034_t0026.png (left=gt, right=pred, class=34, t=26)
+2026-03-21 21:29:49,541 - INFO - Step   16100 | Epoch  64 | MSE: 0.4501 | Steps/sec: 0.18
+2026-03-21 21:35:31,997 - INFO - Step   16200 | Epoch  65 | MSE: 0.4485 | Steps/sec: 0.29
+2026-03-21 21:42:43,568 - INFO - Step   16300 | Epoch  65 | MSE: 0.4439 | Steps/sec: 0.23
+2026-03-21 21:50:15,027 - INFO - Step   16400 | Epoch  66 | MSE: 0.4478 | Steps/sec: 0.22
+2026-03-21 21:56:24,718 - INFO - Step   16500 | Epoch  66 | MSE: 0.4422 | Steps/sec: 0.27
+2026-03-21 22:05:13,435 - INFO - Step   16600 | Epoch  66 | MSE: 0.4450 | Steps/sec: 0.19
+2026-03-21 22:10:54,104 - INFO - Step   16700 | Epoch  67 | MSE: 0.4553 | Steps/sec: 0.29
+2026-03-21 22:19:31,650 - INFO - Step   16800 | Epoch  67 | MSE: 0.5167 | Steps/sec: 0.19
+2026-03-21 22:26:05,130 - INFO - Step   16900 | Epoch  68 | MSE: 0.4491 | Steps/sec: 0.25
+2026-03-21 22:32:47,565 - INFO - Step   17000 | Epoch  68 | MSE: 0.4911 | Steps/sec: 0.25
+2026-03-21 22:32:48,031 - INFO - [train-render] saved: output/dit_results_gsplat/dit_train_renders/epoch_068_step_0017000_class004_t0474.png (left=gt, right=pred, class=4, t=474)
+2026-03-21 22:41:54,676 - INFO - Step   17100 | Epoch  68 | MSE: 0.4505 | Steps/sec: 0.18
+2026-03-21 22:48:07,462 - INFO - Step   17200 | Epoch  69 | MSE: 0.4456 | Steps/sec: 0.27
+2026-03-21 22:55:32,294 - INFO - Step   17300 | Epoch  69 | MSE: 0.4487 | Steps/sec: 0.22
+2026-03-21 23:03:36,234 - INFO - Step   17400 | Epoch  70 | MSE: 0.4442 | Steps/sec: 0.21
+2026-03-21 23:10:44,848 - INFO - Step   17500 | Epoch  70 | MSE: 0.4521 | Steps/sec: 0.23
+2026-03-21 23:18:49,466 - INFO - Step   17600 | Epoch  70 | MSE: 0.4524 | Steps/sec: 0.21
+2026-03-21 23:24:45,755 - INFO - Step   17700 | Epoch  71 | MSE: 0.4571 | Steps/sec: 0.28
+2026-03-21 23:33:38,525 - INFO - Step   17800 | Epoch  71 | MSE: 0.4459 | Steps/sec: 0.19
+2026-03-21 23:40:09,085 - INFO - Step   17900 | Epoch  72 | MSE: 0.4479 | Steps/sec: 0.26
+2026-03-21 23:47:14,986 - INFO - Step   18000 | Epoch  72 | MSE: 0.4824 | Steps/sec: 0.23
+2026-03-21 23:47:15,800 - INFO - [train-render] saved: output/dit_results_gsplat/dit_train_renders/epoch_072_step_0018000_class086_t0350.png (left=gt, right=pred, class=86, t=350)
+2026-03-21 23:56:22,075 - INFO - Step   18100 | Epoch  72 | MSE: 0.4557 | Steps/sec: 0.18
+2026-03-22 00:02:39,454 - INFO - Step   18200 | Epoch  73 | MSE: 0.4486 | Steps/sec: 0.26
+2026-03-22 00:10:03,261 - INFO - Step   18300 | Epoch  73 | MSE: 0.4419 | Steps/sec: 0.23
+2026-03-22 00:19:07,722 - INFO - Step   18400 | Epoch  74 | MSE: 0.4480 | Steps/sec: 0.18
+2026-03-22 00:26:05,839 - INFO - Step   18500 | Epoch  74 | MSE: 0.4496 | Steps/sec: 0.24
+2026-03-22 00:33:43,719 - INFO - Step   18600 | Epoch  74 | MSE: 0.4759 | Steps/sec: 0.22
+2026-03-22 00:40:01,136 - INFO - Step   18700 | Epoch  75 | MSE: 0.4534 | Steps/sec: 0.26
+2026-03-22 00:49:57,484 - INFO - Step   18800 | Epoch  75 | MSE: 0.4477 | Steps/sec: 0.17
+2026-03-22 00:55:57,034 - INFO - Step   18900 | Epoch  76 | MSE: 0.4549 | Steps/sec: 0.28
+2026-03-22 01:02:47,089 - INFO - Step   19000 | Epoch  76 | MSE: 0.4453 | Steps/sec: 0.24
+2026-03-22 01:02:55,404 - INFO - [train-render] saved: output/dit_results_gsplat/dit_train_renders/epoch_076_step_0019000_class086_t0354.png (left=gt, right=pred, class=86, t=354)
+2026-03-22 01:10:41,635 - INFO - Step   19100 | Epoch  77 | MSE: 0.4451 | Steps/sec: 0.21
+2026-03-22 01:16:57,650 - INFO - Step   19200 | Epoch  77 | MSE: 0.5900 | Steps/sec: 0.27
+2026-03-22 01:25:09,897 - INFO - Step   19300 | Epoch  77 | MSE: 0.4412 | Steps/sec: 0.20
+2026-03-22 01:31:39,322 - INFO - Step   19400 | Epoch  78 | MSE: 0.6683 | Steps/sec: 0.26
+2026-03-22 01:38:57,254 - INFO - Step   19500 | Epoch  78 | MSE: 0.4737 | Steps/sec: 0.23
+2026-03-22 01:46:47,165 - INFO - Step   19600 | Epoch  79 | MSE: 0.4430 | Steps/sec: 0.21
+2026-03-22 01:53:25,364 - INFO - Step   19700 | Epoch  79 | MSE: 0.5385 | Steps/sec: 0.25
+2026-03-22 02:01:39,402 - INFO - Step   19800 | Epoch  79 | MSE: 0.4550 | Steps/sec: 0.20
+2026-03-22 02:07:34,574 - INFO - Step   19900 | Epoch  80 | MSE: 0.4468 | Steps/sec: 0.28
+2026-03-22 02:14:27,476 - INFO - Step   20000 | Epoch  80 | MSE: 0.4506 | Steps/sec: 0.24
+2026-03-22 02:14:36,678 - INFO - Saved checkpoint to output/dit_results_gsplat/0020000.pt
+2026-03-22 02:14:39,933 - INFO - [validation] saved: output/dit_results_gsplat/dit_validation/epoch_080_step_0020000_class011.png (class=11, steps=250)
+2026-03-22 02:14:40,266 - INFO - [train-render] saved: output/dit_results_gsplat/dit_train_renders/epoch_080_step_0020000_class046_t0760.png (left=gt, right=pred, class=46, t=760)
+2026-03-22 02:22:00,490 - INFO - Step   20100 | Epoch  81 | MSE: 0.4430 | Steps/sec: 0.22
+2026-03-22 02:28:50,262 - INFO - Step   20200 | Epoch  81 | MSE: 0.4901 | Steps/sec: 0.24
+2026-03-22 02:36:37,094 - INFO - Step   20300 | Epoch  81 | MSE: 0.4429 | Steps/sec: 0.21
+2026-03-22 02:42:53,450 - INFO - Step   20400 | Epoch  82 | MSE: 0.4707 | Steps/sec: 0.27
+2026-03-22 02:49:33,968 - INFO - Step   20500 | Epoch  82 | MSE: 0.9157 | Steps/sec: 0.25
+2026-03-22 02:56:59,880 - INFO - Step   20600 | Epoch  83 | MSE: 1.9682 | Steps/sec: 0.22
+2026-03-22 03:03:00,588 - INFO - Step   20700 | Epoch  83 | MSE: 1.8134 | Steps/sec: 0.28
+2026-03-22 03:10:35,315 - INFO - Step   20800 | Epoch  83 | MSE: 0.7911 | Steps/sec: 0.22
+[2026-03-22T03:11:03.347] error: *** JOB 574334 ON he-h200-1 CANCELLED AT 2026-03-22T03:11:03 DUE TO TIME LIMIT ***
