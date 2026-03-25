@@ -400,7 +400,7 @@ def main(args) -> None:
         logger.info("Dataset size: %d, Per-GPU batch size: %d", len(dataset), args.batch_size)
 
     if is_main:
-        logger.info("Creating model: %s", args.model)
+        logger.info("Creating model: %s (spatial_fold_factor=%d)", args.model, args.spatial_fold_factor)
     model = build_gaussianverse_unet(
         args.model,
         sample_size=128,
@@ -410,6 +410,7 @@ def main(args) -> None:
         class_embedding_dim=args.class_embed_dim,
         norm_num_groups=args.norm_num_groups,
         dropout=args.dropout,
+        spatial_fold_factor=args.spatial_fold_factor,
         gradient_checkpointing=args.gradient_checkpointing,
     )
 
@@ -564,8 +565,11 @@ def main(args) -> None:
                     else:
                         # epsilon prediction: natural weight = SNR, divide out
                         snr_weight = snr_weight / snr
-                    # Scale by 4.0 to compensate for reduced average magnitude from SNR weighting
-                    mse_loss = (sample_losses * snr_weight).mean() * 4.0
+                    mse_loss = (sample_losses * snr_weight).mean()
+                    if not args.predict_xstart:
+                        # Scale by 4.0 only for epsilon prediction to compensate for
+                        # reduced average magnitude from SNR division
+                        mse_loss = mse_loss * 4.0
                 else:
                     mse_loss = sample_losses.mean()
                 if not torch.isfinite(mse_loss):
@@ -789,6 +793,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--class_embed_dim", type=int, default=768, help="Class embedding dimension for UNet conditioning")
     parser.add_argument("--norm_num_groups", type=int, default=32, help="GroupNorm group count inside the UNet")
     parser.add_argument("--dropout", type=float, default=0.0, help="Dropout used inside the diffusers UNet")
+    parser.add_argument(
+        "--spatial_fold_factor",
+        type=int,
+        default=1,
+        help="Pixel-unshuffle factor applied before the UNet. 2 packs each 2x2 local patch into channels.",
+    )
     parser.add_argument(
         "--predict_xstart",
         action=argparse.BooleanOptionalAction,

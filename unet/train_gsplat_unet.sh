@@ -9,7 +9,7 @@ NUM_GPUS=${NUM_GPUS:-$(nvidia-smi -L 2>/dev/null | wc -l)}
 NUM_GPUS=${NUM_GPUS:-1}
 NUM_MACHINES=${NUM_MACHINES:-1}
 DYNAMO_BACKEND=${DYNAMO_BACKEND:-no}
-CLASS_EMBED_DIM=${CLASS_EMBED_DIM:-256}
+CLASS_EMBED_DIM=${CLASS_EMBED_DIM:-768}
 VAL_SAMPLER=${VAL_SAMPLER:-dpm}
 DPM_SOLVER_ORDER=${DPM_SOLVER_ORDER:-2}
 DPM_ALGORITHM_TYPE=${DPM_ALGORITHM_TYPE:-dpmsolver++}
@@ -43,6 +43,7 @@ echo "Logging to $LOG_FILE"
 $CMD unet/train_gsplat_unet.py \
     --model $MODEL \
     --class_embed_dim $CLASS_EMBED_DIM \
+    --spatial_fold_factor 2 \
     --obj_list $OBJ_LIST \
     --gs_path $GS_DATA_PATH \
     --mean_file $MEAN_FILE \

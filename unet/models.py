@@ -5,6 +5,7 @@ from typing import Optional
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from diffusers import UNet2DConditionModel
 from diffusers.models.attention_processor import AttnProcessor2_0
 
@@ -24,6 +25,7 @@ class GaussianVerseUNetConfig:
     attention_head_dim: int | tuple[int, ...]
     norm_num_groups: int
     dropout: float
+    spatial_fold_factor: int = 1
     gradient_checkpointing: bool = False
 
 
@@ -60,12 +62,27 @@ class GaussianVerseUNet(nn.Module):
 
     def __init__(self, config: GaussianVerseUNetConfig):
         super().__init__()
+        if config.spatial_fold_factor < 1:
+            raise ValueError(f"spatial_fold_factor must be >= 1, got {config.spatial_fold_factor}")
+        if config.sample_size % config.spatial_fold_factor != 0:
+            raise ValueError(
+                f"sample_size={config.sample_size} must be divisible by "
+                f"spatial_fold_factor={config.spatial_fold_factor}"
+            )
+
         self.config = config
+        self.sample_size = config.sample_size
+        self.in_channels = config.in_channels
+        self.out_channels = config.out_channels
+        self.spatial_fold_factor = config.spatial_fold_factor
+        self.folded_sample_size = config.sample_size // config.spatial_fold_factor
+        self.folded_in_channels = config.in_channels * (config.spatial_fold_factor ** 2)
+        self.folded_out_channels = config.out_channels * (config.spatial_fold_factor ** 2)
         self.class_embedding = nn.Embedding(config.num_classes, config.class_embedding_dim)
         self.unet = UNet2DConditionModel(
-            sample_size=config.sample_size,
-            in_channels=config.in_channels,
-            out_channels=config.out_channels,
+            sample_size=self.folded_sample_size,
+            in_channels=self.folded_in_channels,
+            out_channels=self.folded_out_channels,
             down_block_types=config.down_block_types,
             mid_block_type=config.mid_block_type,
             up_block_types=config.up_block_types,
@@ -82,6 +99,16 @@ class GaussianVerseUNet(nn.Module):
         if config.gradient_checkpointing:
             self.unet.enable_gradient_checkpointing()
 
+    def fold_spatial(self, x: torch.Tensor) -> torch.Tensor:
+        if self.spatial_fold_factor == 1:
+            return x
+        return F.pixel_unshuffle(x, self.spatial_fold_factor)
+
+    def unfold_spatial(self, x: torch.Tensor) -> torch.Tensor:
+        if self.spatial_fold_factor == 1:
+            return x
+        return F.pixel_shuffle(x, self.spatial_fold_factor)
+
     def forward(
         self,
         x: torch.Tensor,
@@ -90,16 +117,28 @@ class GaussianVerseUNet(nn.Module):
     ) -> torch.Tensor:
         if y is None:
             raise ValueError("Class labels `y` must be provided for GaussianVerseUNet.")
+        if x.ndim != 4:
+            raise ValueError(f"Expected `x` to have shape (N, C, H, W), got {tuple(x.shape)}")
+        if self.spatial_fold_factor > 1 and (
+            x.shape[-2] % self.spatial_fold_factor != 0 or x.shape[-1] % self.spatial_fold_factor != 0
+        ):
+            raise ValueError(
+                f"Input spatial shape {tuple(x.shape[-2:])} must be divisible by "
+                f"spatial_fold_factor={self.spatial_fold_factor}"
+            )
+
+        x = self.fold_spatial(x)
         label_embeddings = self.class_embedding(y.long())
         label_embeddings = label_embeddings.to(dtype=x.dtype)
         encoder_hidden_states = label_embeddings.unsqueeze(1)
-        return self.unet(
+        model_out = self.unet(
             x,
             t,
             encoder_hidden_states=encoder_hidden_states,
             class_labels=label_embeddings,
             return_dict=False,
         )[0]
+        return self.unfold_spatial(model_out)
 
 
 def build_gaussianverse_unet(
@@ -112,6 +151,7 @@ def build_gaussianverse_unet(
     class_embedding_dim: int = 768,
     norm_num_groups: int = 32,
     dropout: float = 0.0,
+    spatial_fold_factor: int = 1,
     gradient_checkpointing: bool = False,
 ) -> GaussianVerseUNet:
     if model_name not in GAUSSIANVERSE_UNET_PRESETS:
@@ -143,6 +183,7 @@ def build_gaussianverse_unet(
         attention_head_dim=preset["attention_head_dim"],  # type: ignore[arg-type]
         norm_num_groups=norm_num_groups,
         dropout=dropout,
+        spatial_fold_factor=spatial_fold_factor,
         gradient_checkpointing=gradient_checkpointing,
     )
     return GaussianVerseUNet(config)
