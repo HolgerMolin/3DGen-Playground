@@ -30,12 +30,17 @@ CLASS_MAP_PATH=${CLASS_MAP_PATH:-$DIT_GSPLAT_CLASS_MAP}
 SPHERE2PLANE_PATH=${SPHERE2PLANE_PATH:-$DIT_GSPLAT_SPHERE2PLANE_PATH}
 REF_CAMERA_TAR=${REF_CAMERA_TAR:-$DIT_GSPLAT_REF_CAMERA_TAR}
 
+LOG_DIR="${RESULTS_DIR}"
+mkdir -p "$LOG_DIR"
+LOG_FILE="${LOG_DIR}/train_$(date +%Y%m%d_%H%M%S).log"
+
 if [ "$NUM_GPUS" -le 1 ]; then
     CMD="python"
 else
     CMD="accelerate launch --num_processes $NUM_GPUS --num_machines $NUM_MACHINES --multi_gpu --mixed_precision $MIXED_PRECISION --dynamo_backend $DYNAMO_BACKEND"
 fi
 
+echo "Logging to $LOG_FILE"
 $CMD unet/train_gsplat_unet.py \
     --model $MODEL \
     --class_embed_dim $CLASS_EMBED_DIM \
@@ -79,4 +84,5 @@ $CMD unet/train_gsplat_unet.py \
     --train_render_log_every $TRAIN_RENDER_LOG_EVERY \
     --train_render_log_num_cam $TRAIN_RENDER_LOG_NUM_CAM \
     --val_every 1000 \
-    --results_dir $RESULTS_DIR
+    --results_dir $RESULTS_DIR \
+    2>&1 | tee "$LOG_FILE"
