@@ -34,8 +34,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from dataloaders.class_3dgen_loader import DC_ONLY_FEATURE_INDICES, load_sphere2plane
+from dataloaders.class_3dgen_loader import DC_ONLY_FEATURE_INDICES
 from dataloaders.standard_3dgen_loader import extract_directory_info, load_ply
+from utils.plane_utils import load_sphere2plane
 
 
 logger = logging.getLogger(__name__)

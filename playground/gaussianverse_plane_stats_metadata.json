@@ -1,0 +1,55 @@
+{
+  "created_at_utc": "2026-03-27T00:22:04.906620+00:00",
+  "obj_list": [
+    "/home/tiangexiang/gen3d/gaussianverse/all_obj_list.json"
+  ],
+  "gs_path": "/home/tiangexiang/gen3d/gaussianverse",
+  "sphere2plane_path": "/home/tiangexiang/gen3d/3DGen-Playground/data/sphere2plane.npy",
+  "point_cloud_order": "plane",
+  "processed_objects": 254370,
+  "skipped_objects": 1,
+  "limit": 0,
+  "batch_size": 8,
+  "num_workers_requested": 0,
+  "num_workers_resolved": 8,
+  "prefetch_factor": 2,
+  "accumulation_dtype": "float64",
+  "saved_dtype": "float32",
+  "multiprocessing_backend": "torch.utils.data.DataLoader",
+  "shapes": {
+    "mean_c11": [
+      59,
+      1,
+      1
+    ],
+    "std_c11": [
+      59,
+      1,
+      1
+    ],
+    "mean_chw": [
+      59,
+      128,
+      128
+    ],
+    "std_chw": [
+      59,
+      128,
+      128
+    ]
+  },
+  "outputs": {
+    "mean_c11": "/home/tiangexiang/gen3d/3DGen-Playground/playground/gaussianverse_plane_stats_mean_c11.pt",
+    "std_c11": "/home/tiangexiang/gen3d/3DGen-Playground/playground/gaussianverse_plane_stats_std_c11.pt",
+    "mean_chw": "/home/tiangexiang/gen3d/3DGen-Playground/playground/gaussianverse_plane_stats_mean_chw.pt",
+    "std_chw": "/home/tiangexiang/gen3d/3DGen-Playground/playground/gaussianverse_plane_stats_std_chw.pt"
+  },
+  "skip_examples": [
+    {
+      "dataset_index": 155184,
+      "tar_gz_path": "1930/9643656.tar.gz",
+      "missing_path": "/home/tiangexiang/gen3d/gaussianverse/1930/9643656/gs2sphere.npy",
+      "error": "[Errno 2] No such file or directory: '/home/tiangexiang/gen3d/gaussianverse/1930/9643656/gs2sphere.npy'"
+    }
+  ]
+}

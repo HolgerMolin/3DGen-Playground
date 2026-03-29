@@ -1,8 +1,7 @@
 """Class-conditional 3DGS dataset wrapper.
 
 Wraps Standard3DGenDataset to pair each sample with its class label,
-filter out invalid classes, optionally select a subset of feature channels,
-and remap points from sphere order to a 2D plane grid via sphere2plane permutation.
+filter out invalid classes, and optionally select a subset of feature channels.
 """
 
 from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
@@ -22,8 +21,8 @@ from torch.utils.data import Dataset
 
 from dataloaders.standard_3dgen_loader import (
     Standard3DGenDataset,
+    _normalize_point_cloud_numpy,
     extract_directory_info,
-    load_ply,
 )
 
 try:
@@ -35,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 FULL_3DGS_FEATURE_DIM = 59
 DC_ONLY_FEATURE_INDICES = (0, 1, 2, 3, 4, 20, 36, 52, 53, 54, 55, 56, 57, 58)
-PRELOAD_CACHE_VERSION = 6
+PRELOAD_CACHE_VERSION = 7
 LAZY_CACHE_LOCK_STRIPES = 256
 _PRELOAD_WORKER_STATE = {}
 
@@ -109,72 +108,69 @@ def _open_tensor_memmap(
     return backing, tensor
 
 
-def _point_cloud_to_plane_numpy(point_cloud: np.ndarray, plane_to_sphere: np.ndarray) -> np.ndarray:
-    """Convert sphere-ordered (N, D) point cloud to plane grid (D, H, W) in numpy."""
-    n, d = point_cloud.shape
-    side = int(math.isqrt(n))
-    if side * side != n:
-        raise ValueError(f"N={n} is not a perfect square")
-    plane = point_cloud[plane_to_sphere]
-    return np.ascontiguousarray(plane.reshape(side, side, d).transpose(2, 0, 1))
-
-
 def _load_preload_point_cloud(
-    tar_gz_path: str,
-    gs_path: str,
-    mean: Optional[np.ndarray],
-    std: Optional[np.ndarray],
+    base_dataset: Standard3DGenDataset,
+    real_idx: int,
 ) -> np.ndarray:
-    """Load and normalize a single point cloud in sphere order."""
+    """Load and normalize one plane-grid point cloud via Standard3DGenDataset."""
+    hash_key = base_dataset.keys[real_idx]
+    tar_gz_path = base_dataset.obj_data[hash_key]
     directory_number, filename = extract_directory_info(tar_gz_path)
-    data_dir = Path(gs_path) / directory_number / filename
+    point_cloud, _ = base_dataset._load_3dgs_data(directory_number, filename)
 
-    gs2sphere = np.load(str(data_dir / "gs2sphere.npy"))
-    point_cloud = load_ply(str(data_dir / "point_cloud.ply"))
-
-    if gs2sphere.ndim != 1:
-        raise ValueError(f"Expected 1D gs2sphere, got shape {gs2sphere.shape}")
-    if gs2sphere.shape[0] != point_cloud.shape[0]:
-        raise ValueError(
-            f"Point count mismatch: point_cloud={point_cloud.shape[0]} vs gs2sphere={gs2sphere.shape[0]}"
-        )
-    sphere_to_gs = np.empty_like(gs2sphere)
-    sphere_to_gs[gs2sphere] = np.arange(gs2sphere.shape[0], dtype=gs2sphere.dtype)
-    point_cloud = point_cloud[sphere_to_gs]
-
-    if mean is not None and std is not None:
-        point_cloud = (point_cloud - mean[None]) / (std[None] + 1e-8)
+    if base_dataset.mean is not None and base_dataset.std is not None:
+        point_cloud = _normalize_point_cloud_numpy(point_cloud, base_dataset.mean, base_dataset.std)
 
     return point_cloud.astype(np.float32, copy=False)
 
 
-def _build_preload_planes(
-    tar_gz_path: str,
-    gs_path: str,
-    mean: Optional[np.ndarray],
-    std: Optional[np.ndarray],
-    plane_to_sphere: np.ndarray,
+def _select_point_cloud_features_numpy(
+    point_cloud: np.ndarray,
+    feature_indices: Optional[np.ndarray],
+) -> np.ndarray:
+    if point_cloud.ndim == 4 and point_cloud.shape[0] == 1:
+        point_cloud = point_cloud[0]
+    if feature_indices is None:
+        return point_cloud
+    if point_cloud.ndim == 2:
+        return point_cloud[:, feature_indices]
+    if point_cloud.ndim == 3:
+        return point_cloud[feature_indices]
+    raise ValueError(f"Expected point_cloud with 2 or 3 dims, got shape {tuple(point_cloud.shape)}")
+
+
+def _plane_point_cloud_to_grid_numpy(point_cloud: np.ndarray) -> np.ndarray:
+    """Normalize plane-based numpy point clouds to (D, H, W)."""
+    if point_cloud.ndim == 4 and point_cloud.shape[0] == 1:
+        point_cloud = point_cloud[0]
+    if point_cloud.ndim == 3:
+        return np.ascontiguousarray(point_cloud)
+    if point_cloud.ndim != 2:
+        raise ValueError(f"Expected point_cloud with 2 or 3 dims, got shape {tuple(point_cloud.shape)}")
+    n, d = point_cloud.shape
+    side = int(math.isqrt(n))
+    if side * side != n:
+        raise ValueError(f"N={n} is not a perfect square")
+    return np.ascontiguousarray(point_cloud.reshape(side, side, d).transpose(2, 0, 1))
+
+
+def _build_preload_grids(
+    base_dataset: Standard3DGenDataset,
+    real_idx: int,
     feature_indices: Optional[np.ndarray],
     return_full_for_render: bool,
 ) -> tuple[np.ndarray, Optional[np.ndarray]]:
-    """Build plane-ordered arrays for the shared preload cache."""
-    pc_full = _load_preload_point_cloud(tar_gz_path, gs_path, mean, std)
-    if feature_indices is not None:
-        pc = pc_full[:, feature_indices]
-    else:
-        pc = pc_full
-
-    pc_plane = _point_cloud_to_plane_numpy(pc, plane_to_sphere)
+    """Build plane-grid arrays for the shared preload cache."""
+    pc_full = _load_preload_point_cloud(base_dataset, real_idx)
+    pc = _select_point_cloud_features_numpy(pc_full, feature_indices)
+    pc_plane = _plane_point_cloud_to_grid_numpy(pc)
     if return_full_for_render:
-        return pc_plane, _point_cloud_to_plane_numpy(pc_full, plane_to_sphere)
+        return pc_plane, _plane_point_cloud_to_grid_numpy(pc_full)
     return pc_plane, None
 
 
 def _init_preload_worker(
-    gs_path: str,
-    mean: Optional[np.ndarray],
-    std: Optional[np.ndarray],
-    plane_to_sphere: np.ndarray,
+    base_dataset: Standard3DGenDataset,
     feature_indices: Optional[np.ndarray],
     return_full_for_render: bool,
     pc_path: str,
@@ -190,10 +186,7 @@ def _init_preload_worker(
     """Initialize per-process state for parallel preload workers."""
     global _PRELOAD_WORKER_STATE
     _PRELOAD_WORKER_STATE = {
-        "gs_path": gs_path,
-        "mean": mean,
-        "std": std,
-        "plane_to_sphere": plane_to_sphere,
+        "base_dataset": base_dataset,
         "feature_indices": feature_indices,
         "return_full_for_render": return_full_for_render,
         "pc_tensor": _open_tensor_memmap(
@@ -216,16 +209,13 @@ def _init_preload_worker(
         )[1]
 
 
-def _preload_worker_write_sample(task: tuple[int, str, int]) -> int:
+def _preload_worker_write_sample(task: tuple[int, int, int]) -> int:
     """Write one sample directly into the shared preload memmaps."""
-    slot, tar_gz_path, label = task
+    slot, real_idx, label = task
     state = _PRELOAD_WORKER_STATE
-    pc_plane, pc_full_plane = _build_preload_planes(
-        tar_gz_path=tar_gz_path,
-        gs_path=state["gs_path"],
-        mean=state["mean"],
-        std=state["std"],
-        plane_to_sphere=state["plane_to_sphere"],
+    pc_plane, pc_full_plane = _build_preload_grids(
+        base_dataset=state["base_dataset"],
+        real_idx=real_idx,
         feature_indices=state["feature_indices"],
         return_full_for_render=state["return_full_for_render"],
     )
@@ -238,79 +228,47 @@ def _preload_worker_write_sample(task: tuple[int, str, int]) -> int:
     return slot
 
 
-def load_sphere2plane(sphere2plane_path: str, expected_points: int) -> torch.Tensor:
-    """Load and validate the sphere-to-plane permutation array.
-
-    Args:
-        sphere2plane_path: Path to sphere2plane.npy file.
-        expected_points: Expected number of points (must match array length).
-
-    Returns:
-        Long tensor of shape (N,) mapping sphere-order indices to plane-order indices.
-    """
-    arr = np.load(sphere2plane_path).astype(np.int64)
-    if arr.ndim != 1:
-        raise ValueError(f"sphere2plane must be 1D, got shape {arr.shape}")
-    if arr.shape[0] != expected_points:
-        raise ValueError(
-            f"sphere2plane has {arr.shape[0]} entries, expected {expected_points}"
-        )
-    perm = torch.from_numpy(arr).long()
-    expected = torch.arange(expected_points, dtype=perm.dtype)
-    if not torch.equal(torch.sort(perm).values, expected):
-        raise ValueError(f"sphere2plane at {sphere2plane_path} is not a valid permutation")
-    return perm
-
-
-def point_cloud_to_plane(point_cloud: torch.Tensor, plane_to_sphere: torch.Tensor) -> torch.Tensor:
-    """Convert sphere-ordered (N, D) point cloud to plane grid (D, H, W).
-
-    Args:
-        point_cloud: (N, D) tensor in sphere order.
-        plane_to_sphere: (N,) permutation tensor.
-
-    Returns:
-        (D, H, W) tensor where H = W = sqrt(N).
-    """
+def plane_point_cloud_to_grid(point_cloud: torch.Tensor) -> torch.Tensor:
+    """Normalize plane-based tensors to (D, H, W)."""
+    if point_cloud.ndim == 4 and point_cloud.shape[0] == 1:
+        point_cloud = point_cloud[0]
+    if point_cloud.ndim == 3:
+        return point_cloud.contiguous()
+    if point_cloud.ndim != 2:
+        raise ValueError(f"Expected point_cloud with 2 or 3 dims, got shape {tuple(point_cloud.shape)}")
     n, d = point_cloud.shape
     side = int(math.isqrt(n))
     assert side * side == n, f"N={n} is not a perfect square"
-    plane = point_cloud[plane_to_sphere]  # reorder to plane order
-    return plane.view(side, side, d).permute(2, 0, 1).contiguous()
+    return point_cloud.reshape(side, side, d).permute(2, 0, 1).contiguous()
 
 
-def plane_to_point_cloud(plane_chw: torch.Tensor, plane_to_sphere: torch.Tensor) -> torch.Tensor:
-    """Convert plane grid (D, H, W) back to sphere-ordered (N, D) point cloud.
-
-    Args:
-        plane_chw: (D, H, W) tensor in plane order.
-        plane_to_sphere: (N,) permutation tensor.
-
-    Returns:
-        (N, D) tensor in sphere order.
-    """
-    d, h, w = plane_chw.shape
-    n = h * w
-    flat = plane_chw.permute(1, 2, 0).reshape(n, d)  # (N, D) in plane order
-    # Invert permutation: sphere_to_plane[sphere_idx] = plane_idx
-    sphere_to_plane = torch.empty_like(plane_to_sphere)
-    sphere_to_plane[plane_to_sphere] = torch.arange(n, dtype=plane_to_sphere.dtype)
-    return flat[sphere_to_plane]
+def _select_point_cloud_features_torch(
+    point_cloud: torch.Tensor,
+    feature_indices: Optional[torch.Tensor],
+) -> torch.Tensor:
+    if point_cloud.ndim == 4 and point_cloud.shape[0] == 1:
+        point_cloud = point_cloud[0]
+    if feature_indices is None:
+        return point_cloud
+    if point_cloud.ndim == 2:
+        return point_cloud[:, feature_indices]
+    if point_cloud.ndim == 3:
+        return point_cloud[feature_indices]
+    raise ValueError(f"Expected point_cloud with 2 or 3 dims, got shape {tuple(point_cloud.shape)}")
 
 
 class Class3DGenDataset(Dataset):
     """Wraps Standard3DGenDataset for class-conditional training.
 
     Filters out samples with class label -1 (noise), looks up class labels,
-    optionally selects feature channels, and remaps points from sphere order
-    to a 2D plane grid using the sphere2plane permutation.
+    optionally selects feature channels, and reshapes plane-ordered rows
+    into `(C, H, W)` tensors for training.
     """
 
     def __init__(
         self,
         base_dataset: Standard3DGenDataset,
         class_map: dict,
-        plane_to_sphere: torch.Tensor,
         feature_indices: Optional[torch.Tensor] = None,
         return_full_for_render: bool = False,
         preload_to_cpu: bool = False,
@@ -323,7 +281,6 @@ class Class3DGenDataset(Dataset):
         Args:
             base_dataset: Standard3DGenDataset instance.
             class_map: Dict mapping "dir/file" keys to class label ints.
-            plane_to_sphere: Permutation tensor from load_sphere2plane().
             feature_indices: Optional tensor of feature column indices to select
                 (e.g. for sh_degree0_only mode).
             return_full_for_render: If True and feature_indices is set, also return
@@ -342,9 +299,14 @@ class Class3DGenDataset(Dataset):
             raise ValueError("preload_to_cpu and lazy_cache_to_cpu are mutually exclusive")
         if preload_max_samples < 0:
             raise ValueError("preload_max_samples must be >= 0")
+        base_order = getattr(base_dataset, "point_cloud_order", "plane")
+        if base_order != "plane":
+            raise ValueError(
+                "Class3DGenDataset expects a plane-ordered base dataset; "
+                f"got point_cloud_order={base_order!r}"
+            )
         self.base_dataset = base_dataset
         self.class_map = class_map
-        self.plane_to_sphere = plane_to_sphere
         self.feature_indices = feature_indices
         self.return_full_for_render = return_full_for_render and (feature_indices is not None)
         self.preload_to_cpu = preload_to_cpu
@@ -361,7 +323,6 @@ class Class3DGenDataset(Dataset):
         self.cache_dir = None
         self.cache_mode = None
         self._cache_backing = {}
-        self._plane_to_sphere_np = self.plane_to_sphere.cpu().numpy()
         self._feature_indices_np = (
             self.feature_indices.cpu().numpy() if self.feature_indices is not None else None
         )
@@ -406,20 +367,17 @@ class Class3DGenDataset(Dataset):
             class_key = tar_gz_path.replace('.tar.gz', '')
             label = self.class_map[class_key]
 
-        # Point cloud from base dataset is in sphere order: (N, 59)
+        # Point cloud from Standard3DGenDataset is already plane-based: (C, H, W)
+        # for current data, but keep 2D flat-row compatibility for older outputs.
         pc_full = sample['point_cloud']
 
         # Select features if requested
-        if self.feature_indices is not None:
-            pc = pc_full[:, self.feature_indices]  # (N, F)
-        else:
-            pc = pc_full
-
-        # Remap from sphere order to plane grid: (N, F) -> (F, H, W)
-        pc = point_cloud_to_plane(pc, self.plane_to_sphere)
+        pc = _select_point_cloud_features_torch(pc_full, self.feature_indices)
+        pc = plane_point_cloud_to_grid(pc)
+        if self.return_full_for_render:
+            pc_full_grid = plane_point_cloud_to_grid(pc_full)
 
         if self.return_full_for_render:
-            pc_full_grid = point_cloud_to_plane(pc_full, self.plane_to_sphere)
             return pc, label, pc_full_grid, hash_key
 
         return pc, label, hash_key
@@ -432,7 +390,6 @@ class Class3DGenDataset(Dataset):
         _hash_strings(hasher, [self.base_dataset.obj_data[key] for key in self.base_dataset.keys])
         _hash_array(hasher, np.asarray(self.valid_indices, dtype=np.int64))
         _hash_array(hasher, np.asarray(self.valid_labels, dtype=np.int64))
-        _hash_array(hasher, self.plane_to_sphere.cpu().numpy())
         if self.feature_indices is None:
             hasher.update(b"feature_indices:none")
         else:
@@ -552,14 +509,9 @@ class Class3DGenDataset(Dataset):
 
         first_real_idx = self.valid_indices[0]
         first_label = self.valid_labels[0]
-        first_hash_key = self.base_dataset.keys[first_real_idx]
-        first_tar_gz_path = self.base_dataset.obj_data[first_hash_key]
-        first_pc, first_pc_full = _build_preload_planes(
-            tar_gz_path=first_tar_gz_path,
-            gs_path=str(self.base_dataset.gs_path),
-            mean=self.base_dataset.mean,
-            std=self.base_dataset.std,
-            plane_to_sphere=self._plane_to_sphere_np,
+        first_pc, first_pc_full = _build_preload_grids(
+            base_dataset=self.base_dataset,
+            real_idx=first_real_idx,
             feature_indices=self._feature_indices_np,
             return_full_for_render=self.return_full_for_render,
         )
@@ -618,7 +570,7 @@ class Class3DGenDataset(Dataset):
             task_iter = (
                 (
                     slot,
-                    self.base_dataset.obj_data[self.base_dataset.keys[real_idx]],
+                    real_idx,
                     label,
                 )
                 for slot, (real_idx, label) in enumerate(
@@ -627,12 +579,9 @@ class Class3DGenDataset(Dataset):
             )
             if worker_count == 1:
                 for task in task_iter:
-                    _preload_worker_write_sample_local = _build_preload_planes(
-                        tar_gz_path=task[1],
-                        gs_path=str(self.base_dataset.gs_path),
-                        mean=self.base_dataset.mean,
-                        std=self.base_dataset.std,
-                        plane_to_sphere=self._plane_to_sphere_np,
+                    _preload_worker_write_sample_local = _build_preload_grids(
+                        base_dataset=self.base_dataset,
+                        real_idx=task[1],
                         feature_indices=self._feature_indices_np,
                         return_full_for_render=self.return_full_for_render,
                     )
@@ -644,10 +593,7 @@ class Class3DGenDataset(Dataset):
                     max_workers=worker_count,
                     initializer=_init_preload_worker,
                     initargs=(
-                        str(self.base_dataset.gs_path),
-                        self.base_dataset.mean,
-                        self.base_dataset.std,
-                        self._plane_to_sphere_np,
+                        self.base_dataset,
                         self._feature_indices_np,
                         self.return_full_for_render,
                         str(pc_path),
@@ -751,14 +697,9 @@ class Class3DGenDataset(Dataset):
 
         first_real_idx = self.valid_indices[0]
         first_label = self.valid_labels[0]
-        first_hash_key = self.base_dataset.keys[first_real_idx]
-        first_tar_gz_path = self.base_dataset.obj_data[first_hash_key]
-        first_pc, first_pc_full = _build_preload_planes(
-            tar_gz_path=first_tar_gz_path,
-            gs_path=str(self.base_dataset.gs_path),
-            mean=self.base_dataset.mean,
-            std=self.base_dataset.std,
-            plane_to_sphere=self._plane_to_sphere_np,
+        first_pc, first_pc_full = _build_preload_grids(
+            base_dataset=self.base_dataset,
+            real_idx=first_real_idx,
             feature_indices=self._feature_indices_np,
             return_full_for_render=self.return_full_for_render,
         )
@@ -914,13 +855,9 @@ class Class3DGenDataset(Dataset):
                 return
 
             real_idx = self.valid_indices[idx]
-            tar_gz_path = self.base_dataset.obj_data[self.base_dataset.keys[real_idx]]
-            pc_plane, pc_full_plane = _build_preload_planes(
-                tar_gz_path=tar_gz_path,
-                gs_path=str(self.base_dataset.gs_path),
-                mean=self.base_dataset.mean,
-                std=self.base_dataset.std,
-                plane_to_sphere=self._plane_to_sphere_np,
+            pc_plane, pc_full_plane = _build_preload_grids(
+                base_dataset=self.base_dataset,
+                real_idx=real_idx,
                 feature_indices=self._feature_indices_np,
                 return_full_for_render=self.return_full_for_render,
             )

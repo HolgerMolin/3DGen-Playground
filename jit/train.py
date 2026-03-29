@@ -1,9 +1,9 @@
 """
-Training script for DiT on 3DGS data (class-conditional).
+Training script for JiT-style large-patch diffusion on 3DGS data (class-conditional).
 3DGS data (16384 points x 59 features) on 128x128 grid is the latent space directly — no VAE needed.
 
-Single-GPU:  python dit/train.py --obj_list ... --gs_path ...
-Multi-GPU:   accelerate launch [--num_processes N] dit/train.py --obj_list ... --gs_path ...
+Single-GPU:  python jit/train.py --obj_list ... --gs_path ...
+Multi-GPU:   accelerate launch [--num_processes N] jit/train.py --obj_list ... --gs_path ...
 """
 
 import argparse
@@ -22,7 +22,6 @@ from typing import Any, Optional
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from PIL import Image
 
@@ -43,21 +42,9 @@ from dataloaders.standard_3dgen_loader import Standard3DGenDataset
 from dataloaders.class_3dgen_loader import (
     Class3DGenDataset, DC_ONLY_FEATURE_INDICES, FULL_3DGS_FEATURE_DIM,
 )
-from dit.models import DiT_3DGS_models
-from dit.diffusion import create_diffusion
+from jit.models import JiT_3DGS_models
+from jit.diffusion import create_diffusion
 from utils.plane_utils import load_sphere2plane, plane_to_point_cloud
-from utils.gsplat_render_util import (
-    _compute_render_loss_for_batch,
-    _denormalize_point_cloud,
-    _load_reference_cameras,
-    _plane_to_point_cloud_batch,
-    _point_clouds_to_gsplat_inputs,
-    _prepare_train_cameras,
-    _render_gsplat_batch,
-    _save_training_render_preview,
-    _try_import_lpips,
-    _try_import_renderer,
-)
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -67,6 +54,11 @@ logger = logging.getLogger(__name__)
 #################################################################################
 #                          Rendering Loss Helpers                               #
 #################################################################################
+
+def _sample_jit_timesteps(batch_size: int, num_timesteps: int, device: torch.device, p_mean: float, p_std: float) -> torch.Tensor:
+    """Sample JiT-style logit-normal timesteps and map them onto discrete diffusion steps."""
+    probs = torch.sigmoid(torch.randn(batch_size, device=device) * p_std + p_mean)
+    return torch.clamp((probs * num_timesteps).long(), min=0, max=num_timesteps - 1)
 
 def _tensor_debug_summary(tensor: torch.Tensor) -> dict[str, Any]:
     """Summarize a tensor for non-finite debugging without dumping full contents."""
@@ -188,6 +180,329 @@ def _debug_nonfinite_mse(
     raise FloatingPointError(f"Non-finite diffusion MSE detected at step {step}; debug dump saved to {debug_path}")
 
 
+def _try_import_renderer():
+    try:
+        from gaussian_renderer import render as gs_render
+        from scene.cameras import Camera
+        from scene.gaussian_model import GaussianModel
+        return gs_render, Camera, GaussianModel
+    except Exception as e:
+        return e
+
+
+def _try_import_lpips():
+    try:
+        import lpips
+        return lpips
+    except Exception as e:
+        return e
+
+
+class _PipeConfig:
+    convert_SHs_python = False
+    compute_cov3D_python = False
+    debug = False
+    antialiasing = False
+
+
+def _fov2focal(fov: float, pixels: int) -> float:
+    return pixels / (2.0 * math.tan(fov / 2.0))
+
+
+def _load_reference_cameras(ref_camera_tar: str) -> list:
+    cams = []
+    with tarfile.open(ref_camera_tar, "r:gz") as tar:
+        json_members = [m for m in tar.getmembers() if m.name.endswith(".json")]
+        json_members.sort(key=lambda m: m.name)
+        for m in json_members:
+            meta = json.loads(tar.extractfile(m).read().decode("utf-8"))
+            c2w = np.eye(4, dtype=np.float32)
+            c2w[:3, 0] = np.array(meta["x"], dtype=np.float32)
+            c2w[:3, 1] = np.array(meta["y"], dtype=np.float32)
+            c2w[:3, 2] = np.array(meta["z"], dtype=np.float32)
+            c2w[:3, 3] = np.array(meta["origin"], dtype=np.float32)
+            w2c = np.linalg.inv(c2w).astype(np.float32)
+            fovx = float(meta["x_fov"])
+            fovy = float(meta["y_fov"])
+            width = int(meta.get("width", 512))
+            height = int(meta.get("height", 512))
+            cams.append({
+                "R": w2c[:3, :3],
+                "T": w2c[:3, 3],
+                "fovx": fovx,
+                "fovy": fovy,
+                "width": width,
+                "height": height,
+            })
+    if not cams:
+        raise ValueError(f"No camera json found in {ref_camera_tar}")
+    return cams
+
+
+def _make_camera_from_ref(ref_cam: dict, camera_cls, cam_idx: int):
+    w = int(ref_cam["width"])
+    h = int(ref_cam["height"])
+    pil_img = Image.fromarray(np.zeros((h, w, 3), dtype=np.uint8))
+    return camera_cls(
+        resolution=(w, h),
+        colmap_id=-1,
+        R=ref_cam["R"],
+        T=ref_cam["T"],
+        FoVx=float(ref_cam["fovx"]),
+        FoVy=float(ref_cam["fovy"]),
+        depth_params=None,
+        image=pil_img,
+        invdepthmap=None,
+        image_name=f"train_cam_{cam_idx:05d}",
+        uid=cam_idx,
+    )
+
+
+def _prepare_train_cameras(ref_cameras: list, camera_cls, train_render_size: int) -> list:
+    cams = []
+    for i, rc in enumerate(ref_cameras):
+        rc_small = dict(rc)
+        rc_small["width"] = int(train_render_size)
+        rc_small["height"] = int(train_render_size)
+        cams.append(_make_camera_from_ref(rc_small, camera_cls, i))
+    return cams
+
+
+def _build_gaussian_model_from_point_cloud(point_cloud: torch.Tensor, gaussian_model_cls, detach_input: bool = False):
+    """Build GaussianModel from a point cloud tensor of shape (N, 59)."""
+    if detach_input:
+        point_cloud = point_cloud.detach()
+    if point_cloud.shape[1] < 59:
+        raise ValueError(f"Expected feature dim >= 59, got {point_cloud.shape[1]}")
+
+    model = gaussian_model_cls(sh_degree=3)
+    pc = point_cloud[:, :59].to(dtype=torch.float32).contiguous()
+
+    xyz = pc[:, 0:3]
+    opacity = pc[:, 3:4]
+    feat = pc[:, 4:52]
+    scaling = pc[:, 52:55]
+    rotation = pc[:, 55:59]
+
+    feat_sh = feat.reshape(-1, 3, 16)
+    features_dc = feat_sh[:, :, 0].unsqueeze(1).contiguous()       # (N,1,3)
+    features_rest = feat_sh[:, :, 1:].transpose(1, 2).contiguous() # (N,15,3)
+
+    opacity = opacity.clamp(-12.0, 12.0)
+    scaling = scaling.clamp(-12.0, 8.0)
+
+    model._xyz = xyz
+    model._features_dc = features_dc
+    model._features_rest = features_rest
+    model._opacity = opacity
+    model._scaling = scaling
+    model._rotation = rotation
+    model.active_sh_degree = model.max_sh_degree
+    return model
+
+
+def _build_gaussian_model_from_dc_only(point_cloud: torch.Tensor, gaussian_model_cls, detach_input: bool = False):
+    """Build GaussianModel from a DC-only point cloud tensor of shape (N, 14).
+
+    The 14 channels correspond to DC_ONLY_FEATURE_INDICES:
+        xyz(3), opacity(1), sh_dc_r(1), sh_dc_g(1), sh_dc_b(1),
+        scales(3), rotations(4)
+    """
+    if detach_input:
+        point_cloud = point_cloud.detach()
+    if point_cloud.shape[1] != 14:
+        raise ValueError(f"Expected 14 DC-only features, got {point_cloud.shape[1]}")
+
+    model = gaussian_model_cls(sh_degree=0)
+    pc = point_cloud.to(dtype=torch.float32).contiguous()
+
+    xyz = pc[:, 0:3]
+    opacity = pc[:, 3:4]
+    # DC coefficients: one per color channel → (N, 1, 3)
+    features_dc = pc[:, 4:7].unsqueeze(1).contiguous()  # (N, 1, 3)
+    scaling = pc[:, 7:10]
+    rotation = pc[:, 10:14]
+
+    opacity = opacity.clamp(-12.0, 12.0)
+    scaling = scaling.clamp(-12.0, 8.0)
+
+    model._xyz = xyz
+    model._features_dc = features_dc
+    model._features_rest = torch.zeros(pc.shape[0], 0, 3, device=pc.device, dtype=pc.dtype)
+    model._opacity = opacity
+    model._scaling = scaling
+    model._rotation = rotation
+    model.active_sh_degree = 0
+    return model
+
+
+def _denormalize_point_cloud(
+    point_cloud: torch.Tensor,
+    mean: Optional[torch.Tensor],
+    std: Optional[torch.Tensor],
+) -> torch.Tensor:
+    if mean is None or std is None:
+        return point_cloud
+    mean_t = mean.to(device=point_cloud.device, dtype=point_cloud.dtype)
+    std_t = std.to(device=point_cloud.device, dtype=point_cloud.dtype)
+    return point_cloud * (std_t[None, :] + 1e-8) + mean_t[None, :]
+
+
+def _compute_render_loss_for_batch(
+    x0_pred: torch.Tensor,
+    x_gt_full: torch.Tensor,
+    plane_to_sphere: torch.Tensor,
+    norm_mean_pred: Optional[torch.Tensor],
+    norm_std_pred: Optional[torch.Tensor],
+    norm_mean_full: Optional[torch.Tensor],
+    norm_std_full: Optional[torch.Tensor],
+    train_cameras: list,
+    renderer_tuple: tuple,
+    lpips_fn: Optional[nn.Module],
+    num_cam: int,
+    device: torch.device,
+    dc_only: bool = False,
+) -> tuple:
+    """Compute differentiable 2D render losses (L1 + LPIPS) on one random sample.
+
+    GT is always rendered with full 59 channels (sh_degree=3) for correct appearance.
+    Prediction is rendered with dc_only (sh_degree=0) when dc_only=True.
+
+    Args:
+        x0_pred: Model's predicted x₀, shape (B, C, 128, 128). Gradients flow through this.
+        x_gt_full: Ground truth full 59-ch sample, shape (B, 59, 128, 128).
+        plane_to_sphere: Permutation tensor to convert plane grid back to sphere order.
+        norm_mean_pred/norm_std_pred: Normalization stats matching x0_pred channels.
+        norm_mean_full/norm_std_full: Full 59-dim normalization stats for GT.
+        train_cameras: Pre-built camera objects for rendering.
+        renderer_tuple: (gs_render, Camera, GaussianModel).
+        lpips_fn: LPIPS loss function or None.
+        num_cam: Number of cameras to randomly sample and render per step.
+        device: Torch device.
+        dc_only: If True, prediction is 14-channel DC-only; build sh_degree=0 GS model.
+
+    Returns:
+        (l1_loss, lpips_loss) averaged over cameras.
+    """
+    gs_render, camera_cls, gaussian_model_cls = renderer_tuple
+    pred_build_fn = _build_gaussian_model_from_dc_only if dc_only else _build_gaussian_model_from_point_cloud
+
+    bsz = x_gt_full.shape[0]
+    sample_idx = random.randrange(max(1, bsz))
+
+    # Ground truth: always full 59-ch, sh_degree=3, detached
+    orig_pc_norm = plane_to_point_cloud(x_gt_full[sample_idx], plane_to_sphere)
+    orig_pc_raw = _denormalize_point_cloud(orig_pc_norm, norm_mean_full, norm_std_full)
+    orig_gs = _build_gaussian_model_from_point_cloud(orig_pc_raw.to(device), gaussian_model_cls, detach_input=True)
+
+    # Prediction: keep gradients, denormalize with matching stats
+    pred_pc_norm = plane_to_point_cloud(x0_pred[sample_idx].float(), plane_to_sphere)
+    pred_pc_raw = _denormalize_point_cloud(pred_pc_norm, norm_mean_pred, norm_std_pred)
+    pred_gs = pred_build_fn(pred_pc_raw.to(device), gaussian_model_cls, detach_input=False)
+
+    pipe = _PipeConfig()
+    background = torch.zeros(3, dtype=torch.float32, device=device)
+
+    total_l1 = torch.tensor(0.0, dtype=torch.float32, device=device)
+    total_lpips = torch.tensor(0.0, dtype=torch.float32, device=device)
+    view_count = max(1, int(num_cam))
+    cam_indices = random.sample(range(len(train_cameras)), min(view_count, len(train_cameras)))
+    for ci in cam_indices:
+        cam = train_cameras[ci]
+
+        with torch.no_grad():
+            target = gs_render(cam, orig_gs, pipe, background)["render"]
+        pred = gs_render(cam, pred_gs, pipe, background)["render"]
+        total_l1 = total_l1 + torch.mean(torch.abs(pred - target))
+        if lpips_fn is not None:
+            pred_n = (pred.clamp(0.0, 1.0) * 2.0 - 1.0).unsqueeze(0)
+            target_n = (target.clamp(0.0, 1.0) * 2.0 - 1.0).unsqueeze(0)
+            total_lpips = total_lpips + lpips_fn(pred_n, target_n).mean()
+
+    denom = float(len(cam_indices))
+    return total_l1 / denom, total_lpips / denom
+
+
+def _save_training_render_preview(
+    x0_pred: torch.Tensor,
+    x_gt_full: torch.Tensor,
+    plane_to_sphere: torch.Tensor,
+    norm_mean_pred: Optional[torch.Tensor],
+    norm_std_pred: Optional[torch.Tensor],
+    norm_mean_full: Optional[torch.Tensor],
+    norm_std_full: Optional[torch.Tensor],
+    train_cameras: list,
+    renderer_tuple: tuple,
+    output_dir: str,
+    epoch: int,
+    step: int,
+    timesteps: torch.Tensor,
+    labels: torch.Tensor,
+    device: torch.device,
+    num_cam: int,
+    dc_only: bool = False,
+) -> None:
+    """Save side-by-side GT/pred train-time renders for quick visual inspection."""
+    gs_render, _, gaussian_model_cls = renderer_tuple
+    pred_build_fn = _build_gaussian_model_from_dc_only if dc_only else _build_gaussian_model_from_point_cloud
+
+    bsz = x_gt_full.shape[0]
+    sample_idx = random.randrange(max(1, bsz))
+
+    # Ground truth: always render with the full SH representation when available.
+    orig_pc_norm = plane_to_point_cloud(x_gt_full[sample_idx], plane_to_sphere)
+    orig_pc_raw = _denormalize_point_cloud(orig_pc_norm, norm_mean_full, norm_std_full)
+    orig_gs = _build_gaussian_model_from_point_cloud(orig_pc_raw.to(device), gaussian_model_cls, detach_input=True)
+
+    pred_pc_norm = plane_to_point_cloud(x0_pred[sample_idx].float(), plane_to_sphere)
+    pred_pc_raw = _denormalize_point_cloud(pred_pc_norm, norm_mean_pred, norm_std_pred)
+    pred_gs = pred_build_fn(pred_pc_raw.to(device), gaussian_model_cls, detach_input=True)
+
+    pipe = _PipeConfig()
+    background = torch.zeros(3, dtype=torch.float32, device=device)
+
+    view_count = max(1, int(num_cam))
+    cam_indices = random.sample(range(len(train_cameras)), min(view_count, len(train_cameras)))
+    rows = []
+
+    with torch.no_grad():
+        for ci in cam_indices:
+            cam = train_cameras[ci]
+            target = gs_render(cam, orig_gs, pipe, background)["render"]
+            pred = gs_render(cam, pred_gs, pipe, background)["render"]
+
+            target_np = (target.permute(1, 2, 0).clamp(0.0, 1.0).cpu().numpy() * 255.0).astype(np.uint8)
+            pred_np = (pred.permute(1, 2, 0).clamp(0.0, 1.0).cpu().numpy() * 255.0).astype(np.uint8)
+            column_separator = np.full((target_np.shape[0], 4, 3), 255, dtype=np.uint8)
+            rows.append(np.concatenate([target_np, column_separator, pred_np], axis=1))
+
+    if not rows:
+        return
+    if len(rows) == 1:
+        preview = rows[0]
+    else:
+        row_separator = np.full((4, rows[0].shape[1], 3), 255, dtype=np.uint8)
+        preview = np.concatenate(
+            [piece for row in rows[:-1] for piece in (row, row_separator)] + [rows[-1]],
+            axis=0,
+        )
+
+    preview_dir = os.path.join(output_dir, "dit_train_renders")
+    os.makedirs(preview_dir, exist_ok=True)
+    y_label = int(labels[sample_idx].item())
+    timestep = int(timesteps[sample_idx].item())
+    out_path = os.path.join(
+        preview_dir,
+        f"epoch_{epoch:03d}_step_{step:07d}_class{y_label:03d}_t{timestep:04d}.png",
+    )
+    latest_path = os.path.join(preview_dir, "latest.png")
+    Image.fromarray(preview).save(out_path)
+    Image.fromarray(preview).save(latest_path)
+    logger.info(
+        f"[train-render] saved: {out_path} (left=gt, right=pred, class={y_label}, t={timestep})"
+    )
+
+
 def _run_validation_render(
     model: nn.Module,
     plane_to_sphere: torch.Tensor,
@@ -206,6 +521,9 @@ def _run_validation_render(
     val_sampling_steps: int = 250,
 ) -> None:
     """Generate a sample from pure noise via full DDPM sampling, render and save as PNG."""
+    gs_render, camera_cls, gaussian_model_cls = renderer_tuple
+    build_fn = _build_gaussian_model_from_dc_only if dc_only else _build_gaussian_model_from_point_cloud
+
     # Create a respaced diffusion for faster validation sampling
     val_diffusion = create_diffusion(
         timestep_respacing=str(val_sampling_steps),
@@ -232,18 +550,18 @@ def _run_validation_render(
     if was_training:
         model.train()
 
-    # Build GS inputs from generated sample.
-    pred_pc = _plane_to_point_cloud_batch(sample.float(), plane_to_sphere)
+    # Build GS model from generated sample
+    pred_pc = plane_to_point_cloud(sample[0].float(), plane_to_sphere)
     pred_pc_raw = _denormalize_point_cloud(pred_pc, norm_mean, norm_std)
-    pred_gaussians = _point_clouds_to_gsplat_inputs(
-        pred_pc_raw.to(device),
-        dc_only=dc_only,
-        detach_input=True,
-    )
+    pred_gs = build_fn(pred_pc_raw.to(device), gaussian_model_cls, detach_input=True)
 
-    cam_indices = [random.randrange(int(train_cameras["viewmats"].shape[0]))]
+    # Render from a random camera
+    cam = train_cameras[random.randrange(len(train_cameras))]
+    pipe = _PipeConfig()
+    background = torch.zeros(3, dtype=torch.float32, device=device)
+
     with torch.no_grad():
-        pred_img = _render_gsplat_batch(renderer_tuple, pred_gaussians, train_cameras, cam_indices, device)[0, 0]
+        pred_img = gs_render(cam, pred_gs, pipe, background)["render"]  # (3, H, W)
 
     # Convert to numpy HWC and save
     pred_np = pred_img.permute(1, 2, 0).clamp(0.0, 1.0).cpu().numpy()
@@ -382,7 +700,7 @@ def main(args):
     # Create model
     if is_main:
         logger.info(f"Creating model: {args.model}")
-    model = DiT_3DGS_models[args.model](
+    model = JiT_3DGS_models[args.model](
         input_size=128,
         in_channels=in_channels,
         num_classes=num_classes,
@@ -409,6 +727,12 @@ def main(args):
     if is_main:
         logger.info(f"Diffusion timesteps: {diffusion.num_timesteps}, "
                      f"predict={'x0' if args.predict_xstart else 'eps'}")
+        logger.info(
+            "JiT timestep sampling: sigmoid(N(%.3f, %.3f)) mapped to discrete steps [0, %d]",
+            args.P_mean,
+            args.P_std,
+            diffusion.num_timesteps - 1,
+        )
 
     # Optimizer
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0)
@@ -434,7 +758,7 @@ def main(args):
             norm_mean = norm_mean_full
             norm_std = norm_std_full
 
-    # Render / validation setup (per-process; gsplat renderer is local)
+    # Render / validation setup (per-process; GS renderer is local)
     renderer_for_train = None
     lpips_fn_for_train = None
     train_cameras = None
@@ -442,7 +766,7 @@ def main(args):
     needs_renderer = use_render_loss or enable_val or enable_train_render_log
     if needs_renderer and device.type != "cuda":
         if is_main:
-            logger.info("[renderer] disabled: CUDA required for gsplat")
+            logger.info("[renderer] disabled: CUDA required for gaussian-splatting renderer")
         needs_renderer = False
         enable_val = False
     if needs_renderer:
@@ -450,9 +774,10 @@ def main(args):
         if is_main:
             logger.info(f"Loaded {len(ref_cameras)} reference cameras from {args.ref_camera_tar}")
         renderer_probe = _try_import_renderer()
-        if not isinstance(renderer_probe, Exception):
+        if isinstance(renderer_probe, tuple):
             renderer_for_train = renderer_probe
-            train_cameras = _prepare_train_cameras(ref_cameras, args.train_render_size, device)
+            _, camera_cls_for_train, _ = renderer_probe
+            train_cameras = _prepare_train_cameras(ref_cameras, camera_cls_for_train, args.train_render_size)
             if use_render_loss and args.lpips_loss_weight > 0.0:
                 lpips_probe = _try_import_lpips()
                 if isinstance(lpips_probe, Exception):
@@ -510,8 +835,8 @@ def main(args):
             hash_keys = list(hash_keys)
 
             with accelerator.accumulate(model):
-                # Sample random timesteps
-                t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
+                # Sample JiT-style timesteps instead of uniform discrete indices.
+                t = _sample_jit_timesteps(x.shape[0], diffusion.num_timesteps, device, args.P_mean, args.P_std)
                 noise = torch.randn_like(x)
 
                 # Forward pass (accelerate handles autocast)
@@ -712,11 +1037,11 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Train DiT for 3DGS generation')
+    parser = argparse.ArgumentParser(description='Train JiT for 3DGS generation')
 
     # Model
-    parser.add_argument('--model', type=str, default='DiT-B/8',
-                        choices=list(DiT_3DGS_models.keys()))
+    parser.add_argument('--model', type=str, default='JiT-B/16',
+                        choices=list(JiT_3DGS_models.keys()))
     parser.add_argument('--predict_xstart', action=argparse.BooleanOptionalAction, default=False,
                         help='Predict x0 directly instead of epsilon')
 
@@ -787,6 +1112,10 @@ if __name__ == '__main__':
                         help='Number of batches each DataLoader worker prefetches ahead when num_workers > 0. '
                              'Set <= 0 to disable the explicit override.')
     parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--P_mean', type=float, default=-0.8,
+                        help='Mean of the JiT logit-normal timestep sampler before sigmoid.')
+    parser.add_argument('--P_std', type=float, default=0.8,
+                        help='Stddev of the JiT logit-normal timestep sampler before sigmoid.')
 
     # Logging / Checkpoints / Validation
     parser.add_argument('--log_every', type=int, default=100)

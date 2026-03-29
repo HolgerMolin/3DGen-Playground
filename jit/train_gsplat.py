@@ -1,9 +1,9 @@
 """
-Training script for DiT on 3DGS data (class-conditional).
+Training script for JiT-style large-patch diffusion on 3DGS data (class-conditional).
 3DGS data (16384 points x 59 features) on 128x128 grid is the latent space directly — no VAE needed.
 
-Single-GPU:  python dit/train.py --obj_list ... --gs_path ...
-Multi-GPU:   accelerate launch [--num_processes N] dit/train.py --obj_list ... --gs_path ...
+Single-GPU:  python jit/train_gsplat.py --obj_list ... --gs_path ...
+Multi-GPU:   accelerate launch [--num_processes N] jit/train_gsplat.py --obj_list ... --gs_path ...
 """
 
 import argparse
@@ -43,8 +43,8 @@ from dataloaders.standard_3dgen_loader import Standard3DGenDataset
 from dataloaders.class_3dgen_loader import (
     Class3DGenDataset, DC_ONLY_FEATURE_INDICES, FULL_3DGS_FEATURE_DIM,
 )
-from dit.models import DiT_3DGS_models
-from dit.diffusion import create_diffusion
+from jit.models import JiT_3DGS_models
+from jit.diffusion import create_diffusion
 from utils.plane_utils import load_sphere2plane, plane_to_point_cloud
 from utils.gsplat_render_util import (
     _compute_render_loss_for_batch,
@@ -67,6 +67,11 @@ logger = logging.getLogger(__name__)
 #################################################################################
 #                          Rendering Loss Helpers                               #
 #################################################################################
+
+def _sample_jit_timesteps(batch_size: int, num_timesteps: int, device: torch.device, p_mean: float, p_std: float) -> torch.Tensor:
+    """Sample JiT-style logit-normal timesteps and map them onto discrete diffusion steps."""
+    probs = torch.sigmoid(torch.randn(batch_size, device=device) * p_std + p_mean)
+    return torch.clamp((probs * num_timesteps).long(), min=0, max=num_timesteps - 1)
 
 def _tensor_debug_summary(tensor: torch.Tensor) -> dict[str, Any]:
     """Summarize a tensor for non-finite debugging without dumping full contents."""
@@ -382,7 +387,7 @@ def main(args):
     # Create model
     if is_main:
         logger.info(f"Creating model: {args.model}")
-    model = DiT_3DGS_models[args.model](
+    model = JiT_3DGS_models[args.model](
         input_size=128,
         in_channels=in_channels,
         num_classes=num_classes,
@@ -409,6 +414,12 @@ def main(args):
     if is_main:
         logger.info(f"Diffusion timesteps: {diffusion.num_timesteps}, "
                      f"predict={'x0' if args.predict_xstart else 'eps'}")
+        logger.info(
+            "JiT timestep sampling: sigmoid(N(%.3f, %.3f)) mapped to discrete steps [0, %d]",
+            args.P_mean,
+            args.P_std,
+            diffusion.num_timesteps - 1,
+        )
 
     # Optimizer
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0)
@@ -510,8 +521,8 @@ def main(args):
             hash_keys = list(hash_keys)
 
             with accelerator.accumulate(model):
-                # Sample random timesteps
-                t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
+                # Sample JiT-style timesteps instead of uniform discrete indices.
+                t = _sample_jit_timesteps(x.shape[0], diffusion.num_timesteps, device, args.P_mean, args.P_std)
                 noise = torch.randn_like(x)
 
                 # Forward pass (accelerate handles autocast)
@@ -712,11 +723,11 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Train DiT for 3DGS generation')
+    parser = argparse.ArgumentParser(description='Train JiT for 3DGS generation')
 
     # Model
-    parser.add_argument('--model', type=str, default='DiT-B/8',
-                        choices=list(DiT_3DGS_models.keys()))
+    parser.add_argument('--model', type=str, default='JiT-B/8',
+                        choices=list(JiT_3DGS_models.keys()))
     parser.add_argument('--predict_xstart', action=argparse.BooleanOptionalAction, default=False,
                         help='Predict x0 directly instead of epsilon')
 
@@ -787,6 +798,10 @@ if __name__ == '__main__':
                         help='Number of batches each DataLoader worker prefetches ahead when num_workers > 0. '
                              'Set <= 0 to disable the explicit override.')
     parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--P_mean', type=float, default=-0.8,
+                        help='Mean of the JiT logit-normal timestep sampler before sigmoid.')
+    parser.add_argument('--P_std', type=float, default=0.8,
+                        help='Stddev of the JiT logit-normal timestep sampler before sigmoid.')
 
     # Logging / Checkpoints / Validation
     parser.add_argument('--log_every', type=int, default=100)

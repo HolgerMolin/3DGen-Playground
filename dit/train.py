@@ -41,10 +41,10 @@ if GS_ROOT not in sys.path:
 from dataloaders.standard_3dgen_loader import Standard3DGenDataset
 from dataloaders.class_3dgen_loader import (
     Class3DGenDataset, DC_ONLY_FEATURE_INDICES, FULL_3DGS_FEATURE_DIM,
-    load_sphere2plane, plane_to_point_cloud,
 )
 from dit.models import DiT_3DGS_models
 from dit.diffusion import create_diffusion
+from utils.plane_utils import load_sphere2plane, plane_to_point_cloud
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -632,6 +632,7 @@ def main(args):
         caption_path=None,
         mean_file=args.mean_file,
         std_file=args.std_file,
+        sphere2plane_path=args.sphere2plane_path,
     )
 
     # Resolve feature indices for sh_degree0_only
@@ -645,7 +646,12 @@ def main(args):
         in_channels = FULL_3DGS_FEATURE_DIM
 
     # Load sphere2plane permutation
-    num_points = base_dataset[0]['point_cloud'].shape[0]
+    point_cloud_shape = tuple(base_dataset[0]['point_cloud'].shape)
+    num_points = (
+        int(point_cloud_shape[-2] * point_cloud_shape[-1])
+        if len(point_cloud_shape) == 3
+        else int(point_cloud_shape[0])
+    )
     plane_to_sphere = load_sphere2plane(args.sphere2plane_path, num_points)
     if is_main:
         logger.info(f"Loaded sphere2plane permutation: {num_points} points")
@@ -660,7 +666,6 @@ def main(args):
     # Wrap with class-conditional dataset
     dataset = Class3DGenDataset(
         base_dataset, class_map,
-        plane_to_sphere=plane_to_sphere,
         feature_indices=feature_indices,
         return_full_for_render=((use_render_loss or enable_train_render_log) and feature_indices is not None),
         preload_to_cpu=args.preload_to_cpu,
