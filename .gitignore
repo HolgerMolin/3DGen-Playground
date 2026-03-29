@@ -2,6 +2,7 @@
 helper/
 output/
 vae2d/
+playground/
 
 # macOS
 .DS_Store
