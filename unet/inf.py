@@ -29,7 +29,7 @@ from dataloaders.class_3dgen_loader import (  # noqa: E402
     FULL_3DGS_FEATURE_DIM,
 )
 from unet.models import GAUSSIANVERSE_UNET_PRESETS, build_gaussianverse_unet  # noqa: E402
-from unet.sampling import resolve_sampling_shape, sample_with_dpm  # noqa: E402
+from unet.sampling import SAMPLER_CHOICES, resolve_sampling_shape, sample_model  # noqa: E402
 from utils.plane_utils import load_sphere2plane  # noqa: E402
 
 
@@ -420,7 +420,7 @@ def _build_runtime_config(args: argparse.Namespace, saved_args: dict[str, Any]) 
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Load a pretrained GaussianVerse UNet and run DPM inference.")
+    parser = argparse.ArgumentParser(description="Load a pretrained GaussianVerse UNet and run sampler-based inference.")
 
     parser.add_argument("--checkpoint", type=str, required=True, help="Path to a UNet training checkpoint.")
     parser.add_argument("--results_dir", type=str, default="output/unet_inference_gsplat")
@@ -478,7 +478,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="Rendering resolution.",
     )
 
-    parser.add_argument("--num_inference_steps", type=int, default=40, help="Number of DPM sampling steps.")
+    parser.add_argument(
+        "--sampler",
+        type=str,
+        default="dpm",
+        choices=SAMPLER_CHOICES,
+        help="Sampling algorithm. 'ddpm' is the simpler ancestral baseline; 'dpm' is faster.",
+    )
+    parser.add_argument("--num_inference_steps", type=int, default=40, help="Number of sampling steps.")
     parser.add_argument("--num_render_views", type=int, default=4, help="Number of rendered views to save.")
     parser.add_argument("--class_label", type=int, default=None, help="Explicit class label. Defaults to a random valid class.")
     parser.add_argument("--seed", type=int, default=0, help="Random seed used for class choice and sampling.")
@@ -491,33 +498,39 @@ def build_parser() -> argparse.ArgumentParser:
         help="Inference parameter dtype.",
     )
 
-    parser.add_argument("--dpm_solver_order", type=int, default=2, choices=[1, 2, 3], help="DPM solver order.")
+    parser.add_argument(
+        "--dpm_solver_order",
+        type=int,
+        default=2,
+        choices=[1, 2, 3],
+        help="DPM solver order. Only used when --sampler=dpm.",
+    )
     parser.add_argument(
         "--dpm_algorithm_type",
         type=str,
         default="dpmsolver++",
         choices=["dpmsolver", "dpmsolver++", "sde-dpmsolver", "sde-dpmsolver++"],
-        help="DPM algorithm variant.",
+        help="DPM algorithm variant. Only used when --sampler=dpm.",
     )
     parser.add_argument(
         "--dpm_solver_type",
         type=str,
         default="midpoint",
         choices=["midpoint", "heun"],
-        help="DPM solver type.",
+        help="DPM solver type. Only used when --sampler=dpm.",
     )
     parser.add_argument(
         "--dpm_timestep_spacing",
         type=str,
         default="trailing",
         choices=["linspace", "leading", "trailing"],
-        help="Diffusers timestep spacing.",
+        help="Diffusers timestep spacing. Only used when --sampler=dpm.",
     )
     parser.add_argument(
         "--dpm_use_karras_sigmas",
         action=argparse.BooleanOptionalAction,
         default=False,
-        help="Enable Karras sigmas in the DPM scheduler.",
+        help="Enable Karras sigmas in the DPM scheduler. Only used when --sampler=dpm.",
     )
     return parser
 
@@ -655,12 +668,13 @@ def main(args: argparse.Namespace) -> None:
 
     logger.info("Loaded checkpoint: %s", checkpoint_path)
     logger.info("Using state dict: %s (%s)", loaded_state_key, loaded_state_variant)
-    logger.info("Sampling class=%d with %d DPM steps", class_label, args.num_inference_steps)
+    logger.info("Sampling class=%d with sampler=%s steps=%d", class_label, args.sampler, args.num_inference_steps)
     logger.info("Output directory: %s", output_dir)
 
     y = torch.tensor([class_label], dtype=torch.long, device=device)
     with torch.inference_mode():
-        sample = sample_with_dpm(
+        sample = sample_model(
+            sampler=args.sampler,
             model=model,
             shape=sample_shape,
             class_labels=y,
@@ -718,6 +732,7 @@ def main(args: argparse.Namespace) -> None:
             "seed": args.seed,
             "device": str(device),
             "mixed_precision": resolved_mixed_precision,
+            "sampler": args.sampler,
             "num_inference_steps": args.num_inference_steps,
             "num_render_views": len(cam_indices),
             "render_camera_indices": cam_indices,

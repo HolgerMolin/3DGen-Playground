@@ -5,7 +5,10 @@ from typing import Optional
 import torch
 from diffusers import DPMSolverMultistepScheduler
 
+from dit.diffusion import create_diffusion
 from dit.diffusion.gaussian_diffusion import get_named_beta_schedule
+
+SAMPLER_CHOICES = ("dpm", "ddpm")
 
 
 def resolve_sampling_shape(
@@ -92,6 +95,24 @@ def build_dpm_scheduler(
     )
 
 
+def build_ddpm_diffusion(
+    *,
+    predict_xstart: bool,
+    noise_schedule: str = "linear",
+    diffusion_steps: int = 1000,
+    num_inference_steps: int = 1000,
+):
+    if num_inference_steps < 1:
+        raise ValueError(f"num_inference_steps must be >= 1, got {num_inference_steps}")
+    return create_diffusion(
+        timestep_respacing=str(num_inference_steps),
+        noise_schedule=noise_schedule,
+        learn_sigma=False,
+        predict_xstart=predict_xstart,
+        diffusion_steps=diffusion_steps,
+    )
+
+
 @torch.no_grad()
 def sample_with_dpm(
     *,
@@ -150,3 +171,108 @@ def sample_with_dpm(
         model.train()
 
     return sample
+
+
+@torch.no_grad()
+def sample_with_ddpm(
+    *,
+    model: torch.nn.Module,
+    shape: tuple[int, ...],
+    class_labels: torch.Tensor,
+    num_inference_steps: int,
+    device: torch.device,
+    predict_xstart: bool,
+    noise_schedule: str = "linear",
+    diffusion_steps: int = 1000,
+    generator: Optional[torch.Generator] = None,
+) -> torch.Tensor:
+    shape = _validate_sampling_shape(model, shape)
+    diffusion = build_ddpm_diffusion(
+        predict_xstart=predict_xstart,
+        noise_schedule=noise_schedule,
+        diffusion_steps=diffusion_steps,
+        num_inference_steps=num_inference_steps,
+    )
+
+    sample_dtype = next(model.parameters()).dtype
+    sample = torch.randn(shape, device=device, dtype=torch.float32, generator=generator)
+
+    was_training = model.training
+    model.eval()
+    model_kwargs = {"y": class_labels}
+
+    def model_fn(x: torch.Tensor, t: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        return model(x.to(dtype=sample_dtype), t, y)
+
+    for timestep in reversed(range(diffusion.num_timesteps)):
+        timestep_batch = torch.full(
+            (shape[0],),
+            timestep,
+            device=device,
+            dtype=torch.long,
+        )
+        out = diffusion.p_mean_variance(
+            model_fn,
+            sample,
+            timestep_batch,
+            clip_denoised=False,
+            model_kwargs=model_kwargs,
+        )
+        noise = torch.randn(sample.shape, device=device, dtype=sample.dtype, generator=generator)
+        nonzero_mask = (timestep_batch != 0).to(dtype=sample.dtype).view(-1, *([1] * (sample.ndim - 1)))
+        sample = out["mean"] + nonzero_mask * torch.exp(0.5 * out["log_variance"]) * noise
+    if was_training:
+        model.train()
+
+    return sample
+
+
+@torch.no_grad()
+def sample_model(
+    *,
+    sampler: str,
+    model: torch.nn.Module,
+    shape: tuple[int, ...],
+    class_labels: torch.Tensor,
+    num_inference_steps: int,
+    device: torch.device,
+    predict_xstart: bool,
+    noise_schedule: str = "linear",
+    diffusion_steps: int = 1000,
+    solver_order: int = 2,
+    algorithm_type: str = "dpmsolver++",
+    solver_type: str = "midpoint",
+    timestep_spacing: str = "trailing",
+    use_karras_sigmas: bool = False,
+    generator: Optional[torch.Generator] = None,
+) -> torch.Tensor:
+    if sampler == "dpm":
+        return sample_with_dpm(
+            model=model,
+            shape=shape,
+            class_labels=class_labels,
+            num_inference_steps=num_inference_steps,
+            device=device,
+            predict_xstart=predict_xstart,
+            noise_schedule=noise_schedule,
+            diffusion_steps=diffusion_steps,
+            solver_order=solver_order,
+            algorithm_type=algorithm_type,
+            solver_type=solver_type,
+            timestep_spacing=timestep_spacing,
+            use_karras_sigmas=use_karras_sigmas,
+            generator=generator,
+        )
+    if sampler == "ddpm":
+        return sample_with_ddpm(
+            model=model,
+            shape=shape,
+            class_labels=class_labels,
+            num_inference_steps=num_inference_steps,
+            device=device,
+            predict_xstart=predict_xstart,
+            noise_schedule=noise_schedule,
+            diffusion_steps=diffusion_steps,
+            generator=generator,
+        )
+    raise ValueError(f"Unknown sampler {sampler!r}. Available samplers: {', '.join(SAMPLER_CHOICES)}")
