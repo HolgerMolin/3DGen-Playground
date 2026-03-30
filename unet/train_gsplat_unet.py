@@ -1195,9 +1195,11 @@ def main(args) -> None:
                     and step >= args.enable_render_loss_after
                 )
 
-                x0_pred = None
+                x0_pred = loss_dict.get("pred_xstart")
+                if x0_pred is not None:
+                    x0_pred = x0_pred.float()
                 x_gt_for_render = x_full if x_full is not None else x
-                if should_compute_render:
+                if should_compute_render and x0_pred is None:
                     noise_for_render = torch.randn_like(x)
                     x_t = diffusion.q_sample(x, t, noise=noise_for_render)
                     model_out = model(x_t, t, y)

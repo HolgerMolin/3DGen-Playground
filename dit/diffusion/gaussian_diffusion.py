@@ -723,6 +723,8 @@ class GaussianDiffusion:
         :param noise: if specified, the specific Gaussian noise to try to remove.
         :return: a dict with the key "loss" containing a tensor of shape [N].
                  Some mean or variance settings may also have other keys.
+                 When available, "pred_xstart" contains the model's x_0 prediction
+                 from the same forward pass used to compute the loss.
         """
         if model_kwargs is None:
             model_kwargs = {}
@@ -777,6 +779,10 @@ class GaussianDiffusion:
             }[self.model_mean_type]
             assert model_output.shape == target.shape == x_start.shape
             terms["mse"] = mean_flat((target - model_output) ** 2)
+            if self.model_mean_type == ModelMeanType.START_X:
+                terms["pred_xstart"] = model_output
+            elif self.model_mean_type == ModelMeanType.EPSILON:
+                terms["pred_xstart"] = self._predict_xstart_from_eps(x_t, t, model_output)
             if "vb" in terms:
                 terms["loss"] = terms["mse"] + terms["vb"]
             else:
