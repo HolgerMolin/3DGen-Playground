@@ -231,6 +231,21 @@ def _capture_rng_state() -> dict[str, Any]:
     return state
 
 
+def _coerce_rng_byte_tensor(value: Any, *, name: str) -> torch.ByteTensor:
+    if isinstance(value, (bytes, bytearray)):
+        tensor = torch.tensor(list(value), dtype=torch.uint8)
+    elif torch.is_tensor(value):
+        tensor = value.detach()
+    else:
+        try:
+            tensor = torch.as_tensor(value)
+        except Exception as exc:
+            raise TypeError(f"{name} must be convertible to a torch.ByteTensor, got {type(value)!r}") from exc
+
+    tensor = tensor.to(device="cpu", dtype=torch.uint8).contiguous().view(-1)
+    return tensor
+
+
 def _restore_rng_state(state: Optional[dict[str, Any]], *, is_main: bool) -> None:
     if not state:
         return
@@ -245,12 +260,19 @@ def _restore_rng_state(state: Optional[dict[str, Any]], *, is_main: bool) -> Non
 
     torch_cpu_state = state.get("torch_cpu")
     if torch_cpu_state is not None:
-        torch.set_rng_state(torch_cpu_state)
+        torch.set_rng_state(_coerce_rng_byte_tensor(torch_cpu_state, name="torch_cpu"))
 
     torch_cuda_state = state.get("torch_cuda")
     if torch_cuda_state is not None:
         if torch.cuda.is_available():
-            torch.cuda.set_rng_state_all(torch_cuda_state)
+            if torch.is_tensor(torch_cuda_state) or isinstance(torch_cuda_state, (bytes, bytearray)):
+                cuda_states = [_coerce_rng_byte_tensor(torch_cuda_state, name="torch_cuda")]
+            else:
+                cuda_states = [
+                    _coerce_rng_byte_tensor(item, name=f"torch_cuda[{index}]")
+                    for index, item in enumerate(torch_cuda_state)
+                ]
+            torch.cuda.set_rng_state_all(cuda_states)
         elif is_main:
             logger.warning("Checkpoint contains CUDA RNG state but CUDA is unavailable; skipping CUDA RNG restore")
 
