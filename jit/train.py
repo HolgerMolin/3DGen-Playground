@@ -44,6 +44,7 @@ from dataloaders.class_3dgen_loader import (
 )
 from jit.models import JiT_3DGS_models
 from jit.diffusion import create_diffusion
+from jit.sampling import SAMPLER_CHOICES, resolve_sampling_shape, sample_model
 from utils.plane_utils import load_sphere2plane, plane_to_point_cloud
 
 
@@ -518,37 +519,38 @@ def _run_validation_render(
     num_classes: int,
     dc_only: bool = False,
     predict_xstart: bool = False,
-    val_sampling_steps: int = 250,
+    noise_schedule: str = "linear",
+    val_sampling_steps: int = 40,
+    val_sampler: str = "dpm",
+    dpm_solver_order: int = 2,
+    dpm_algorithm_type: str = "dpmsolver++",
+    dpm_solver_type: str = "midpoint",
+    dpm_timestep_spacing: str = "trailing",
+    dpm_use_karras_sigmas: bool = False,
 ) -> None:
-    """Generate a sample from pure noise via full DDPM sampling, render and save as PNG."""
+    """Generate a validation sample, render it, and save the result."""
     gs_render, camera_cls, gaussian_model_cls = renderer_tuple
     build_fn = _build_gaussian_model_from_dc_only if dc_only else _build_gaussian_model_from_point_cloud
 
-    # Create a respaced diffusion for faster validation sampling
-    val_diffusion = create_diffusion(
-        timestep_respacing=str(val_sampling_steps),
-        learn_sigma=False,
-        predict_xstart=predict_xstart,
-    )
-
-    # Randomly sample a class label
     y_label = random.randrange(num_classes)
     y = torch.tensor([y_label], dtype=torch.long, device=device)
 
-    # Full sampling from pure Gaussian noise
-    shape = (1, in_channels, 128, 128)
-    was_training = model.training
-    model.eval()
-    with torch.no_grad():
-        sample = val_diffusion.p_sample_loop(
-            model,
-            shape,
-            clip_denoised=False,
-            model_kwargs=dict(y=y),
-            device=device,
-        )
-    if was_training:
-        model.train()
+    shape = resolve_sampling_shape(model=model, batch_size=1, in_channels=in_channels)
+    sample = sample_model(
+        sampler=val_sampler,
+        model=model,
+        shape=shape,
+        class_labels=y,
+        num_inference_steps=val_sampling_steps,
+        device=device,
+        predict_xstart=predict_xstart,
+        noise_schedule=noise_schedule,
+        solver_order=dpm_solver_order,
+        algorithm_type=dpm_algorithm_type,
+        solver_type=dpm_solver_type,
+        timestep_spacing=dpm_timestep_spacing,
+        use_karras_sigmas=dpm_use_karras_sigmas,
+    )
 
     # Build GS model from generated sample
     pred_pc = plane_to_point_cloud(sample[0].float(), plane_to_sphere)
@@ -571,7 +573,13 @@ def _run_validation_render(
     os.makedirs(val_dir, exist_ok=True)
     out_path = os.path.join(val_dir, f"epoch_{epoch:03d}_step_{step:07d}_class{y_label:03d}.png")
     Image.fromarray(img_uint8).save(out_path)
-    logger.info(f"[validation] saved: {out_path} (class={y_label}, steps={val_sampling_steps})")
+    logger.info(
+        "[validation] saved: %s (class=%d, sampler=%s, steps=%d)",
+        out_path,
+        y_label,
+        val_sampler,
+        val_sampling_steps,
+    )
 
 
 
@@ -610,6 +618,7 @@ def main(args):
     if is_main:
         logger.info(f"Accelerator: num_processes={accelerator.num_processes}, "
                      f"mixed_precision={accelerator.mixed_precision}, device={device}")
+        logger.info("Validation sampler: %s", args.val_sampler)
 
     # Seed for reproducibility (accelerate handles per-process offset)
     set_seed(args.seed)
@@ -721,12 +730,14 @@ def main(args):
     # Create diffusion
     diffusion = create_diffusion(
         timestep_respacing="",  # use all 1000 timesteps for training
+        noise_schedule=args.noise_schedule,
         learn_sigma=False,
         predict_xstart=args.predict_xstart,
     )
     if is_main:
         logger.info(f"Diffusion timesteps: {diffusion.num_timesteps}, "
-                     f"predict={'x0' if args.predict_xstart else 'eps'}")
+                     f"predict={'x0' if args.predict_xstart else 'eps'}, "
+                     f"schedule={args.noise_schedule}")
         logger.info(
             "JiT timestep sampling: sigmoid(N(%.3f, %.3f)) mapped to discrete steps [0, %d]",
             args.P_mean,
@@ -876,9 +887,11 @@ def main(args):
                     and use_render_loss
                     and step >= args.enable_render_loss_after
                 )
-                x0_pred = None
+                x0_pred = loss_dict.get("pred_xstart")
+                if x0_pred is not None:
+                    x0_pred = x0_pred.float()
                 x_gt_for_render = x_full if x_full is not None else x
-                if should_compute_render:
+                if should_compute_render and x0_pred is None:
                     noise_for_render = torch.randn_like(x)
                     x_t = diffusion.q_sample(x, t, noise=noise_for_render)
                     model_out = model(x_t, t, y)
@@ -1020,7 +1033,14 @@ def main(args):
                     num_classes=num_classes,
                     dc_only=dc_only,
                     predict_xstart=args.predict_xstart,
+                    noise_schedule=args.noise_schedule,
                     val_sampling_steps=args.val_sampling_steps,
+                    val_sampler=args.val_sampler,
+                    dpm_solver_order=args.dpm_solver_order,
+                    dpm_algorithm_type=args.dpm_algorithm_type,
+                    dpm_solver_type=args.dpm_solver_type,
+                    dpm_timestep_spacing=args.dpm_timestep_spacing,
+                    dpm_use_karras_sigmas=args.dpm_use_karras_sigmas,
                 )
 
     # Save final checkpoint
@@ -1044,6 +1064,13 @@ if __name__ == '__main__':
                         choices=list(JiT_3DGS_models.keys()))
     parser.add_argument('--predict_xstart', action=argparse.BooleanOptionalAction, default=False,
                         help='Predict x0 directly instead of epsilon')
+    parser.add_argument(
+        '--noise_schedule',
+        type=str,
+        default='linear',
+        choices=['linear', 'squaredcos_cap_v2'],
+        help='Beta schedule for diffusion noise',
+    )
 
     # Data
     parser.add_argument('--obj_list', type=str, required=True,
@@ -1122,8 +1149,24 @@ if __name__ == '__main__':
     parser.add_argument('--ckpt_every', type=int, default=10000)
     parser.add_argument('--val_every', type=int, default=0,
                         help='Steps between validation renders (0 = disabled)')
-    parser.add_argument('--val_sampling_steps', type=int, default=250,
+    parser.add_argument('--val_sampling_steps', type=int, default=40,
                         help='Number of diffusion steps for validation sampling')
+    parser.add_argument('--val_sampler', type=str, default='dpm',
+                        choices=SAMPLER_CHOICES,
+                        help='Sampler used for validation generation')
+    parser.add_argument('--dpm_solver_order', type=int, default=2, choices=[1, 2, 3],
+                        help='Diffusers DPM solver order')
+    parser.add_argument('--dpm_algorithm_type', type=str, default='dpmsolver++',
+                        choices=['dpmsolver', 'dpmsolver++', 'sde-dpmsolver', 'sde-dpmsolver++'],
+                        help='Diffusers DPM algorithm variant')
+    parser.add_argument('--dpm_solver_type', type=str, default='midpoint',
+                        choices=['midpoint', 'heun'],
+                        help='Diffusers DPM solver type')
+    parser.add_argument('--dpm_timestep_spacing', type=str, default='trailing',
+                        choices=['linspace', 'leading', 'trailing'],
+                        help='Diffusers timestep spacing for DPM sampling')
+    parser.add_argument('--dpm_use_karras_sigmas', action=argparse.BooleanOptionalAction, default=False,
+                        help='Enable Karras sigmas in the diffusers DPM scheduler')
     parser.add_argument('--results_dir', type=str, default='output/dit_results')
 
     # Resume

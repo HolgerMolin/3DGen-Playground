@@ -58,4 +58,6 @@ $CMD jit/train.py \
     --train_render_log_every $TRAIN_RENDER_LOG_EVERY \
     --train_render_log_num_cam $TRAIN_RENDER_LOG_NUM_CAM \
     --val_every 1000 \
+    --val_sampler dpm \
+    --val_sampling_steps 40 \
     --results_dir $RESULTS_DIR
