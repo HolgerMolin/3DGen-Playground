@@ -330,6 +330,9 @@ class DiT(nn.Module):
         self.learn_sigma = learn_sigma
         self.input_size = input_size
         self.sample_size = input_size
+        # JiT operates directly on the full 128x128 latent grid. Patchification is tokenization only,
+        # not UNet/DiT-style spatial folding.
+        self.spatial_fold_factor = 1
         self.in_channels = in_channels
         self.out_channels = in_channels * 2 if learn_sigma else in_channels
         self.patch_size = patch_size

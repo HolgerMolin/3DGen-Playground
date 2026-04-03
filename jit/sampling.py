@@ -19,11 +19,17 @@ def resolve_sampling_shape(
     batch_size: int,
     in_channels: int,
 ) -> tuple[int, int, int, int]:
+    spatial_fold_factor = int(getattr(model, "spatial_fold_factor", 1))
     sample_size = int(getattr(model, "sample_size", getattr(model, "input_size", 128)))
     model_in_channels = int(getattr(model, "in_channels", in_channels))
 
     if batch_size < 1:
         raise ValueError(f"batch_size must be >= 1, got {batch_size}")
+    if spatial_fold_factor != 1:
+        raise ValueError(
+            f"JiT sampling does not support spatial folding; expected spatial_fold_factor=1, "
+            f"got {spatial_fold_factor}"
+        )
     if model_in_channels != in_channels:
         raise ValueError(
             f"Model in_channels={model_in_channels} does not match expected input channels={in_channels}"

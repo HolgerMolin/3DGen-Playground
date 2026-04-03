@@ -330,20 +330,30 @@ def _save_checkpoint(
     step: int,
     steps_per_epoch: int,
 ) -> None:
-    torch.save(
-        {
-            "model": _model_state_dict_for_checkpoint(raw_model),
-            "ema": ema.state_dict(),
-            "opt": opt.state_dict(),
-            "lr_scheduler": lr_scheduler.state_dict(),
-            "args": vars(args),
-            "step": step,
-            "epoch": step // steps_per_epoch,
-            "step_in_epoch": step % steps_per_epoch,
-            "rng_state": _capture_rng_state(),
-        },
-        ckpt_path,
-    )
+    ckpt_dir = os.path.dirname(ckpt_path) or "."
+    os.makedirs(ckpt_dir, exist_ok=True)
+    tmp_path = f"{ckpt_path}.tmp-{os.getpid()}-{time.time_ns()}"
+    payload = {
+        "model": _model_state_dict_for_checkpoint(raw_model),
+        "ema": ema.state_dict(),
+        "opt": opt.state_dict(),
+        "lr_scheduler": lr_scheduler.state_dict(),
+        "args": vars(args),
+        "step": step,
+        "epoch": step // steps_per_epoch,
+        "step_in_epoch": step % steps_per_epoch,
+        "rng_state": _capture_rng_state(),
+    }
+    try:
+        torch.save(payload, tmp_path)
+        os.replace(tmp_path, ckpt_path)
+    except Exception:
+        try:
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 def _build_dynamo_plugin(args) -> Optional[TorchDynamoPlugin]:

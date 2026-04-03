@@ -3,8 +3,10 @@ source .env
 
 cd "$REPO_ROOT"
 
+CHECKPOINT_PATH="${UNET_INF_CHECKPOINT:-output/unet_results_gsplat}"
+
 python unet/inf.py \
-    --checkpoint output/unet_results_gsplat/0030000.pt \
+    --checkpoint "$CHECKPOINT_PATH" \
     --results_dir output/unet_inference_gsplat \
     --state_key auto \
     --sampler ddpm \

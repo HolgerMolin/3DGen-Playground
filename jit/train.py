@@ -716,6 +716,13 @@ def main(args):
         learn_sigma=False,
         gradient_checkpointing=args.gradient_checkpointing,
     )
+    spatial_fold_factor = int(getattr(model, "spatial_fold_factor", 1))
+    if spatial_fold_factor != 1:
+        raise ValueError(
+            f"JiT training expects no spatial folding; expected spatial_fold_factor=1, got {spatial_fold_factor}"
+        )
+    if is_main:
+        logger.info("JiT spatial folding: disabled (factor=%d)", spatial_fold_factor)
 
     # Count parameters
     total_params = sum(p.numel() for p in model.parameters())

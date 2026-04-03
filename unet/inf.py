@@ -8,6 +8,7 @@ import os
 import random
 import sys
 import time
+import zipfile
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Optional
@@ -276,6 +277,91 @@ def _require_path(path: Optional[str], name: str) -> str:
     return resolved
 
 
+def _checkpoint_sort_key(path: Path) -> tuple[int, int, str]:
+    stem = path.stem
+    if stem.isdigit():
+        return (1, int(stem), stem)
+    return (0, -1, stem)
+
+
+def _checkpoint_archive_issue(checkpoint_path: Path) -> Optional[str]:
+    try:
+        stat_result = checkpoint_path.stat()
+    except OSError as exc:
+        return str(exc)
+
+    if stat_result.st_size == 0:
+        return "file is empty"
+
+    try:
+        with checkpoint_path.open("rb") as handle:
+            signature = handle.read(4)
+    except OSError as exc:
+        return str(exc)
+
+    if signature != b"PK\x03\x04":
+        return None
+
+    try:
+        with zipfile.ZipFile(checkpoint_path) as archive:
+            names = archive.namelist()
+    except (OSError, RuntimeError, zipfile.BadZipFile, zipfile.LargeZipFile) as exc:
+        return str(exc)
+
+    if not any(name.endswith("/data.pkl") or name == "data.pkl" for name in names):
+        return "missing data.pkl in checkpoint archive"
+    return None
+
+
+def _find_latest_valid_checkpoint(checkpoint_dir: Path) -> Optional[Path]:
+    candidates = sorted(checkpoint_dir.glob("*.pt"), key=_checkpoint_sort_key, reverse=True)
+    for candidate in candidates:
+        issue = _checkpoint_archive_issue(candidate)
+        if issue is None:
+            return candidate
+        logger.warning("Skipping unreadable checkpoint %s: %s", candidate, issue)
+    return None
+
+
+def _format_checkpoint_load_error(checkpoint_path: Path, detail: str) -> str:
+    suggestion = ""
+    sibling = _find_latest_valid_checkpoint(checkpoint_path.parent)
+    if sibling is not None and sibling != checkpoint_path:
+        suggestion = f" Latest valid sibling checkpoint: {sibling}."
+    return (
+        f"Checkpoint is not readable: {checkpoint_path} ({detail}). "
+        "This usually means training was interrupted while writing the file."
+        f"{suggestion} Pass the checkpoint directory to --checkpoint to auto-select the newest valid checkpoint."
+    )
+
+
+def _resolve_checkpoint_path(path: str) -> str:
+    resolved = Path(_require_path(path, "checkpoint"))
+    if resolved.is_dir():
+        latest_valid = _find_latest_valid_checkpoint(resolved)
+        if latest_valid is None:
+            raise FileNotFoundError(f"No readable .pt checkpoint found in directory: {resolved}")
+        logger.info("Resolved checkpoint directory %s to %s", resolved, latest_valid)
+        return str(latest_valid)
+
+    if not resolved.is_file():
+        raise FileNotFoundError(f"checkpoint is neither a file nor a directory: {resolved}")
+    return str(resolved)
+
+
+def _load_checkpoint(path: str) -> tuple[str, Any]:
+    checkpoint_path = Path(_resolve_checkpoint_path(path))
+    archive_issue = _checkpoint_archive_issue(checkpoint_path)
+    if archive_issue is not None:
+        raise RuntimeError(_format_checkpoint_load_error(checkpoint_path, archive_issue))
+
+    try:
+        checkpoint = torch.load(str(checkpoint_path), map_location="cpu", weights_only=False)
+    except RuntimeError as exc:
+        raise RuntimeError(_format_checkpoint_load_error(checkpoint_path, str(exc))) from exc
+    return str(checkpoint_path), checkpoint
+
+
 def _resolve_device(device_arg: Optional[str]) -> torch.device:
     if device_arg:
         return torch.device(device_arg)
@@ -422,7 +508,12 @@ def _build_runtime_config(args: argparse.Namespace, saved_args: dict[str, Any]) 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Load a pretrained GaussianVerse UNet and run sampler-based inference.")
 
-    parser.add_argument("--checkpoint", type=str, required=True, help="Path to a UNet training checkpoint.")
+    parser.add_argument(
+        "--checkpoint",
+        type=str,
+        required=True,
+        help="Path to a UNet training checkpoint, or a directory containing step-named .pt checkpoints.",
+    )
     parser.add_argument("--results_dir", type=str, default="output/unet_inference_gsplat")
     parser.add_argument("--sample_name", type=str, default=None, help="Optional output subdirectory name.")
     parser.add_argument(
@@ -536,8 +627,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(args: argparse.Namespace) -> None:
-    checkpoint_path = _require_path(args.checkpoint, "checkpoint")
-    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+    checkpoint_path, checkpoint = _load_checkpoint(args.checkpoint)
     saved_args = checkpoint.get("args", {}) if isinstance(checkpoint, dict) and isinstance(checkpoint.get("args"), dict) else {}
     config = _build_runtime_config(args, saved_args)
     runtime_config = _runtime_config_as_dict(config)
