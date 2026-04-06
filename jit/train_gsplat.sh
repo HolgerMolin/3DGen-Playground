@@ -81,7 +81,7 @@ PY_ARGS=(
     --sh_degree0_only
     --predict_xstart
     --noise_schedule squaredcos_cap_v2
-    --enable_render_loss_after 0
+    --enable_render_loss_after 5000
     --render_loss_weight 10.0
     --alpha_mask_loss_weight 10.0
     --lpips_loss_weight 10.0
@@ -90,11 +90,11 @@ PY_ARGS=(
     --train_render_size 512
     --ref_camera_tar "$REF_CAMERA_TAR"
     --epochs 1000
-    --batch_size 32
+    --batch_size 8
     --lr 5e-5
     --ema_decay 0.9999
     --mixed_precision "$MIXED_PRECISION"
-    --gradient_accumulation_steps 1
+    --gradient_accumulation_steps 4
     --num_workers 2
     --seed 0
     --log_every 100
