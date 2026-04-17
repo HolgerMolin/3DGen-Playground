@@ -1,0 +1,91 @@
+# JiT `train_gsplat.py` hyperparameters — matches argparse defaults in jit/train_gsplat.py.
+# Precedence: CLI > this file > argparse defaults.
+#
+# Required paths (obj_list, gs_path) are supplied by train_gsplat.sh + .env or on the CLI.
+#
+# Older train_gsplat.sh hard-coded (for reference): epochs 1000, batch_size 8, lr 5e-5,
+# squaredcos_cap_v2, sh_degree0_only + predict_xstart, render weights 10.0, train_render_size 512,
+# enable_render_loss_after 5000, gradient_accumulation_steps 4, num_workers 2, ckpt_every 5000,
+# train_render_log_every 100, val_every 100, train_render_log_num_cam 1.
+
+# --- Model ---
+model: JiT-B/8
+predict_xstart: true
+noise_schedule: squaredcos_cap_v2
+class_dropout_prob: 0.2
+
+# --- Data (optional overrides; shell/env usually provides mean/std and paths) ---
+# mean_file: null
+# std_file: null
+class_map: object_labels/object_to_class.json
+sphere2plane_path: data/sphere2plane.npy
+sh_degree0_only: true
+
+# --- Render loss ---
+render_loss_weight: 0.01
+alpha_mask_loss_weight: 0.01
+lpips_loss_weight: 0.001
+lpips_net: vgg
+render_loss_num_cam: 1
+train_render_size: 128
+ref_camera_tar: /home/tiangexiang/gen3d/ref_camera.tar.gz
+enable_render_loss_after: 30000
+# Hard mask on FM t_value: render loss only applies when t_value >= cutoff
+# (i.e. the clean fraction is >= cutoff). 0 disables the mask.
+render_loss_noise_cutoff: 0.4
+train_render_log_every: 0
+train_render_log_num_cam: 2
+
+# --- Training ---
+epochs: 30
+batch_size: 4
+lr: 2e-4
+# none | warmup (ramp to lr then hold) | cosine (warmup then decay to lr_min)
+lr_schedule: cosine
+lr_warmup_steps: 500
+lr_min: 0.0
+# cosine only: 0 = auto (epochs * len(loader) // gradient_accumulation_steps, after
+# accelerate.prepare — so real dataset size, num_processes, and drop_last are included)
+lr_cosine_total_steps: 0
+ema_decay: 0.995
+mixed_precision: fp16
+gradient_accumulation_steps: 32
+gradient_checkpointing: true
+max_grad_norm: 4.0
+num_workers: 4
+preload_to_cpu: false
+lazy_cache_to_cpu: false
+preload_max_samples: 0
+preload_workers: 0
+persistent_workers: true
+prefetch_factor: 2
+seed: 0
+# Logit-normal t ~ sigmoid(N(P_mean, P_std)). In this FM convention t=0 is
+# noise and t=1 is clean, so P_mean < 0 biases training toward noisy samples.
+P_mean: 0.0
+P_std: 1.0
+
+# --- Logging / checkpoints / validation ---
+# Training uses JiT flow-matching noising (x_t = t*x_0 + (1-t)*eps, t=0 noise,
+# t=1 clean) via flow_matching_training_losses; heun/euler are the consistent
+# samplers. ddim/dpm/ddpm will produce garbage on FM checkpoints.
+log_every: 200
+grad_norm_log_every_n_prints: 10
+ckpt_every: 20000
+val_every: 1000
+val_sampling_steps: 100
+val_sampler: heun
+val_cfg_scale: 4.0
+ddim_eta: 0.0
+dpm_solver_order: 2
+dpm_algorithm_type: "dpmsolver++"
+dpm_solver_type: midpoint
+dpm_timestep_spacing: trailing
+dpm_use_karras_sigmas: false
+results_dir: output/dit_results
+
+# Hot-reload hyperparameters during training (optional):
+# overrides_yaml: jit/configs/overrides.yaml
+# overrides_every: 1000
+
+# resume: /home/hmolin/3DGen-Playground/output/jit_JiT-XL/8_results_gsplat/0020000.pt
