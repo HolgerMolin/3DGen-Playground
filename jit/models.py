@@ -49,9 +49,13 @@ class VisionRotaryEmbeddingFast(nn.Module):
         self.register_buffer("freqs_sin", freqs_2d.sin(), persistent=False)
 
     def forward(self, x):
-        cos = self.freqs_cos.to(device=x.device, dtype=x.dtype).unsqueeze(0).unsqueeze(0)
-        sin = self.freqs_sin.to(device=x.device, dtype=x.dtype).unsqueeze(0).unsqueeze(0)
-        return x * cos + rotate_half(x) * sin
+        # Cache the dtype-converted buffers so we don't pay the .to() overhead
+        # on every forward pass during stable mixed-precision training.
+        if not hasattr(self, '_rope_cache_dtype') or self._rope_cache_dtype != x.dtype:
+            self._cos_cache = self.freqs_cos.to(dtype=x.dtype).unsqueeze(0).unsqueeze(0)
+            self._sin_cache = self.freqs_sin.to(dtype=x.dtype).unsqueeze(0).unsqueeze(0)
+            self._rope_cache_dtype = x.dtype
+        return x * self._cos_cache + rotate_half(x) * self._sin_cache
 
 
 class RMSNorm(nn.Module):
@@ -185,7 +189,7 @@ class TimestepEmbedder(nn.Module):
     """
     Embeds scalar timesteps into vector representations.
     """
-    def __init__(self, hidden_size, frequency_embedding_size=256):
+    def __init__(self, hidden_size, frequency_embedding_size=256, max_period=10000):
         super().__init__()
         self.mlp = nn.Sequential(
             nn.Linear(frequency_embedding_size, hidden_size, bias=True),
@@ -193,30 +197,29 @@ class TimestepEmbedder(nn.Module):
             nn.Linear(hidden_size, hidden_size, bias=True),
         )
         self.frequency_embedding_size = frequency_embedding_size
-
-    @staticmethod
-    def timestep_embedding(t, dim, max_period=10000):
-        """
-        Create sinusoidal timestep embeddings.
-        :param t: a 1-D Tensor of N indices, one per batch element.
-                          These may be fractional.
-        :param dim: the dimension of the output.
-        :param max_period: controls the minimum frequency of the embeddings.
-        :return: an (N, D) Tensor of positional embeddings.
-        """
-        # https://github.com/openai/glide-text2im/blob/main/glide_text2im/nn.py
-        half = dim // 2
+        # Pre-compute the frequency vector once; register as non-persistent buffer
+        # so it moves with the model (device-aware) without appearing in state_dict.
+        half = frequency_embedding_size // 2
         freqs = torch.exp(
             -math.log(max_period) * torch.arange(start=0, end=half, dtype=torch.float32) / half
-        ).to(device=t.device)
-        args = t[:, None].float() * freqs[None]
+        )
+        self.register_buffer("_freqs", freqs, persistent=False)
+
+    def timestep_embedding(self, t):
+        """
+        Create sinusoidal timestep embeddings.
+        :param t: a 1-D Tensor of N indices (possibly fractional), one per batch element.
+        :return: an (N, frequency_embedding_size) Tensor of positional embeddings.
+        """
+        # https://github.com/openai/glide-text2im/blob/main/glide_text2im/nn.py
+        args = t[:, None].float() * self._freqs[None]
         embedding = torch.cat([torch.cos(args), torch.sin(args)], dim=-1)
-        if dim % 2:
+        if self.frequency_embedding_size % 2:
             embedding = torch.cat([embedding, torch.zeros_like(embedding[:, :1])], dim=-1)
         return embedding
 
     def forward(self, t):
-        t_freq = self.timestep_embedding(t, self.frequency_embedding_size)
+        t_freq = self.timestep_embedding(t)
         t_emb = self.mlp(t_freq)
         return t_emb
 
