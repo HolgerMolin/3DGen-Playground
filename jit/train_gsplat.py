@@ -26,6 +26,7 @@ import numpy as np
 import yaml
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from PIL import Image
 
@@ -50,6 +51,7 @@ from jit.models import JiT_3DGS_models
 from jit.diffusion import create_diffusion
 from jit.sampling import SAMPLER_CHOICES, resolve_sampling_shape, sample_model
 from utils.plane_utils import load_sphere2plane, plane_to_point_cloud
+from utils.loss_tracker import LossTracker
 from utils.gsplat_render_util import (
     _compute_render_loss_for_batch,
     _denormalize_point_cloud,
@@ -111,6 +113,34 @@ def _compute_lr(
     raise ValueError(f"Unknown lr_schedule: {schedule!r}")
 
 
+def _build_class_balanced_sampler(dataset, seed: int, rank: int):
+    """Build a WeightedRandomSampler with inverse class-frequency weights.
+
+    Each rank gets its own generator (seed + rank) so draws are independent
+    across processes. Replacement is True so rare classes can appear in most
+    batches; `num_samples` matches dataset length to keep epoch cadence.
+    """
+    if not hasattr(dataset, "valid_labels"):
+        raise ValueError(
+            "class_balanced_sampler requires Class3DGenDataset "
+            "(needs .valid_labels); got " + type(dataset).__name__
+        )
+    labels = np.asarray(dataset.valid_labels, dtype=np.int64)
+    counts = np.bincount(labels)
+    class_weights = np.zeros_like(counts, dtype=np.float64)
+    nonzero = counts > 0
+    class_weights[nonzero] = 1.0 / counts[nonzero]
+    sample_weights = class_weights[labels]
+    g = torch.Generator()
+    g.manual_seed(int(seed) + int(rank))
+    return torch.utils.data.WeightedRandomSampler(
+        weights=torch.from_numpy(sample_weights).double(),
+        num_samples=len(sample_weights),
+        replacement=True,
+        generator=g,
+    )
+
+
 #################################################################################
 #                    Hot-reload training overrides (YAML)                      #
 #################################################################################
@@ -121,6 +151,7 @@ _OVERRIDABLE_KEYS = frozenset({
     "render_loss_weight",
     "alpha_mask_loss_weight",
     "lpips_loss_weight",
+    "aux_classifier_weight",
     "P_mean",
     "grad_norm_log_every_n_prints",
 })
@@ -135,6 +166,7 @@ class TrainRuntimeOverrides:
     render_loss_weight: float
     alpha_mask_loss_weight: float
     lpips_loss_weight: float
+    aux_classifier_weight: float
     P_mean: float
     grad_norm_log_every_n_prints: float  # float so overrides YAML can write it; cast to int on use
 
@@ -146,6 +178,7 @@ class TrainRuntimeOverrides:
             render_loss_weight=float(args.render_loss_weight),
             alpha_mask_loss_weight=float(args.alpha_mask_loss_weight),
             lpips_loss_weight=float(args.lpips_loss_weight),
+            aux_classifier_weight=float(args.aux_classifier_weight),
             P_mean=float(args.P_mean),
             grad_norm_log_every_n_prints=float(args.grad_norm_log_every_n_prints),
         )
@@ -157,6 +190,128 @@ def _any_render_loss_weight(o: TrainRuntimeOverrides) -> bool:
         or o.alpha_mask_loss_weight > 0.0
         or o.lpips_loss_weight > 0.0
     )
+
+
+def _parse_p_mean_schedule(raw: Any) -> Optional[list[tuple[int, float]]]:
+    """Normalize a P_mean curriculum into a sorted list of (step, value) control points.
+
+    Accepts None/empty (returns None), a JSON string (from CLI), or a Python
+    list-of-pairs (from YAML merge). Linear interpolation between control
+    points; held constant outside the endpoints.
+    """
+    if raw is None:
+        return None
+    if isinstance(raw, str):
+        raw = raw.strip()
+        if not raw:
+            return None
+        try:
+            raw = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"--P_mean_schedule JSON parse error: {exc}") from exc
+    if not isinstance(raw, (list, tuple)) or len(raw) == 0:
+        raise ValueError(
+            f"--P_mean_schedule must be a non-empty list of [step, value] pairs, got {raw!r}"
+        )
+    pts: list[tuple[int, float]] = []
+    for item in raw:
+        if not isinstance(item, (list, tuple)) or len(item) != 2:
+            raise ValueError(
+                f"--P_mean_schedule entry must be [step, value], got {item!r}"
+            )
+        s, v = item
+        pts.append((int(s), float(v)))
+    pts.sort(key=lambda p: p[0])
+    for (s_prev, _), (s_cur, _) in zip(pts, pts[1:]):
+        if s_cur == s_prev:
+            raise ValueError(f"--P_mean_schedule has duplicate step {s_cur}")
+    if pts[0][0] < 0:
+        raise ValueError(f"--P_mean_schedule first step must be >= 0, got {pts[0][0]}")
+    return pts
+
+
+def _p_mean_at_step(schedule: list[tuple[int, float]], step: int) -> float:
+    if step <= schedule[0][0]:
+        return schedule[0][1]
+    if step >= schedule[-1][0]:
+        return schedule[-1][1]
+    for (s0, v0), (s1, v1) in zip(schedule, schedule[1:]):
+        if s0 <= step <= s1:
+            frac = (step - s0) / (s1 - s0)
+            return v0 + frac * (v1 - v0)
+    return schedule[-1][1]
+
+
+def _parse_render_weight_schedule(
+    raw: Any,
+) -> Optional[list[tuple[int, float, float, float]]]:
+    """Normalize a render-weight ramp into sorted [(step, rl1, alpha, lpips)] control points.
+
+    Each entry is a 4-tuple ``[step, render_loss_weight, alpha_mask_loss_weight,
+    lpips_loss_weight]``; values are linearly interpolated between control points and
+    held constant outside the endpoints. Weights must be >= 0. Passing any negative
+    value or an item of the wrong arity raises ValueError. Accepts None/empty (→ None),
+    a JSON string (from CLI), or a Python list-of-lists (from YAML merge).
+    """
+    if raw is None:
+        return None
+    if isinstance(raw, str):
+        raw = raw.strip()
+        if not raw:
+            return None
+        try:
+            raw = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"--render_weight_schedule JSON parse error: {exc}") from exc
+    if not isinstance(raw, (list, tuple)) or len(raw) == 0:
+        raise ValueError(
+            "--render_weight_schedule must be a non-empty list of "
+            f"[step, rl1, alpha, lpips] entries, got {raw!r}"
+        )
+    pts: list[tuple[int, float, float, float]] = []
+    for item in raw:
+        if not isinstance(item, (list, tuple)) or len(item) != 4:
+            raise ValueError(
+                "--render_weight_schedule entry must be [step, rl1, alpha, lpips], "
+                f"got {item!r}"
+            )
+        s, rl1, alpha, lpips = item
+        rl1_f, alpha_f, lpips_f = float(rl1), float(alpha), float(lpips)
+        if rl1_f < 0 or alpha_f < 0 or lpips_f < 0:
+            raise ValueError(
+                f"--render_weight_schedule weights must be >= 0, got {item!r}"
+            )
+        pts.append((int(s), rl1_f, alpha_f, lpips_f))
+    pts.sort(key=lambda p: p[0])
+    for (s_prev, *_), (s_cur, *_) in zip(pts, pts[1:]):
+        if s_cur == s_prev:
+            raise ValueError(f"--render_weight_schedule has duplicate step {s_cur}")
+    if pts[0][0] < 0:
+        raise ValueError(
+            f"--render_weight_schedule first step must be >= 0, got {pts[0][0]}"
+        )
+    return pts
+
+
+def _render_weights_at_step(
+    schedule: list[tuple[int, float, float, float]], step: int
+) -> tuple[float, float, float]:
+    """Return (rl1, alpha, lpips) weights linearly interpolated at the given step."""
+    if step <= schedule[0][0]:
+        return schedule[0][1], schedule[0][2], schedule[0][3]
+    if step >= schedule[-1][0]:
+        return schedule[-1][1], schedule[-1][2], schedule[-1][3]
+    for pt0, pt1 in zip(schedule, schedule[1:]):
+        s0, rl1_0, a0, l0 = pt0
+        s1, rl1_1, a1, l1 = pt1
+        if s0 <= step <= s1:
+            frac = (step - s0) / (s1 - s0)
+            return (
+                rl1_0 + frac * (rl1_1 - rl1_0),
+                a0 + frac * (a1 - a0),
+                l0 + frac * (l1 - l0),
+            )
+    return schedule[-1][1], schedule[-1][2], schedule[-1][3]
 
 
 def _load_and_apply_overrides_yaml(
@@ -367,6 +522,68 @@ def _debug_nonfinite_mse(
         for sample_info in per_sample_debug:
             logger.error("[nonfinite] sample_debug=%s", sample_info)
     raise FloatingPointError(f"Non-finite diffusion MSE detected at step {step}; debug dump saved to {debug_path}")
+
+
+@torch.no_grad()
+def _measure_conditioning_signal(
+    model: nn.Module,
+    num_classes: int,
+    in_channels: int,
+    diffusion_num_timesteps: int,
+    device: torch.device,
+    t_value: float = 0.3,
+    batch_size: int = 8,
+    seed: int = 0,
+) -> dict:
+    """Probe class conditioning at a fixed t on a fixed random batch.
+
+    Computes, as fractions of ``‖pred_A‖_RMS``:
+      - ``cfg_signal`` = ``‖pred(x_t, y=A) − pred(x_t, null)‖_RMS``
+      - ``class_signal`` = ``‖pred(x_t, y=A) − pred(x_t, y=B)‖_RMS``
+
+    ``cfg_signal < 0.01`` → conditioning collapsed, CFG is a no-op.
+    ``class_signal ≈ 0`` with non-zero ``cfg_signal`` → model uses "some class
+    vs null" but doesn't discriminate between classes.
+
+    Uses a fixed RNG seed so the numbers are comparable across checkpoints.
+    """
+    model_was_training = model.training
+    model.eval()
+    g = torch.Generator(device=device).manual_seed(int(seed))
+    shape = resolve_sampling_shape(model=model, batch_size=batch_size, in_channels=in_channels)
+    x_t = torch.randn(*shape, generator=g, device=device)
+    # Discrete t matches training: round(t_value * (T-1)).
+    t_disc = torch.full(
+        (batch_size,),
+        int(round(t_value * (diffusion_num_timesteps - 1))),
+        dtype=torch.long, device=device,
+    )
+    # Two distinct class labels. Wrap to valid range.
+    y_a = torch.zeros(batch_size, dtype=torch.long, device=device)
+    y_b = torch.full((batch_size,), min(num_classes - 1, 1), dtype=torch.long, device=device)
+    # Null class id = num_classes (LabelEmbedder's reserved CFG slot).
+    y_null = torch.full((batch_size,), num_classes, dtype=torch.long, device=device)
+
+    unwrapped = model
+    pred_a = unwrapped(x_t, t_disc, y_a).float()
+    pred_b = unwrapped(x_t, t_disc, y_b).float()
+    pred_null = unwrapped(x_t, t_disc, y_null).float()
+
+    def _rms(t: torch.Tensor) -> float:
+        return float(t.square().mean().sqrt().item())
+
+    norm_a = _rms(pred_a)
+    eps = 1e-8
+    cfg_signal = _rms(pred_a - pred_null) / (norm_a + eps)
+    class_signal = _rms(pred_a - pred_b) / (norm_a + eps)
+
+    if model_was_training:
+        model.train()
+    return {
+        "cfg_signal": cfg_signal,
+        "class_signal": class_signal,
+        "pred_rms": norm_a,
+    }
 
 
 def _run_validation_render(
@@ -623,14 +840,30 @@ def main(args):
 
     # DataLoader — accelerate will inject DistributedSampler automatically
     overfitting = args.overfit > 0
+    balanced_sampler = None
+    if args.class_balanced_sampler and not overfitting:
+        balanced_sampler = _build_class_balanced_sampler(
+            dataset, seed=args.seed, rank=accelerator.process_index,
+        )
+        if is_main:
+            label_counts = np.bincount(np.asarray(dataset.valid_labels, dtype=np.int64))
+            nz = int((label_counts > 0).sum())
+            logger.info(
+                "[class-balanced] sampling with inverse-frequency weights over %d classes "
+                "(min=%d, max=%d, mean=%.1f samples/class)",
+                nz, int(label_counts[label_counts > 0].min()), int(label_counts.max()),
+                float(label_counts[label_counts > 0].mean()),
+            )
     loader_kwargs = dict(
         dataset=dataset,
         batch_size=args.batch_size,
-        shuffle=not overfitting,
+        shuffle=(not overfitting) and balanced_sampler is None,
         num_workers=args.num_workers,
         pin_memory=True,
         drop_last=not overfitting,
     )
+    if balanced_sampler is not None:
+        loader_kwargs["sampler"] = balanced_sampler
     if args.num_workers > 0:
         loader_kwargs["persistent_workers"] = args.persistent_workers
         if args.prefetch_factor > 0:
@@ -649,7 +882,15 @@ def main(args):
         class_dropout_prob=args.class_dropout_prob,
         learn_sigma=False,
         gradient_checkpointing=args.gradient_checkpointing,
+        aux_classifier=args.aux_classifier,
+        label_embed_init_std=args.label_embed_init_std,
     )
+    if is_main and args.aux_classifier:
+        logger.info(
+            "[aux-classifier] enabled: linear head → %d classes, initial weight=%.4g, "
+            "label_embed_init_std=%.3g",
+            num_classes, args.aux_classifier_weight, args.label_embed_init_std,
+        )
     spatial_fold_factor = int(getattr(model, "spatial_fold_factor", 1))
     if spatial_fold_factor != 1:
         raise ValueError(
@@ -716,16 +957,26 @@ def main(args):
             max_opt_steps = max(1, int(args.lr_cosine_total_steps))
         else:
             # len(loader) is per-process iterations per epoch after accelerate.prepare
-            # has wrapped it with a DistributedSampler, so it already accounts for the
-            # real dataset size (including --overfit), num_processes, and drop_last.
-            # All processes step together every grad_accum iterations, so opt steps per
-            # epoch = len(loader) // grad_accum.
+            # has sharded the batch sampler (BatchSamplerShard with even_batches=True
+            # by default), so it already accounts for the real dataset size (including
+            # --overfit), num_processes, and drop_last. Accelerate forces sync_gradients
+            # at end-of-dataloader (sync_with_dataloader=True default) so a final
+            # partial-accumulation opt step happens on the last batch of every epoch
+            # → opt_steps_per_epoch = ceil(iters_per_epoch / grad_accum).
             ga = max(1, int(args.gradient_accumulation_steps))
             try:
                 iters_per_epoch = len(loader)
-            except TypeError:
-                iters_per_epoch = 0
-            opt_steps_per_epoch = max(1, iters_per_epoch // ga)
+            except TypeError as e:
+                raise RuntimeError(
+                    "lr_cosine_total_steps=auto requires a sized DataLoader, "
+                    "but len(loader) raised TypeError. Set lr_cosine_total_steps explicitly."
+                ) from e
+            if iters_per_epoch <= 0:
+                raise RuntimeError(
+                    f"lr_cosine_total_steps=auto got iters_per_epoch={iters_per_epoch}; "
+                    "dataset/sampler is empty or batch_size > num_samples."
+                )
+            opt_steps_per_epoch = (iters_per_epoch + ga - 1) // ga  # ceil
             max_opt_steps = max(1, int(args.epochs) * opt_steps_per_epoch)
         if is_main:
             logger.info(
@@ -756,6 +1007,31 @@ def main(args):
         else:
             norm_mean = norm_mean_full
             norm_std = norm_std_full
+
+    # Per-channel MSE weighting. Audit via data/audit_norm_stats.py: after
+    # global per-channel normalization, some channels (e.g. opacity/logit-scale)
+    # have per-object spatial std << 1, so their MSE contribution is ~var²
+    # smaller than unit-variance channels. Per-channel weights compensate.
+    channel_loss_weights = None
+    if args.channel_loss_weights:
+        raw = json.loads(args.channel_loss_weights)
+        if not isinstance(raw, list) or not all(isinstance(v, (int, float)) for v in raw):
+            raise ValueError(
+                "--channel_loss_weights must be a JSON list of numbers"
+            )
+        if len(raw) != in_channels:
+            raise ValueError(
+                f"--channel_loss_weights length {len(raw)} != in_channels {in_channels}"
+            )
+        channel_loss_weights = torch.tensor(raw, dtype=torch.float32, device=device)
+        if is_main:
+            mean_w = float(channel_loss_weights.mean().item())
+            logger.info(
+                "[channel_loss_weights] active: %d values, mean=%.4f, min=%.4f, max=%.4f",
+                len(raw), mean_w,
+                float(channel_loss_weights.min().item()),
+                float(channel_loss_weights.max().item()),
+            )
 
     # Render / validation setup (per-process; gsplat renderer is local)
     renderer_for_train = None
@@ -801,10 +1077,33 @@ def main(args):
         if is_main:
             logger.info(f"Resuming from checkpoint: {args.resume}")
         ckpt = torch.load(args.resume, map_location='cpu', weights_only=False)
-        accelerator.unwrap_model(model).load_state_dict(ckpt['model'])
-        ema.load_state_dict(ckpt['ema'])
+        # strict=False so older checkpoints without aux_classifier keys still load; we log
+        # any mismatches so accidental architecture drift doesn't pass silently.
+        missing, unexpected = accelerator.unwrap_model(model).load_state_dict(
+            ckpt['model'], strict=False
+        )
+        if is_main and (missing or unexpected):
+            logger.info(
+                "[resume] load_state_dict non-strict: missing=%s unexpected=%s",
+                list(missing), list(unexpected),
+            )
+        ema_missing, ema_unexpected = ema.load_state_dict(ckpt['ema'], strict=False)
+        if is_main and (ema_missing or ema_unexpected):
+            logger.info(
+                "[resume] EMA load_state_dict non-strict: missing=%s unexpected=%s",
+                list(ema_missing), list(ema_unexpected),
+            )
         ema.eval()
-        opt.load_state_dict(ckpt['opt'])
+        try:
+            opt.load_state_dict(ckpt['opt'])
+        except ValueError as e:
+            if is_main:
+                logger.warning(
+                    "[resume] optimizer state_dict mismatch (%s) — "
+                    "starting optimizer from scratch. This is expected when "
+                    "resuming into a model with added/removed params.",
+                    e,
+                )
         del ckpt['model'], ckpt['ema'], ckpt['opt']
         torch.cuda.empty_cache()
         start_step = ckpt['step']
@@ -817,6 +1116,19 @@ def main(args):
             if args.lr_schedule in ('cosine', 'warmup'):
                 logger.info(f"Resumed LR opt_step={opt_step}")
 
+    # Per-t-bucket MSE accumulators: t in (0,1) split into equal-width bins.
+    # t→0 is noise, t→1 is clean (FM convention). Declared up here so the
+    # loss tracker is sized consistently with the bucket tensors below.
+    num_t_buckets = 4
+
+    # Loss tracker (rank-0 only; resume appends to existing loss_log.csv)
+    loss_tracker = LossTracker(
+        output_dir=args.results_dir,
+        num_t_buckets=num_t_buckets,
+        enabled=is_main,
+        resume=bool(args.resume),
+    )
+
     # Training
     model.train()
     step = start_step
@@ -826,6 +1138,7 @@ def main(args):
     log_render_l1 = torch.zeros([], device=device)
     log_render_alpha_l1 = torch.zeros([], device=device)
     log_render_lpips = torch.zeros([], device=device)
+    log_aux_loss = torch.zeros([], device=device)
     log_grad_norm = 0.0
     log_grad_steps = 0
     log_steps = 0
@@ -833,18 +1146,53 @@ def main(args):
     log_rl1_gn = 0.0
     log_alpha_gn = 0.0
     log_lpips_gn = 0.0
+    log_aux_gn = 0.0
     log_per_loss_gn_steps = 0
+    log_t_bucket_sum = torch.zeros(num_t_buckets, device=device)
+    log_t_bucket_cnt = torch.zeros(num_t_buckets, device=device)
     start_time = time.time()
     last_lr_val: Optional[float] = None
     # Pre-allocated zero tensors used as no-op sentinels for render losses when
     # render loss is disabled or hasn't warmed up yet.  Avoids 3 GPU allocations
     # + kernel launches every step for the common case (render loss disabled).
     _zero_render_loss = torch.zeros([], dtype=torch.float32, device=device)
+    _zero_aux_loss = torch.zeros([], dtype=torch.float32, device=device)
 
     if is_main:
         logger.info(f"Starting training from epoch {start_epoch}, step {start_step}...")
 
     runtime = TrainRuntimeOverrides.from_args(args)
+
+    p_mean_schedule = _parse_p_mean_schedule(args.P_mean_schedule)
+    if p_mean_schedule is not None:
+        runtime.P_mean = _p_mean_at_step(p_mean_schedule, start_step)
+        if is_main:
+            pretty = ", ".join(f"({s}, {v:+.3f})" for s, v in p_mean_schedule)
+            logger.info(
+                "[P_mean_schedule] active with %d control points: %s | "
+                "initial P_mean at step %d = %+.4f",
+                len(p_mean_schedule), pretty, start_step, runtime.P_mean,
+            )
+
+    render_weight_schedule = _parse_render_weight_schedule(args.render_weight_schedule)
+    if render_weight_schedule is not None:
+        rl1_0, alpha_0, lpips_0 = _render_weights_at_step(render_weight_schedule, start_step)
+        runtime.render_loss_weight = rl1_0
+        runtime.alpha_mask_loss_weight = alpha_0
+        runtime.lpips_loss_weight = lpips_0
+        if is_main:
+            pretty = ", ".join(
+                f"({s}, rl1={rl1:.3f}, a={a:.3f}, lp={lp:.4f})"
+                for s, rl1, a, lp in render_weight_schedule
+            )
+            logger.info(
+                "[render_weight_schedule] active with %d control points: %s | "
+                "initial weights at step %d: rl1=%.4f, alpha=%.4f, lpips=%.4f",
+                len(render_weight_schedule), pretty, start_step,
+                runtime.render_loss_weight,
+                runtime.alpha_mask_loss_weight,
+                runtime.lpips_loss_weight,
+            )
 
     dc_only = args.sh_degree0_only
     # Subset wraps the underlying dataset — look through it for the attribute
@@ -857,6 +1205,17 @@ def main(args):
                 step % max(1, int(args.overrides_every)) == 0 or step == start_step
             ):
                 _load_and_apply_overrides_yaml(args.overrides_yaml, runtime, is_main=is_main)
+
+            if p_mean_schedule is not None:
+                runtime.P_mean = _p_mean_at_step(p_mean_schedule, step)
+
+            if render_weight_schedule is not None:
+                rl1_s, alpha_s, lpips_s = _render_weights_at_step(
+                    render_weight_schedule, step
+                )
+                runtime.render_loss_weight = rl1_s
+                runtime.alpha_mask_loss_weight = alpha_s
+                runtime.lpips_loss_weight = lpips_s
 
             if has_full_for_render:
                 x, y, x_full, hash_keys = batch
@@ -890,18 +1249,52 @@ def main(args):
                 )
                 noise = torch.randn_like(x)
 
+                # Pre-sample the CFG drop mask ourselves so the aux classifier
+                # can skip dropped rows (their class label has been replaced by
+                # the unconditional slot). When the aux head is off we still
+                # pass force_drop_ids=None and let LabelEmbedder resample
+                # internally to preserve the original stochastic behavior.
+                unwrapped_model = accelerator.unwrap_model(model)
+                use_aux_head = unwrapped_model.aux_classifier is not None
+                if use_aux_head and args.class_dropout_prob > 0.0:
+                    drop_mask = (
+                        torch.rand(x.shape[0], device=device) < args.class_dropout_prob
+                    )
+                    force_drop_ids = drop_mask.long()
+                    model_kwargs = dict(y=y, force_drop_ids=force_drop_ids)
+                else:
+                    drop_mask = None
+                    model_kwargs = dict(y=y)
+
                 # Forward pass (accelerate handles autocast).
                 loss_dict = diffusion.flow_matching_training_losses(
                     model,
                     x,
                     t_value,
                     t,
-                    model_kwargs=dict(y=y),
+                    model_kwargs=model_kwargs,
                     noise=noise,
+                    channel_loss_weights=channel_loss_weights,
                 )
                 sample_losses = loss_dict["loss"]
                 mse_loss = sample_losses.mean()
                 x0_pred = loss_dict.get("pred_xstart")
+
+                # Aux classification: cross-entropy over un-dropped rows only.
+                # The trunk's pooled logits were stashed on the unwrapped model
+                # during forward (see DiT.forward); reading them here avoids
+                # changing the diffusion API's forward return contract.
+                aux_loss = _zero_aux_loss
+                if use_aux_head:
+                    aux_logits = unwrapped_model._aux_logits
+                    if aux_logits is not None:
+                        if drop_mask is not None:
+                            keep = ~drop_mask
+                            n_keep = int(keep.sum().item())
+                            if n_keep > 0:
+                                aux_loss = F.cross_entropy(aux_logits[keep], y[keep])
+                        else:
+                            aux_loss = F.cross_entropy(aux_logits, y)
 
                 if not torch.isfinite(mse_loss):
                     _debug_nonfinite_mse(
@@ -1041,6 +1434,7 @@ def main(args):
                             dc_only=dc_only,
                             plane_to_sphere=plane_to_sphere,
                         )
+                        loss_tracker.flush_plots()
                     accelerator.wait_for_everyone()
 
                 total_loss = (
@@ -1048,21 +1442,21 @@ def main(args):
                     + float(runtime.render_loss_weight) * render_l1_loss
                     + float(runtime.alpha_mask_loss_weight) * render_alpha_l1_loss
                     + float(runtime.lpips_loss_weight) * render_lpips_loss
+                    + float(runtime.aux_classifier_weight) * aux_loss
                 )
 
-                # Per-loss gradient norm measurement (main process only).
+                # Per-loss gradient norm measurement (single-GPU only).
                 # Fires on every sync step within log intervals that will print grad norms,
                 # i.e. when the upcoming print index is a multiple of grad_norm_log_every_n_prints.
-                # Accumulated and averaged at log time, same pattern as log_grad_norm.
-                # Uses retain_graph=True so the main backward below can still proceed.
-                # Calls .backward() directly (not via accelerator) — bypasses mixed-precision
-                # scaling, but relative magnitudes across losses are still comparable.
-                # Wrapped in accelerator.no_sync(model) to suppress DDP all-reduce hooks:
-                # these per-loss backwards are rank-0-only and must not enqueue collectives.
+                # Disabled under DDP: the helper does multiple retain_graph backwards on one
+                # forward, and DDP's reducer marks each parameter ready on every backward —
+                # even inside accelerator.no_sync — which corrupts reducer state and makes
+                # the subsequent main backward crash with "marked as ready twice".
                 _gnl_n = max(1, int(runtime.grad_norm_log_every_n_prints))
                 _print_idx = step // args.log_every + 1  # index of the upcoming print
                 if (
                     is_main
+                    and accelerator.num_processes == 1
                     and accelerator.sync_gradients
                     and int(runtime.grad_norm_log_every_n_prints) > 0
                     and _print_idx % _gnl_n == 0
@@ -1075,12 +1469,14 @@ def main(args):
                                 "render_l1": (render_l1_loss, float(runtime.render_loss_weight)),
                                 "alpha_l1": (render_alpha_l1_loss, float(runtime.alpha_mask_loss_weight)),
                                 "lpips": (render_lpips_loss, float(runtime.lpips_loss_weight)),
+                                "aux": (aux_loss, float(runtime.aux_classifier_weight)),
                             },
                         )
                     log_mse_gn += _per_loss_norms.get("mse", 0.0)
                     log_rl1_gn += _per_loss_norms.get("render_l1", 0.0)
                     log_alpha_gn += _per_loss_norms.get("alpha_l1", 0.0)
                     log_lpips_gn += _per_loss_norms.get("lpips", 0.0)
+                    log_aux_gn += _per_loss_norms.get("aux", 0.0)
                     log_per_loss_gn_steps += 1
 
                 # Backward pass (accelerate handles scaling + sync)
@@ -1109,6 +1505,17 @@ def main(args):
             log_render_l1 += render_l1_loss.detach()
             log_render_alpha_l1 += render_alpha_l1_loss.detach()
             log_render_lpips += render_lpips_loss.detach()
+            log_aux_loss += aux_loss.detach()
+            # Bucket per-sample MSE by continuous t_value ∈ (0,1).
+            with torch.no_grad():
+                bucket_idx = torch.clamp(
+                    (t_value.detach() * num_t_buckets).long(), 0, num_t_buckets - 1
+                )
+                per_sample = sample_losses.detach()
+                log_t_bucket_sum.scatter_add_(0, bucket_idx, per_sample)
+                log_t_bucket_cnt.scatter_add_(
+                    0, bucket_idx, torch.ones_like(per_sample)
+                )
             log_steps += 1
             step += 1
 
@@ -1123,6 +1530,8 @@ def main(args):
                 )
                 if args.lr_schedule in ('cosine', 'warmup', 'none') and last_lr_val is not None:
                     msg += f" | LR: {last_lr_val:.2e}"
+                if p_mean_schedule is not None:
+                    msg += f" | P_mean: {runtime.P_mean:+.3f}"
                 if _any_render_loss_weight(runtime):
                     avg_rl1 = log_render_l1.item() / log_steps
                     avg_alpha_rl1 = log_render_alpha_l1.item() / log_steps
@@ -1132,6 +1541,10 @@ def main(args):
                         f" | Alpha_L1: {avg_alpha_rl1:.4f}"
                         f" | Render_LPIPS: {avg_rlpips:.4f}"
                     )
+                aux_active = use_aux_head and float(runtime.aux_classifier_weight) > 0.0
+                avg_aux = (log_aux_loss.item() / log_steps) if aux_active else None
+                if aux_active:
+                    msg += f" | Aux: {avg_aux:.4f}"
                 if log_grad_steps > 0:
                     msg += f" | GradNorm: {log_grad_norm / log_grad_steps:.4f}"
                 if log_per_loss_gn_steps > 0:
@@ -1143,11 +1556,57 @@ def main(args):
                         msg += f" | GN[alpha]: {log_alpha_gn / n:.4f}"
                     if log_lpips_gn > 0.0:
                         msg += f" | GN[lpips]: {log_lpips_gn / n:.4f}"
+                    if log_aux_gn > 0.0:
+                        msg += f" | GN[aux]: {log_aux_gn / n:.4f}"
+                # Per-t-bucket MSE: low-t = noisy, high-t = clean. Empty buckets
+                # print NaN rather than crash — happens only on a pathological
+                # P_mean/P_std where some bin is never sampled in the window.
+                bucket_cnt = log_t_bucket_cnt.clamp(min=1)
+                bucket_avg = (log_t_bucket_sum / bucket_cnt).tolist()
+                bucket_hits = log_t_bucket_cnt.tolist()
+                bucket_str = " ".join(
+                    f"[{i * 1.0 / num_t_buckets:.2f}-{(i + 1) * 1.0 / num_t_buckets:.2f}]"
+                    f"{bucket_avg[i]:.3f}(n={int(bucket_hits[i])})"
+                    for i in range(num_t_buckets)
+                )
+                msg += f" | MSE/t: {bucket_str}"
                 logger.info(msg)
+
+                # Persist this print's averages to the loss tracker. Values are
+                # already host-side floats, so this is a cheap dict append +
+                # CSV line write — no extra GPU syncs.
+                render_active = _any_render_loss_weight(runtime)
+                grad_norm_per_loss = None
+                if log_per_loss_gn_steps > 0:
+                    n = log_per_loss_gn_steps
+                    grad_norm_per_loss = {
+                        "mse": log_mse_gn / n,
+                        "render_l1": (log_rl1_gn / n) if log_rl1_gn > 0.0 else None,
+                        "alpha_l1": (log_alpha_gn / n) if log_alpha_gn > 0.0 else None,
+                        "lpips": (log_lpips_gn / n) if log_lpips_gn > 0.0 else None,
+                        "aux": (log_aux_gn / n) if log_aux_gn > 0.0 else None,
+                    }
+                loss_tracker.record(
+                    step=step,
+                    mse=avg_loss,
+                    render_l1=(log_render_l1.item() / log_steps) if render_active else None,
+                    alpha_l1=(log_render_alpha_l1.item() / log_steps) if render_active else None,
+                    lpips=(log_render_lpips.item() / log_steps) if render_active else None,
+                    aux=avg_aux,
+                    grad_norm=(log_grad_norm / log_grad_steps) if log_grad_steps > 0 else None,
+                    grad_norm_per_loss=grad_norm_per_loss,
+                    lr=last_lr_val,
+                    p_mean=runtime.P_mean,
+                    steps_per_sec=steps_per_sec,
+                    bucket_means=bucket_avg,
+                    bucket_counts=[int(h) for h in bucket_hits],
+                )
+
                 log_loss.zero_()
                 log_render_l1.zero_()
                 log_render_alpha_l1.zero_()
                 log_render_lpips.zero_()
+                log_aux_loss.zero_()
                 log_grad_norm = 0.0
                 log_grad_steps = 0
                 log_steps = 0
@@ -1155,7 +1614,10 @@ def main(args):
                 log_rl1_gn = 0.0
                 log_alpha_gn = 0.0
                 log_lpips_gn = 0.0
+                log_aux_gn = 0.0
                 log_per_loss_gn_steps = 0
+                log_t_bucket_sum.zero_()
+                log_t_bucket_cnt.zero_()
                 start_time = time.time()
 
             checkpoint_due = step % args.ckpt_every == 0
@@ -1172,6 +1634,21 @@ def main(args):
                         'opt_step': opt_step,
                     }, ckpt_path)
                     logger.info(f"Saved checkpoint to {ckpt_path}")
+                    if args.class_dropout_prob > 0:
+                        sig = _measure_conditioning_signal(
+                            model=accelerator.unwrap_model(model),
+                            num_classes=num_classes,
+                            in_channels=in_channels,
+                            diffusion_num_timesteps=diffusion.num_timesteps,
+                            device=device,
+                            t_value=0.3,
+                            batch_size=8,
+                            seed=args.seed,
+                        )
+                        logger.info(
+                            "[cond] cfg_signal=%.4f | class_signal=%.4f | pred_rms=%.4f",
+                            sig["cfg_signal"], sig["class_signal"], sig["pred_rms"],
+                        )
                 accelerator.wait_for_everyone()
 
             validation_due = enable_val and step % args.val_every == 0
@@ -1205,6 +1682,7 @@ def main(args):
                         ddim_eta=args.ddim_eta,
                         cfg_scale=args.val_cfg_scale,
                     )
+                    loss_tracker.flush_plots()
                 accelerator.wait_for_everyone()
 
     # Save final checkpoint
@@ -1220,6 +1698,8 @@ def main(args):
             'opt_step': opt_step,
         }, ckpt_path)
         logger.info(f"Training complete. Final checkpoint: {ckpt_path}")
+        loss_tracker.flush_plots()
+        loss_tracker.close()
     accelerator.wait_for_everyone()
 
 
@@ -1243,6 +1723,34 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
         type=float,
         default=0.1,
         help='Label dropout probability for classifier-free guidance (LabelEmbedder)',
+    )
+    parser.add_argument(
+        '--class_balanced_sampler',
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help='Sample with inverse class-frequency weights (WeightedRandomSampler) '
+             'to counter class imbalance. Ignored in --overfit mode.',
+    )
+    parser.add_argument(
+        '--aux_classifier',
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help='Attach a linear classification head on top of mean-pooled transformer tokens. '
+             'Trained with cross-entropy on un-dropped class labels; gives the transformer trunk '
+             'direct class-discriminative signal alongside the flow-matching MSE.',
+    )
+    parser.add_argument(
+        '--aux_classifier_weight',
+        type=float,
+        default=0.0,
+        help='Weight on the auxiliary cross-entropy classification loss. Overridable via overrides.yaml.',
+    )
+    parser.add_argument(
+        '--label_embed_init_std',
+        type=float,
+        default=0.02,
+        help='Init std for LabelEmbedder.embedding_table. Default 0.02 matches the original DiT recipe; '
+             'increase (e.g. 0.1) to amplify class conditioning at init.',
     )
 
     # Data
@@ -1366,6 +1874,38 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
                         help='Mean of the JiT logit-normal timestep sampler before sigmoid.')
     parser.add_argument('--P_std', type=float, default=0.8,
                         help='Stddev of the JiT logit-normal timestep sampler before sigmoid.')
+    parser.add_argument(
+        '--P_mean_schedule',
+        type=str,
+        default=None,
+        help='Optional P_mean curriculum: list of [step, P_mean] control points. '
+             'Linear interpolation between points; held constant outside the endpoints. '
+             'On CLI pass as JSON, e.g. --P_mean_schedule "[[0,-0.5],[20000,0.0],[40000,0.3],[70000,0.5]]". '
+             'When active, overrides both --P_mean and any P_mean in --overrides_yaml.',
+    )
+    parser.add_argument(
+        '--render_weight_schedule',
+        type=str,
+        default=None,
+        help='Optional render-weight ramp: list of [step, rl1, alpha, lpips] control points. '
+             'Linear interpolation between points; held constant outside the endpoints. '
+             'On CLI pass as JSON, e.g. '
+             '--render_weight_schedule "[[0,0.1,0.1,0.01],[100000,0.1,0.1,0.01],[130000,0.3,0.15,0.02]]". '
+             'When active, overrides the static weights (CLI / overrides.yaml) for render_loss_weight, '
+             'alpha_mask_loss_weight, and lpips_loss_weight. Engagement is still gated by '
+             '--enable_render_loss_after; the schedule only supplies the weight values once engaged.',
+    )
+    parser.add_argument(
+        '--channel_loss_weights',
+        type=str,
+        default=None,
+        help='Optional per-channel MSE weighting as a JSON list of floats of length == '
+             'in_channels (e.g. 14 for --sh_degree0_only). Compensates for channels whose '
+             'per-object spatial std is << 1 after normalization (low-spatial-variance '
+             'channels otherwise get near-zero gradient signal). Computed from '
+             'data/audit_norm_stats.py. Normalize to mean=1 so the scalar loss '
+             'magnitude is preserved.',
+    )
 
     # Logging / Checkpoints / Validation
     parser.add_argument('--log_every', type=int, default=100)

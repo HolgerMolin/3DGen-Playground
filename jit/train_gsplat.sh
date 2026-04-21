@@ -14,7 +14,10 @@ source .env
 #     JIT_TRAIN_CONFIG — YAML for train_gsplat.py (default: jit/configs/jit_train_gsplat.yaml)
 #     JIT_OVERRIDES_YAML — hot-reload overrides (default: jit/configs/overrides.yaml).
 #       Set to empty to disable:  JIT_OVERRIDES_YAML= ./jit/train_gsplat.sh
-MODEL=${1:-JiT-XL/8}
+# Positional $1 is an explicit model override. When unset, the YAML's
+# `model:` field is authoritative (via --config). Avoid defaulting MODEL to
+# JiT-XL/8 here — passing --model on the CLI would otherwise shadow the YAML.
+MODEL_OVERRIDE=${1:-}
 JIT_TRAIN_CONFIG=${JIT_TRAIN_CONFIG:-jit/configs/jit_train_gsplat.yaml}
 # Unset → default path; explicitly empty → no --overrides_yaml
 JIT_OVERRIDES_YAML="${JIT_OVERRIDES_YAML-jit/configs/overrides.yaml}"
@@ -67,7 +70,21 @@ if [ -n "$RESUME" ] && [ ! -e "$RESUME" ]; then
     exit 1
 fi
 
-RESULTS_DIR="output/jit_${MODEL}_results_gsplat"
+# Resolve the effective model for RESULTS_DIR: CLI positional > YAML > fallback.
+# (The actual model argument to Python is handled below — this is display only.)
+if [ -n "$MODEL_OVERRIDE" ]; then
+    EFFECTIVE_MODEL="$MODEL_OVERRIDE"
+else
+    YAML_MODEL=$(python3 -c "
+import sys, yaml
+cfg = yaml.safe_load(open('$JIT_TRAIN_CONFIG')) or {}
+v = cfg.get('model')
+if v: print(v)
+" 2>/dev/null)
+    EFFECTIVE_MODEL="${YAML_MODEL:-JiT-XL/8}"
+fi
+
+RESULTS_DIR="output/jit_${EFFECTIVE_MODEL}_results_gsplat"
 RUN_TS=$(date +%Y%m%d_%H%M%S)
 RUN_STEM="train_${RUN_TS}_$$"
 
@@ -97,8 +114,12 @@ else
     echo "JIT_TRAIN_CONFIG not found: $JIT_TRAIN_CONFIG (set JIT_TRAIN_CONFIG or add the file)" >&2
     exit 1
 fi
+# Only pass --model when the user explicitly overrode via positional arg.
+# Otherwise the YAML's `model:` takes effect.
+if [ -n "$MODEL_OVERRIDE" ]; then
+    PY_ARGS+=(--model "$MODEL_OVERRIDE")
+fi
 PY_ARGS+=(
-    --model "$MODEL"
     --obj_list "$OBJ_LIST"
     --gs_path "$GS_DATA_PATH"
     --mean_file "$MEAN_FILE"

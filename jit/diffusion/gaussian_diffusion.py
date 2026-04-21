@@ -258,6 +258,7 @@ class GaussianDiffusion:
         t_discrete,
         model_kwargs=None,
         noise=None,
+        channel_loss_weights=None,
     ):
         """JiT flow-matching loss with x₀ prediction.
 
@@ -266,6 +267,11 @@ class GaussianDiffusion:
         (typically ``round(t_value * (T-1))``) fed to the model's timestep
         embedding, keeping the sampler and trainer on the same grid. The model
         predicts x₀ directly; loss is ``MSE(pred, x_0)``.
+
+        ``channel_loss_weights`` (optional) is a 1-D tensor of length C that
+        scales the per-channel squared error before spatial averaging. Use it
+        to compensate channels whose per-object spatial std is much smaller
+        than 1 after normalization (they'd otherwise get ~var² less gradient).
         """
         if self.model_mean_type != ModelMeanType.START_X:
             raise ValueError(
@@ -282,8 +288,19 @@ class GaussianDiffusion:
         model_output = model(x_t, t_discrete, **model_kwargs)
         assert model_output.shape == x_start.shape
 
+        sq_err = (x_start - model_output) ** 2
+        if channel_loss_weights is not None:
+            w = channel_loss_weights.to(device=sq_err.device, dtype=sq_err.dtype)
+            if w.ndim != 1 or w.shape[0] != sq_err.shape[1]:
+                raise ValueError(
+                    f"channel_loss_weights must be 1-D of length C={sq_err.shape[1]}, "
+                    f"got shape {tuple(w.shape)}"
+                )
+            view_shape = (1, -1) + (1,) * (sq_err.ndim - 2)
+            sq_err = sq_err * w.view(view_shape)
+
         terms = {
-            "mse": mean_flat((x_start - model_output) ** 2),
+            "mse": mean_flat(sq_err),
         }
         terms["loss"] = terms["mse"]
         terms["pred_xstart"] = model_output

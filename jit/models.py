@@ -325,6 +325,8 @@ class DiT(nn.Module):
         bottleneck_dim=128,
         attn_drop=0.0,
         proj_drop=0.0,
+        aux_classifier=False,
+        label_embed_init_std=0.02,
     ):
         super().__init__()
         if input_size % patch_size != 0:
@@ -376,6 +378,12 @@ class DiT(nn.Module):
             for _ in range(depth)
         ])
         self.final_layer = FinalLayer(hidden_size, patch_size, self.out_channels)
+        self.aux_classifier = nn.Linear(hidden_size, num_classes) if aux_classifier else None
+        self._label_embed_init_std = float(label_embed_init_std)
+        # Stash the pooled aux logits during forward so the training loop can
+        # retrieve them without changing the forward() return signature (which
+        # would break flow_matching_training_losses's shape assertion).
+        self._aux_logits = None
         self.initialize_weights()
 
     def initialize_weights(self):
@@ -399,7 +407,7 @@ class DiT(nn.Module):
         nn.init.constant_(self.x_embedder.proj2.bias, 0)
 
         # Initialize label embedding table:
-        nn.init.normal_(self.y_embedder.embedding_table.weight, std=0.02)
+        nn.init.normal_(self.y_embedder.embedding_table.weight, std=self._label_embed_init_std)
 
         # Initialize timestep embedding MLP:
         nn.init.normal_(self.t_embedder.mlp[0].weight, std=0.02)
@@ -436,22 +444,31 @@ class DiT(nn.Module):
             return module(x, c, rope=rope)
         return ckpt_forward
 
-    def forward(self, x, t, y):
+    def forward(self, x, t, y, force_drop_ids=None):
         """
         Forward pass of JiT.
         x: (N, C, H, W) tensor of spatial inputs (3DGS features on grid)
         t: (N,) tensor of diffusion timesteps
         y: (N,) tensor of class labels
+        force_drop_ids: optional (N,) 0/1 tensor — when 1, replace that sample's
+            label with the unconditional slot. Lets the trainer pre-sample the
+            CFG drop mask so the aux classifier can skip dropped rows.
         """
         x = self.x_embedder(x) + self.pos_embed  # (N, T, D), where T = H * W / patch_size ** 2
         t = self.t_embedder(t)                   # (N, D)
-        y = self.y_embedder(y, self.training)    # (N, D)
+        y = self.y_embedder(y, self.training, force_drop_ids=force_drop_ids)  # (N, D)
         c = t + y                                # (N, D)
         for block in self.blocks:
             if self.gradient_checkpointing and self.training:
                 x = checkpoint(self.ckpt_wrapper(block, self.feat_rope), x, c, use_reentrant=False)
             else:
                 x = block(x, c, rope=self.feat_rope)                                     # (N, T, D)
+        # Aux classifier pools the transformer tokens before final_layer so
+        # gradients flow through the full trunk but not through the adaLN head.
+        if self.aux_classifier is not None:
+            self._aux_logits = self.aux_classifier(x.mean(dim=1))
+        else:
+            self._aux_logits = None
         x = self.final_layer(x, c)                # (N, T, patch_size ** 2 * out_channels)
         x = self.unpatchify(x)                   # (N, out_channels, H, W)
         return x
