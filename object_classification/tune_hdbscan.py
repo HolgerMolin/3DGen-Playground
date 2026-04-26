@@ -41,7 +41,7 @@ import numpy as np
 _SCRIPT_DIR = Path(__file__).resolve().parent
 
 # Default grid values
-_DEFAULT_MIN_CLUSTER_SIZES = [50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260, 270, 280, 290, 300]
+_DEFAULT_MIN_CLUSTER_SIZES = [90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260, 270, 280, 290, 300]
 _DEFAULT_MIN_SAMPLES = [1, 2, 3, 4, 5, 10, 20]       # None (= min_cluster_size) added implicitly
 _DEFAULT_EPSILONS = [0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
 _DEFAULT_METHODS = ["eom", "leaf"]

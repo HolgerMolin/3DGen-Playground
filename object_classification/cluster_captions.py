@@ -181,7 +181,7 @@ def run_hdbscan(
         min_samples=ms,
         metric=metric,
         prediction_data=True,
-        cluster_selection_epsilon=0.1,
+        cluster_selection_epsilon=0.15,
     )
     labels = clusterer.fit_predict(coords)
 
