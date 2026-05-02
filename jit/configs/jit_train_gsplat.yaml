@@ -10,6 +10,11 @@
 
 # --- Model ---
 model: JiT-B/8
+# Patch-embed shape. true = two-stage BottleneckPatchEmbed (in_chans→bottleneck_dim→embed_dim,
+# narrowing through bottleneck_dim < embed_dim — explicit information bottleneck).
+# false = single Conv2d patch embed (in_chans→embed_dim), no rank reduction below embed_dim.
+# Checkpoints are not interchangeable across this flag (different submodule names).
+bottleneck: false
 predict_xstart: true
 noise_schedule: squaredcos_cap_v2
 # CFG dropout. 0.2 starves class signal early; keep around 0.1 until CFG
@@ -21,6 +26,12 @@ class_dropout_prob: 0.1
 # useful when `class_signal` stays stuck (see runs/2026-04-19 writeups).
 aux_classifier: false
 aux_classifier_weight: 0.0
+# Class-from-null cosine repulsion: pushes class embeddings away from the
+# CFG null token so classifier-free guidance retains signal at sampling.
+# Stopgrad on null row — null only learns from normal CFG-dropout training.
+# Weight is hot-reloadable via overrides.yaml; margin is static.https://vscode-remote+ssh-002dremote-002b34-002e66-002e119-002e50.vscode-resource.vscode-cdn.net/home/hmolin/3DGen-Playground/output/jit_B8_20260429_042413/loss_plots/class_null_cos.png?version%3D1777438607152
+null_repel_weight: 0.0
+null_repel_margin: 0.5
 # LabelEmbedder embedding-table init std. 0.02 = original DiT recipe; bump
 # to ~0.1 to amplify class conditioning at init without changing architecture.
 label_embed_init_std: 0.1
@@ -34,13 +45,9 @@ sh_degree0_only: true
 # Inverse-frequency WeightedRandomSampler over class labels. Counters the
 # ~1000:1 class imbalance in the GaussianVerse aesthetic split.
 class_balanced_sampler: true
-# Per-channel MSE weighting. After global per-channel normalization, per-object
-# spatial std still varies ~3.5× across DC channels (0.27 on opacity → 0.94 on
-# SH DC rgb); channels with small spatial std get ~var² less gradient. These
-# weights = 1/spatial_std², capped at 3.0, normalized to mean=1. Audit script:
-# data/audit_norm_stats.py. Length must match in_channels (14 for sh_degree0_only).
-# DC indices: [0, 1, 2, 3, 4, 20, 36, 52, 53, 54, 55, 56, 57, 58]
-channel_loss_weights: "[0.766, 0.799, 0.757, 1.822, 1.036, 0.979, 1.006, 0.950, 0.980, 1.023, 1.822, 0.689, 0.687, 0.682]"
+# channel_loss_weights removed pending re-audit after the post-fix stats
+# recompute (rot_w std shifted 5.4×, scale_{x,y,z} 2.5×, so the old 1/spatial_std²
+# weights are stale). Re-run data/audit_norm_stats.py with the new mean/std.
 
 # --- Render loss ---
 render_loss_weight: 0.1
@@ -50,7 +57,7 @@ lpips_net: vgg
 render_loss_num_cam: 1
 train_render_size: 128
 ref_camera_tar: /home/tiangexiang/gen3d/ref_camera.tar.gz
-enable_render_loss_after: 50000
+enable_render_loss_after: 20000
 # Hard mask on FM t_value: render loss only applies when t_value >= cutoff
 # (i.e. the clean fraction is >= cutoff). 0 disables the mask.
 render_loss_noise_cutoff: 0.4
@@ -58,7 +65,7 @@ train_render_log_every: 0
 train_render_log_num_cam: 2
 
 # --- Training ---
-epochs: 120
+epochs: 200
 batch_size: 16
 lr: 2e-4
 # none | warmup (ramp to lr then hold) | cosine (warmup then decay to lr_min)
@@ -103,8 +110,8 @@ P_std: 1.0
 # lpips=0.02. Ramp starts at the engagement step (50 000) from zero and reaches the
 # max values over 30 000 opt steps; held flat thereafter.
 render_weight_schedule:
-  - [50000, 0.0, 0.0,  0.0]
-  - [80000, 0.3, 0.15, 0.02]
+  - [20000,  0.0, 0.0,  0.0 ]
+  - [60000,  0.6, 0.3, 0.1]
 
 # --- Logging / checkpoints / validation ---
 # Training uses JiT flow-matching noising (x_t = t*x_0 + (1-t)*eps, t=0 noise,
@@ -130,3 +137,6 @@ results_dir: output/dit_results
 # overrides_every: 1000
 
 # resume: /home/hmolin/3DGen-Playground/output/jit_JiT-XL/8_results_gsplat/0020000.pt
+
+
+                                                                                                                                                                                                                                            

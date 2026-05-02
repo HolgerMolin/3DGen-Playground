@@ -58,7 +58,12 @@ if GS_ROOT not in sys.path:
 
 from dataloaders.class_3dgen_loader import DC_ONLY_FEATURE_INDICES, FULL_3DGS_FEATURE_DIM
 from jit.models import JiT_3DGS_models
-from jit.sampling import SAMPLER_CHOICES, resolve_sampling_shape, sample_model
+from jit.sampling import (
+    SAMPLER_CHOICES,
+    TIMESTEP_SCHEDULE_CHOICES,
+    resolve_sampling_shape,
+    sample_model,
+)
 from utils.plane_utils import load_sphere2plane
 from utils.gsplat_render_util import (
     _denormalize_point_cloud,
@@ -117,10 +122,11 @@ def main(args: argparse.Namespace) -> None:
     noise_sched  = _resolve_arg(args.noise_schedule, ckpt, "noise_schedule", "linear")
     sh_degree0   = _resolve_arg(args.sh_degree0_only, ckpt, "sh_degree0_only", False)
     cls_dropout  = _resolve_arg(args.class_dropout_prob, ckpt, "class_dropout_prob", 0.1)
+    bottleneck   = _resolve_arg(args.bottleneck,   ckpt, "bottleneck",     True)
 
     logger.info(
-        "Model: %s | predict_xstart=%s | noise_schedule=%s | sh_degree0_only=%s",
-        model_name, predict_x0, noise_sched, sh_degree0,
+        "Model: %s | predict_xstart=%s | noise_schedule=%s | sh_degree0_only=%s | bottleneck=%s",
+        model_name, predict_x0, noise_sched, sh_degree0, bottleneck,
     )
 
     # ── Feature config ────────────────────────────────────────────────────────
@@ -152,6 +158,7 @@ def main(args: argparse.Namespace) -> None:
         num_classes=num_classes,
         class_dropout_prob=cls_dropout,
         learn_sigma=False,
+        bottleneck=bottleneck,
     ).to(device)
 
     # Load weights — default to base because for the current JiT-XL/8 checkpoint
@@ -231,10 +238,12 @@ def main(args: argparse.Namespace) -> None:
 
     # ── Sampling loop ─────────────────────────────────────────────────────────
     logger.info(
-        "Generating %d sample(s) | sampler=%s | steps=%d | cfg_scale=%.2f | "
-        "cfg_interval=(%.2f, %.2f) | t_eps=%.4f | noise_scale=%.3f | predict_xstart=%s",
-        args.num_samples, args.sampler, args.num_steps, args.cfg_scale,
-        args.cfg_interval[0], args.cfg_interval[1], args.t_eps, args.noise_scale, predict_x0,
+        "Generating %d sample(s) | sampler=%s | steps=%d | t_schedule=%s | "
+        "cfg_scale=%.2f | cfg_interval=(%.2f, %.2f) | t_eps=%.4f | noise_scale=%.3f | "
+        "predict_xstart=%s",
+        args.num_samples, args.sampler, args.num_steps, args.timestep_schedule,
+        args.cfg_scale, args.cfg_interval[0], args.cfg_interval[1],
+        args.t_eps, args.noise_scale, predict_x0,
     )
 
     for i in range(args.num_samples):
@@ -267,6 +276,7 @@ def main(args: argparse.Namespace) -> None:
                 cfg_interval=tuple(args.cfg_interval),
                 t_eps=args.t_eps,
                 noise_scale=args.noise_scale,
+                timestep_schedule=args.timestep_schedule,
                 ddim_eta=args.ddim_eta,
                 generator=generator,
             )
@@ -341,6 +351,9 @@ def _build_parser() -> argparse.ArgumentParser:
                          help="Use only DC SH coefficients (14 channels instead of 59)")
     g_model.add_argument("--class_dropout_prob", type=float, default=None,
                          help="Label dropout prob (must match training)")
+    g_model.add_argument("--bottleneck", action=argparse.BooleanOptionalAction, default=None,
+                         help="Two-stage BottleneckPatchEmbed (proj1->bottleneck_dim->proj2). "
+                              "If omitted, auto-read from checkpoint args (default True for legacy).")
     g_model.add_argument("--use_ema", action=argparse.BooleanOptionalAction, default=False,
                          help="Use EMA weights from checkpoint. Default False: for the current "
                               "JiT-XL/8 runs the EMA is collapsed toward the mean; base weights "
@@ -374,6 +387,13 @@ def _build_parser() -> argparse.ArgumentParser:
     g_sample.add_argument("--noise_scale", type=float, default=1.0,
                           help="Scale factor on the initial noise. "
                                "Only applies to heun/euler samplers.")
+    g_sample.add_argument("--timestep_schedule", choices=TIMESTEP_SCHEDULE_CHOICES,
+                          default="logit_normal",
+                          help="Inference timestep spacing for heun/euler. "
+                               "'logit_normal' matches the trainer's t-density "
+                               "(sigmoid(N(0,1))) and reduces scale-tail outliers "
+                               "by ~20-30%% over 'linear' on JiT-B/8 (see "
+                               "docs/sampler_ood_diagnosis.md test 8).")
     g_sample.add_argument("--ddim_eta", type=float, default=0.0,
                           help="DDIM eta: 0.0 = deterministic, 1.0 ≈ DDPM. "
                                "Only applies to the ddim sampler.")

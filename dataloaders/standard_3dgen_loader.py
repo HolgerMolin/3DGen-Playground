@@ -94,6 +94,11 @@ def load_ply(path: str) -> np.ndarray:
     xyz = np.stack((np.asarray(plydata.elements[0]["x"]),
                     np.asarray(plydata.elements[0]["y"]),
                     np.asarray(plydata.elements[0]["z"])), axis=1)
+    # Clamp per-axis to the rough unit-cube extent. A handful of objects have
+    # stray points 100+σ from the global xyz mean — fitting failures the source
+    # 3DGS optimizer never pruned. Clipped points sit at the boundary and add
+    # zero pixels to the render anyway.
+    xyz = np.clip(xyz, -3.0, 3.0)
     opacities = np.asarray(plydata.elements[0]["opacity"])[..., np.newaxis]
 
     # Load DC features
@@ -119,12 +124,26 @@ def load_ply(path: str) -> np.ndarray:
     for idx, attr_name in enumerate(scale_names):
         scales[:, idx] = np.asarray(plydata.elements[0][attr_name])
 
+    # Scales are stored in log space (pre-exp); below log(5e-4) ≈ -7.6 the gaussian
+    # is sub-half-pixel at 512² render and contributes zero pixels regardless,
+    # so clip the dead-scale tail that otherwise dominates per-channel stats.
+    scales = np.maximum(scales, -7.6)
+
     # Load rotations
     rot_names = [p.name for p in plydata.elements[0].properties if p.name.startswith("rot")]
     rot_names = sorted(rot_names, key=lambda x: int(x.split('_')[-1]))
     rots = np.zeros((xyz.shape[0], len(rot_names)))
     for idx, attr_name in enumerate(rot_names):
         rots[:, idx] = np.asarray(plydata.elements[0][attr_name])
+
+    # 3DGS stores `_rotation` as a free 4D vector — only the direction matters
+    # because the renderer normalizes at render time, so per-object ||q|| drift
+    # is a fitting artifact that injects huge variance into per-channel stats.
+    # Normalize to the unit 3-sphere here, then canonicalize sign so q and -q
+    # (which encode the same rotation) don't smear the marginal of rot_w.
+    rots = rots / (np.linalg.norm(rots, axis=1, keepdims=True) + 1e-8)
+    flip = rots[:, 0] < 0
+    rots[flip] *= -1.0
 
     # Concatenate features
     features = np.concatenate((features_dc, features_extra), axis=-1).reshape(xyz.shape[0], -1)
@@ -215,6 +234,7 @@ class Standard3DGenDataset(Dataset):
         mean_file: Optional[str] = None,
         std_file: Optional[str] = None,
         sphere2plane_path: str = "data/sphere2plane.npy",
+        exclude_keys_file: Optional[str] = None,
     ):
         """Initialize the dataset.
         
@@ -240,6 +260,16 @@ class Standard3DGenDataset(Dataset):
         
         # Load object list
         self.obj_data = load_obj_list(obj_list)
+
+        if exclude_keys_file is not None:
+            with open(exclude_keys_file, "r") as f:
+                exclude_keys = set(json.load(f))
+            before = len(self.obj_data)
+            self.obj_data = {k: v for k, v in self.obj_data.items() if k not in exclude_keys}
+            logging.info(
+                f"Excluded {before - len(self.obj_data)} of {before} keys via {exclude_keys_file}"
+            )
+
         self.keys = list(self.obj_data.keys())
         
         # Load captions

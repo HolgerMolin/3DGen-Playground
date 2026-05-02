@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING, Optional
 
 import torch
@@ -11,6 +12,36 @@ if TYPE_CHECKING:
     from diffusers import DPMSolverMultistepScheduler
 
 SAMPLER_CHOICES = ("heun", "euler", "dpm", "ddpm", "ddim")
+TIMESTEP_SCHEDULE_CHOICES = ("linear", "logit_normal")
+
+
+def _build_inference_timesteps(
+    *,
+    num_inference_steps: int,
+    schedule: str,
+    device: torch.device,
+) -> torch.Tensor:
+    """Build the inference timestep grid for heun/euler from ``t=0`` to ``t=1``.
+
+    schedule="linear":       evenly spaced in t.
+    schedule="logit_normal": evenly spaced in the quantile of the trainer's
+        ``sigmoid(N(0,1))`` t-distribution. Concentrates inference points
+        around t=0.5 where the velocity field is best-trained — empirically
+        cuts scale-tail outliers by ~20–30% on JiT-B/8 at 100 steps (see
+        ``docs/sampler_ood_diagnosis.md`` test 8).
+    """
+    if schedule == "linear":
+        return torch.linspace(0.0, 1.0, num_inference_steps + 1, device=device, dtype=torch.float32)
+    if schedule == "logit_normal":
+        eps = 1e-6
+        quantiles = torch.linspace(
+            eps, 1.0 - eps, num_inference_steps + 1, device=device, dtype=torch.float32,
+        )
+        z = torch.erfinv(2 * quantiles - 1) * math.sqrt(2.0)
+        return torch.sigmoid(z)
+    raise ValueError(
+        f"Unknown timestep_schedule {schedule!r}. Choices: {', '.join(TIMESTEP_SCHEDULE_CHOICES)}"
+    )
 
 
 def resolve_sampling_shape(
@@ -231,6 +262,7 @@ def sample_with_jit_ode(
     cfg_interval: tuple[float, float] = (0.0, 1.0),
     t_eps: float = 5e-2,
     noise_scale: float = 1.0,
+    timestep_schedule: str = "logit_normal",
     generator: Optional[torch.Generator] = None,
 ) -> torch.Tensor:
     if not predict_xstart:
@@ -248,7 +280,11 @@ def sample_with_jit_ode(
 
     shape = _validate_sampling_shape(model, shape)
     sample = noise_scale * torch.randn(shape, device=device, dtype=torch.float32, generator=generator)
-    timesteps = torch.linspace(0.0, 1.0, num_inference_steps + 1, device=device, dtype=torch.float32)
+    timesteps = _build_inference_timesteps(
+        num_inference_steps=num_inference_steps,
+        schedule=timestep_schedule,
+        device=device,
+    )
 
     was_training = model.training
     model.eval()
@@ -492,6 +528,7 @@ def sample_model(
     t_eps: float = 5e-2,
     noise_scale: float = 1.0,
     ddim_eta: float = 0.0,
+    timestep_schedule: str = "logit_normal",
     generator: Optional[torch.Generator] = None,
 ) -> torch.Tensor:
     if sampler in {"heun", "euler"}:
@@ -508,6 +545,7 @@ def sample_model(
             cfg_interval=cfg_interval,
             t_eps=t_eps,
             noise_scale=noise_scale,
+            timestep_schedule=timestep_schedule,
             generator=generator,
         )
     if sampler == "dpm":

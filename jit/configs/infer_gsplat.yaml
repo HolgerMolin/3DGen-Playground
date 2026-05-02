@@ -37,6 +37,7 @@ cfg_interval:           # restrict CFG to this time window; [0.0, 1.0] = always 
 # JiT ODE knobs (heun/euler only)
 t_eps: 0.05             # min t to avoid div-by-zero; try 0.01–0.1
 noise_scale: 1.0        # scale on initial noise
+timestep_schedule: logit_normal   # 'logit_normal' (default, matches training t-density) or 'linear'
 
 # DPM-Solver knobs (dpm only)
 dpm_solver_order: 2

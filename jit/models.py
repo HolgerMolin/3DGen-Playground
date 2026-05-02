@@ -181,6 +181,48 @@ class BottleneckPatchEmbed(nn.Module):
         return self.proj2(self.proj1(x)).flatten(2).transpose(1, 2)
 
 
+class PatchEmbed(nn.Module):
+    """Standard ViT-style patch embedding: single Conv2d from full grid → embed_dim tokens.
+
+    Equivalent to a linear projection of each flattened patch (in_chans*patch_size^2 → embed_dim);
+    no rank reduction below embed_dim, unlike BottleneckPatchEmbed.
+    """
+
+    def __init__(
+        self,
+        img_size=128,
+        patch_size=16,
+        in_chans=59,
+        embed_dim=768,
+        bias=True,
+    ):
+        super().__init__()
+        if img_size % patch_size != 0:
+            raise ValueError(f"img_size={img_size} must be divisible by patch_size={patch_size}")
+
+        self.img_size = (img_size, img_size)
+        self.patch_size = (patch_size, patch_size)
+        grid_size = img_size // patch_size
+        self.num_patches = grid_size * grid_size
+
+        self.proj = nn.Conv2d(
+            in_chans,
+            embed_dim,
+            kernel_size=patch_size,
+            stride=patch_size,
+            bias=bias,
+        )
+
+    def forward(self, x):
+        _, _, h, w = x.shape
+        if (h, w) != self.img_size:
+            raise ValueError(
+                f"Input size ({h}x{w}) does not match model patch embed size "
+                f"({self.img_size[0]}x{self.img_size[1]})."
+            )
+        return self.proj(x).flatten(2).transpose(1, 2)
+
+
 #################################################################################
 #               Embedding Layers for Timesteps and Class Labels                 #
 #################################################################################
@@ -323,6 +365,7 @@ class DiT(nn.Module):
         learn_sigma=False,
         gradient_checkpointing=True,
         bottleneck_dim=128,
+        bottleneck=True,
         attn_drop=0.0,
         proj_drop=0.0,
         aux_classifier=False,
@@ -349,14 +392,23 @@ class DiT(nn.Module):
                 f"Per-head hidden size must be divisible by 4 for 2D RoPE, got hidden_size={hidden_size}, num_heads={num_heads}"
             )
 
-        self.x_embedder = BottleneckPatchEmbed(
-            input_size,
-            patch_size,
-            in_channels,
-            bottleneck_dim,
-            hidden_size,
-            bias=True,
-        )
+        if bottleneck:
+            self.x_embedder = BottleneckPatchEmbed(
+                input_size,
+                patch_size,
+                in_channels,
+                bottleneck_dim,
+                hidden_size,
+                bias=True,
+            )
+        else:
+            self.x_embedder = PatchEmbed(
+                input_size,
+                patch_size,
+                in_channels,
+                hidden_size,
+                bias=True,
+            )
         self.t_embedder = TimestepEmbedder(hidden_size)
         self.y_embedder = LabelEmbedder(num_classes, hidden_size, class_dropout_prob)
         num_patches = self.x_embedder.num_patches
@@ -399,12 +451,17 @@ class DiT(nn.Module):
         pos_embed = get_2d_sincos_pos_embed(self.pos_embed.shape[-1], int(self.x_embedder.num_patches ** 0.5))
         self.pos_embed.data.copy_(torch.from_numpy(pos_embed).float().unsqueeze(0))
 
-        # Initialize patch embed like a pair of linear projections.
-        w1 = self.x_embedder.proj1.weight.data
-        nn.init.xavier_uniform_(w1.view([w1.shape[0], -1]))
-        w2 = self.x_embedder.proj2.weight.data
-        nn.init.xavier_uniform_(w2.view([w2.shape[0], -1]))
-        nn.init.constant_(self.x_embedder.proj2.bias, 0)
+        # Initialize patch embed (single or two-stage) with xavier on the flattened weights.
+        if isinstance(self.x_embedder, BottleneckPatchEmbed):
+            w1 = self.x_embedder.proj1.weight.data
+            nn.init.xavier_uniform_(w1.view([w1.shape[0], -1]))
+            w2 = self.x_embedder.proj2.weight.data
+            nn.init.xavier_uniform_(w2.view([w2.shape[0], -1]))
+            nn.init.constant_(self.x_embedder.proj2.bias, 0)
+        else:
+            w = self.x_embedder.proj.weight.data
+            nn.init.xavier_uniform_(w.view([w.shape[0], -1]))
+            nn.init.constant_(self.x_embedder.proj.bias, 0)
 
         # Initialize label embedding table:
         nn.init.normal_(self.y_embedder.embedding_table.weight, std=self._label_embed_init_std)
@@ -563,12 +620,12 @@ JiT_3DGS_models = {
     'JiT-XL/8': _jit_factory(depth=28, hidden_size=1152, patch_size=8, num_heads=16, bottleneck_dim=256),
     'JiT-XL/16': _jit_factory(depth=28, hidden_size=1152, patch_size=16, num_heads=16, bottleneck_dim=256),
     'JiT-XL/32': _jit_factory(depth=28, hidden_size=1152, patch_size=32, num_heads=16, bottleneck_dim=256),
-    'JiT-L/8': _jit_factory(depth=24, hidden_size=1024, patch_size=8, num_heads=16, bottleneck_dim=128),
-    'JiT-L/16': _jit_factory(depth=24, hidden_size=1024, patch_size=16, num_heads=16, bottleneck_dim=128),
-    'JiT-L/32': _jit_factory(depth=24, hidden_size=1024, patch_size=32, num_heads=16, bottleneck_dim=128),
-    'JiT-B/8': _jit_factory(depth=12, hidden_size=768, patch_size=8, num_heads=12, bottleneck_dim=128),
-    'JiT-B/16': _jit_factory(depth=12, hidden_size=768, patch_size=16, num_heads=12, bottleneck_dim=128),
-    'JiT-B/32': _jit_factory(depth=12, hidden_size=768, patch_size=32, num_heads=12, bottleneck_dim=128),
+    'JiT-L/8': _jit_factory(depth=24, hidden_size=1024, patch_size=8, num_heads=16, bottleneck_dim=256),
+    'JiT-L/16': _jit_factory(depth=24, hidden_size=1024, patch_size=16, num_heads=16, bottleneck_dim=256),
+    'JiT-L/32': _jit_factory(depth=24, hidden_size=1024, patch_size=32, num_heads=16, bottleneck_dim=256),
+    'JiT-B/8': _jit_factory(depth=12, hidden_size=768, patch_size=8, num_heads=12, bottleneck_dim=256),
+    'JiT-B/16': _jit_factory(depth=12, hidden_size=768, patch_size=16, num_heads=12, bottleneck_dim=256),
+    'JiT-B/32': _jit_factory(depth=12, hidden_size=768, patch_size=32, num_heads=12, bottleneck_dim=256),
     'JiT-S/8': _jit_factory(depth=12, hidden_size=384, patch_size=8, num_heads=6, bottleneck_dim=64),
     'JiT-S/16': _jit_factory(depth=12, hidden_size=384, patch_size=16, num_heads=6, bottleneck_dim=64),
     'JiT-S/32': _jit_factory(depth=12, hidden_size=384, patch_size=32, num_heads=6, bottleneck_dim=64),
@@ -578,7 +635,7 @@ JiT_3DGS_models = {
 DiT_3DGS_models = {
     **JiT_3DGS_models,
     'DiT-XL/8': _jit_factory(depth=28, hidden_size=1152, patch_size=8, num_heads=16, bottleneck_dim=256),
-    'DiT-L/8': _jit_factory(depth=24, hidden_size=1024, patch_size=8, num_heads=16, bottleneck_dim=128),
+    'DiT-L/8': _jit_factory(depth=24, hidden_size=1024, patch_size=8, num_heads=16, bottleneck_dim=256),
     'DiT-B/8': _jit_factory(depth=12, hidden_size=768, patch_size=8, num_heads=12, bottleneck_dim=128),
     'DiT-S/8': _jit_factory(depth=12, hidden_size=384, patch_size=8, num_heads=6, bottleneck_dim=64),
 }

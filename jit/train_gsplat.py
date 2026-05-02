@@ -152,6 +152,7 @@ _OVERRIDABLE_KEYS = frozenset({
     "alpha_mask_loss_weight",
     "lpips_loss_weight",
     "aux_classifier_weight",
+    "null_repel_weight",
     "P_mean",
     "grad_norm_log_every_n_prints",
 })
@@ -167,6 +168,7 @@ class TrainRuntimeOverrides:
     alpha_mask_loss_weight: float
     lpips_loss_weight: float
     aux_classifier_weight: float
+    null_repel_weight: float
     P_mean: float
     grad_norm_log_every_n_prints: float  # float so overrides YAML can write it; cast to int on use
 
@@ -179,6 +181,7 @@ class TrainRuntimeOverrides:
             alpha_mask_loss_weight=float(args.alpha_mask_loss_weight),
             lpips_loss_weight=float(args.lpips_loss_weight),
             aux_classifier_weight=float(args.aux_classifier_weight),
+            null_repel_weight=float(args.null_repel_weight),
             P_mean=float(args.P_mean),
             grad_norm_log_every_n_prints=float(args.grad_norm_log_every_n_prints),
         )
@@ -369,6 +372,38 @@ def _load_and_apply_overrides_yaml(
 
 
 #################################################################################
+#                        Class-from-null repulsion loss                         #
+#################################################################################
+
+def _compute_null_repel_loss(
+    embedding_table: torch.Tensor,
+    num_classes: int,
+    margin: float,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Push class embeddings away from the CFG null token on the cosine sphere.
+
+    ``embedding_table`` is ``LabelEmbedder.embedding_table.weight`` — shape
+    ``(num_classes + 1, D)`` with the null embedding at row ``num_classes``.
+
+    Returns ``(repel_loss, class_null_cos_mean)``:
+
+      * ``repel_loss`` — hinge-squared on ``cos(e_c, stopgrad(e_null))`` above
+        ``margin``, averaged over classes. The null row is detached so only
+        class rows receive gradient; null continues to learn from its normal
+        CFG-dropout training signal.
+      * ``class_null_cos_mean`` — the raw (pre-hinge) mean cosine between
+        classes and null, detached for diagnostic logging. This is the
+        geometric quantity the regularizer moves; watch it drop over training.
+    """
+    null_vec = embedding_table[num_classes].detach().unsqueeze(0)  # (1, D), stopgrad
+    class_vecs = embedding_table[:num_classes]                      # (C, D)
+    cos = F.cosine_similarity(class_vecs, null_vec.expand_as(class_vecs), dim=-1)
+    hinge = (cos - margin).clamp(min=0.0)
+    repel_loss = (hinge * hinge).mean()
+    return repel_loss, cos.detach().mean()
+
+
+#################################################################################
 #                          Rendering Loss Helpers                               #
 #################################################################################
 
@@ -534,12 +569,21 @@ def _measure_conditioning_signal(
     t_value: float = 0.3,
     batch_size: int = 8,
     seed: int = 0,
+    num_class_probes: int = 16,
+    num_class_pairs: int = 16,
+    return_per_class: bool = False,
 ) -> dict:
     """Probe class conditioning at a fixed t on a fixed random batch.
 
-    Computes, as fractions of ``‖pred_A‖_RMS``:
-      - ``cfg_signal`` = ``‖pred(x_t, y=A) − pred(x_t, null)‖_RMS``
-      - ``class_signal`` = ``‖pred(x_t, y=A) − pred(x_t, y=B)‖_RMS``
+    Computes per-class, as fractions of ``‖pred(y=k)‖_RMS``:
+      - ``cfg_signal_k`` = ``‖pred(x_t, y=k) − pred(x_t, null)‖_RMS``
+    and per-pair:
+      - ``class_signal_(a,b)`` = ``‖pred(x_t, y=a) − pred(x_t, y=b)‖_RMS``
+
+    Returns the **mean** over a random sample of ``num_class_probes`` classes
+    (cfg_signal) and ``num_class_pairs`` random class pairs (class_signal),
+    plus min/max for spread. The same noise sample ``x_t`` is reused across
+    all conditional/null forwards, so the differences are class-only.
 
     ``cfg_signal < 0.01`` → conditioning collapsed, CFG is a no-op.
     ``class_signal ≈ 0`` with non-zero ``cfg_signal`` → model uses "some class
@@ -550,40 +594,82 @@ def _measure_conditioning_signal(
     model_was_training = model.training
     model.eval()
     g = torch.Generator(device=device).manual_seed(int(seed))
+    g_cpu = torch.Generator(device="cpu").manual_seed(int(seed) + 1)
+
     shape = resolve_sampling_shape(model=model, batch_size=batch_size, in_channels=in_channels)
     x_t = torch.randn(*shape, generator=g, device=device)
-    # Discrete t matches training: round(t_value * (T-1)).
     t_disc = torch.full(
         (batch_size,),
         int(round(t_value * (diffusion_num_timesteps - 1))),
         dtype=torch.long, device=device,
     )
-    # Two distinct class labels. Wrap to valid range.
-    y_a = torch.zeros(batch_size, dtype=torch.long, device=device)
-    y_b = torch.full((batch_size,), min(num_classes - 1, 1), dtype=torch.long, device=device)
-    # Null class id = num_classes (LabelEmbedder's reserved CFG slot).
-    y_null = torch.full((batch_size,), num_classes, dtype=torch.long, device=device)
 
-    unwrapped = model
-    pred_a = unwrapped(x_t, t_disc, y_a).float()
-    pred_b = unwrapped(x_t, t_disc, y_b).float()
-    pred_null = unwrapped(x_t, t_disc, y_null).float()
+    K = max(1, min(num_class_probes, num_classes))
+    class_pool = torch.randperm(num_classes, generator=g_cpu)[:K].tolist()
 
-    def _rms(t: torch.Tensor) -> float:
-        return float(t.square().mean().sqrt().item())
-
-    norm_a = _rms(pred_a)
     eps = 1e-8
-    cfg_signal = _rms(pred_a - pred_null) / (norm_a + eps)
-    class_signal = _rms(pred_a - pred_b) / (norm_a + eps)
+    y_null = torch.full((batch_size,), num_classes, dtype=torch.long, device=device)
+    pred_null = model(x_t, t_disc, y_null).float()
+
+    cond_preds: dict[int, torch.Tensor] = {}
+    cond_norms: dict[int, float] = {}
+    cfg_signals: dict[int, float] = {}
+    for cls in class_pool:
+        y = torch.full((batch_size,), int(cls), dtype=torch.long, device=device)
+        pred_c = model(x_t, t_disc, y).float()
+        norm_c = float(pred_c.square().mean().sqrt().item())
+        cfg_c = float((pred_c - pred_null).square().mean().sqrt().item()) / (norm_c + eps)
+        cond_preds[int(cls)] = pred_c
+        cond_norms[int(cls)] = norm_c
+        cfg_signals[int(cls)] = cfg_c
+
+    class_signals: list[float] = []
+    if K >= 2 and num_class_pairs > 0:
+        max_pairs = min(num_class_pairs, K * (K - 1) // 2)
+        seen: set[tuple[int, int]] = set()
+        attempts = 0
+        while len(class_signals) < max_pairs and attempts < 20 * max_pairs:
+            attempts += 1
+            i = int(torch.randint(0, K, (1,), generator=g_cpu).item())
+            j = int(torch.randint(0, K, (1,), generator=g_cpu).item())
+            if i == j:
+                continue
+            key = (min(i, j), max(i, j))
+            if key in seen:
+                continue
+            seen.add(key)
+            a, b = class_pool[i], class_pool[j]
+            pa, pb = cond_preds[a], cond_preds[b]
+            denom = 0.5 * (cond_norms[a] + cond_norms[b]) + eps
+            cs = float((pa - pb).square().mean().sqrt().item()) / denom
+            class_signals.append(cs)
+
+    cfg_vals = list(cfg_signals.values())
+    cfg_mean = sum(cfg_vals) / len(cfg_vals) if cfg_vals else 0.0
+    cfg_min = min(cfg_vals) if cfg_vals else 0.0
+    cfg_max = max(cfg_vals) if cfg_vals else 0.0
+    class_mean = sum(class_signals) / len(class_signals) if class_signals else 0.0
+    class_min = min(class_signals) if class_signals else 0.0
+    class_max = max(class_signals) if class_signals else 0.0
+    pred_rms_mean = sum(cond_norms.values()) / len(cond_norms) if cond_norms else 0.0
 
     if model_was_training:
         model.train()
-    return {
-        "cfg_signal": cfg_signal,
-        "class_signal": class_signal,
-        "pred_rms": norm_a,
+
+    result = {
+        "cfg_signal": cfg_mean,
+        "cfg_signal_min": cfg_min,
+        "cfg_signal_max": cfg_max,
+        "class_signal": class_mean,
+        "class_signal_min": class_min,
+        "class_signal_max": class_max,
+        "pred_rms": pred_rms_mean,
+        "num_class_probes": K,
+        "num_class_pairs": len(class_signals),
     }
+    if return_per_class:
+        result["cfg_signal_per_class"] = cfg_signals
+    return result
 
 
 def _run_validation_render(
@@ -782,6 +868,7 @@ def main(args):
         mean_file=args.mean_file,
         std_file=args.std_file,
         sphere2plane_path=args.sphere2plane_path,
+        exclude_keys_file=args.exclude_keys_file,
     )
 
     # Resolve feature indices for sh_degree0_only
@@ -882,9 +969,16 @@ def main(args):
         class_dropout_prob=args.class_dropout_prob,
         learn_sigma=False,
         gradient_checkpointing=args.gradient_checkpointing,
+        bottleneck=args.bottleneck,
         aux_classifier=args.aux_classifier,
         label_embed_init_std=args.label_embed_init_std,
     )
+    if is_main:
+        logger.info(
+            "[patch-embed] %s",
+            "bottleneck (proj1→bottleneck_dim→proj2)" if args.bottleneck
+            else "single-conv (in_chans→embed_dim, no rank reduction below embed_dim)",
+        )
     if is_main and args.aux_classifier:
         logger.info(
             "[aux-classifier] enabled: linear head → %d classes, initial weight=%.4g, "
@@ -1116,15 +1210,21 @@ def main(args):
             if args.lr_schedule in ('cosine', 'warmup'):
                 logger.info(f"Resumed LR opt_step={opt_step}")
 
-    # Per-t-bucket MSE accumulators: t in (0,1) split into equal-width bins.
-    # t→0 is noise, t→1 is clean (FM convention). Declared up here so the
-    # loss tracker is sized consistently with the bucket tensors below.
-    num_t_buckets = 4
+    # Per-t-bucket MSE accumulators: t in (0,1) split into custom-width bins
+    # to give finer resolution near t=1 (clean end) where loss falls fastest.
+    # t→0 is noise, t→1 is clean (FM convention).
+    t_bucket_edges = (0.0, 0.5, 0.85, 0.95, 1.0)
+    num_t_buckets = len(t_bucket_edges) - 1
+    # Inner boundaries fed to torch.bucketize: t < 0.5 → 0, [0.5,0.85) → 1, ...
+    t_bucket_boundaries = torch.tensor(
+        t_bucket_edges[1:-1], device=device, dtype=torch.float32
+    )
 
     # Loss tracker (rank-0 only; resume appends to existing loss_log.csv)
     loss_tracker = LossTracker(
         output_dir=args.results_dir,
         num_t_buckets=num_t_buckets,
+        t_bucket_edges=list(t_bucket_edges),
         enabled=is_main,
         resume=bool(args.resume),
     )
@@ -1139,6 +1239,8 @@ def main(args):
     log_render_alpha_l1 = torch.zeros([], device=device)
     log_render_lpips = torch.zeros([], device=device)
     log_aux_loss = torch.zeros([], device=device)
+    log_repel_loss = torch.zeros([], device=device)
+    log_class_null_cos = torch.zeros([], device=device)
     log_grad_norm = 0.0
     log_grad_steps = 0
     log_steps = 0
@@ -1147,6 +1249,7 @@ def main(args):
     log_alpha_gn = 0.0
     log_lpips_gn = 0.0
     log_aux_gn = 0.0
+    log_repel_gn = 0.0
     log_per_loss_gn_steps = 0
     log_t_bucket_sum = torch.zeros(num_t_buckets, device=device)
     log_t_bucket_cnt = torch.zeros(num_t_buckets, device=device)
@@ -1437,12 +1540,28 @@ def main(args):
                         loss_tracker.flush_plots()
                     accelerator.wait_for_everyone()
 
+                # Class-from-null repulsion: cosine hinge on class vs null
+                # embedding. Pure additive scalar; stopgrad on null row inside
+                # helper. Computed every step so the diagnostic mean cosine is
+                # always logged, even when the weight is 0. No-op when CFG
+                # dropout is disabled (no null row exists).
+                if args.class_dropout_prob > 0.0:
+                    repel_loss, class_null_cos_mean = _compute_null_repel_loss(
+                        unwrapped_model.y_embedder.embedding_table.weight,
+                        num_classes,
+                        float(args.null_repel_margin),
+                    )
+                else:
+                    repel_loss = torch.zeros([], device=device)
+                    class_null_cos_mean = torch.zeros([], device=device)
+
                 total_loss = (
                     mse_loss
                     + float(runtime.render_loss_weight) * render_l1_loss
                     + float(runtime.alpha_mask_loss_weight) * render_alpha_l1_loss
                     + float(runtime.lpips_loss_weight) * render_lpips_loss
                     + float(runtime.aux_classifier_weight) * aux_loss
+                    + float(runtime.null_repel_weight) * repel_loss
                 )
 
                 # Per-loss gradient norm measurement (single-GPU only).
@@ -1470,6 +1589,7 @@ def main(args):
                                 "alpha_l1": (render_alpha_l1_loss, float(runtime.alpha_mask_loss_weight)),
                                 "lpips": (render_lpips_loss, float(runtime.lpips_loss_weight)),
                                 "aux": (aux_loss, float(runtime.aux_classifier_weight)),
+                                "repel": (repel_loss, float(runtime.null_repel_weight)),
                             },
                         )
                     log_mse_gn += _per_loss_norms.get("mse", 0.0)
@@ -1477,6 +1597,7 @@ def main(args):
                     log_alpha_gn += _per_loss_norms.get("alpha_l1", 0.0)
                     log_lpips_gn += _per_loss_norms.get("lpips", 0.0)
                     log_aux_gn += _per_loss_norms.get("aux", 0.0)
+                    log_repel_gn += _per_loss_norms.get("repel", 0.0)
                     log_per_loss_gn_steps += 1
 
                 # Backward pass (accelerate handles scaling + sync)
@@ -1506,10 +1627,15 @@ def main(args):
             log_render_alpha_l1 += render_alpha_l1_loss.detach()
             log_render_lpips += render_lpips_loss.detach()
             log_aux_loss += aux_loss.detach()
-            # Bucket per-sample MSE by continuous t_value ∈ (0,1).
+            log_repel_loss += repel_loss.detach()
+            log_class_null_cos += class_null_cos_mean
+            # Bucket per-sample MSE by continuous t_value ∈ (0,1) using the
+            # custom edges defined above.
             with torch.no_grad():
-                bucket_idx = torch.clamp(
-                    (t_value.detach() * num_t_buckets).long(), 0, num_t_buckets - 1
+                bucket_idx = torch.bucketize(
+                    t_value.detach().to(t_bucket_boundaries.dtype),
+                    t_bucket_boundaries,
+                    right=True,
                 )
                 per_sample = sample_losses.detach()
                 log_t_bucket_sum.scatter_add_(0, bucket_idx, per_sample)
@@ -1545,6 +1671,19 @@ def main(args):
                 avg_aux = (log_aux_loss.item() / log_steps) if aux_active else None
                 if aux_active:
                     msg += f" | Aux: {avg_aux:.4f}"
+                # Always log the class-to-null cosine diagnostic when CFG dropout
+                # is on (null exists); log repel loss only when the regularizer
+                # is active.
+                repel_active = float(runtime.null_repel_weight) > 0.0
+                null_exists = args.class_dropout_prob > 0.0
+                avg_repel = (log_repel_loss.item() / log_steps) if repel_active else None
+                avg_class_null_cos = (
+                    (log_class_null_cos.item() / log_steps) if null_exists else None
+                )
+                if repel_active:
+                    msg += f" | Repel: {avg_repel:.4f}"
+                if avg_class_null_cos is not None:
+                    msg += f" | cos(c,null): {avg_class_null_cos:+.4f}"
                 if log_grad_steps > 0:
                     msg += f" | GradNorm: {log_grad_norm / log_grad_steps:.4f}"
                 if log_per_loss_gn_steps > 0:
@@ -1558,6 +1697,8 @@ def main(args):
                         msg += f" | GN[lpips]: {log_lpips_gn / n:.4f}"
                     if log_aux_gn > 0.0:
                         msg += f" | GN[aux]: {log_aux_gn / n:.4f}"
+                    if log_repel_gn > 0.0:
+                        msg += f" | GN[repel]: {log_repel_gn / n:.4f}"
                 # Per-t-bucket MSE: low-t = noisy, high-t = clean. Empty buckets
                 # print NaN rather than crash — happens only on a pathological
                 # P_mean/P_std where some bin is never sampled in the window.
@@ -1565,12 +1706,44 @@ def main(args):
                 bucket_avg = (log_t_bucket_sum / bucket_cnt).tolist()
                 bucket_hits = log_t_bucket_cnt.tolist()
                 bucket_str = " ".join(
-                    f"[{i * 1.0 / num_t_buckets:.2f}-{(i + 1) * 1.0 / num_t_buckets:.2f}]"
+                    f"[{t_bucket_edges[i]:.2f}-{t_bucket_edges[i + 1]:.2f}]"
                     f"{bucket_avg[i]:.3f}(n={int(bucket_hits[i])})"
                     for i in range(num_t_buckets)
                 )
                 msg += f" | MSE/t: {bucket_str}"
                 logger.info(msg)
+
+                # ──── TEMP: per-print conditioning-signal probe ─────────────
+                # Mirrors the [cond] line that normally prints at checkpoint
+                # time; moved up to give granular feedback while tuning the
+                # null-repel regularizer. Runs 17 extra forward passes per
+                # invocation; gated to every 1000 steps to keep overhead <0.5%.
+                # To remove: delete this entire block (keep markers for grep).
+                if args.class_dropout_prob > 0 and step % 1000 == 0:
+                    _cond_sig_print = _measure_conditioning_signal(
+                        model=accelerator.unwrap_model(model),
+                        num_classes=num_classes,
+                        in_channels=in_channels,
+                        diffusion_num_timesteps=diffusion.num_timesteps,
+                        device=device,
+                        t_value=0.3,
+                        batch_size=8,
+                        seed=args.seed,
+                    )
+                    logger.info(
+                        "[cond] cfg_signal=%.4f (min=%.4f max=%.4f, n=%d) | "
+                        "class_signal=%.4f (min=%.4f max=%.4f, n=%d) | pred_rms=%.4f",
+                        _cond_sig_print["cfg_signal"],
+                        _cond_sig_print["cfg_signal_min"],
+                        _cond_sig_print["cfg_signal_max"],
+                        _cond_sig_print["num_class_probes"],
+                        _cond_sig_print["class_signal"],
+                        _cond_sig_print["class_signal_min"],
+                        _cond_sig_print["class_signal_max"],
+                        _cond_sig_print["num_class_pairs"],
+                        _cond_sig_print["pred_rms"],
+                    )
+                # ──── TEMP end ───────────────────────────────────────────────
 
                 # Persist this print's averages to the loss tracker. Values are
                 # already host-side floats, so this is a cheap dict append +
@@ -1585,6 +1758,7 @@ def main(args):
                         "alpha_l1": (log_alpha_gn / n) if log_alpha_gn > 0.0 else None,
                         "lpips": (log_lpips_gn / n) if log_lpips_gn > 0.0 else None,
                         "aux": (log_aux_gn / n) if log_aux_gn > 0.0 else None,
+                        "repel": (log_repel_gn / n) if log_repel_gn > 0.0 else None,
                     }
                 loss_tracker.record(
                     step=step,
@@ -1593,6 +1767,8 @@ def main(args):
                     alpha_l1=(log_render_alpha_l1.item() / log_steps) if render_active else None,
                     lpips=(log_render_lpips.item() / log_steps) if render_active else None,
                     aux=avg_aux,
+                    repel=avg_repel,
+                    class_null_cos=avg_class_null_cos,
                     grad_norm=(log_grad_norm / log_grad_steps) if log_grad_steps > 0 else None,
                     grad_norm_per_loss=grad_norm_per_loss,
                     lr=last_lr_val,
@@ -1607,6 +1783,8 @@ def main(args):
                 log_render_alpha_l1.zero_()
                 log_render_lpips.zero_()
                 log_aux_loss.zero_()
+                log_repel_loss.zero_()
+                log_class_null_cos.zero_()
                 log_grad_norm = 0.0
                 log_grad_steps = 0
                 log_steps = 0
@@ -1615,6 +1793,7 @@ def main(args):
                 log_alpha_gn = 0.0
                 log_lpips_gn = 0.0
                 log_aux_gn = 0.0
+                log_repel_gn = 0.0
                 log_per_loss_gn_steps = 0
                 log_t_bucket_sum.zero_()
                 log_t_bucket_cnt.zero_()
@@ -1646,8 +1825,12 @@ def main(args):
                             seed=args.seed,
                         )
                         logger.info(
-                            "[cond] cfg_signal=%.4f | class_signal=%.4f | pred_rms=%.4f",
-                            sig["cfg_signal"], sig["class_signal"], sig["pred_rms"],
+                            "[cond] cfg_signal=%.4f (min=%.4f max=%.4f, n=%d) | "
+                            "class_signal=%.4f (min=%.4f max=%.4f, n=%d) | pred_rms=%.4f",
+                            sig["cfg_signal"], sig["cfg_signal_min"], sig["cfg_signal_max"],
+                            sig["num_class_probes"],
+                            sig["class_signal"], sig["class_signal_min"], sig["class_signal_max"],
+                            sig["num_class_pairs"], sig["pred_rms"],
                         )
                 accelerator.wait_for_everyone()
 
@@ -1709,6 +1892,14 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
     # Model
     parser.add_argument('--model', type=str, default='JiT-B/8',
                         choices=list(JiT_3DGS_models.keys()))
+    parser.add_argument(
+        '--bottleneck',
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help='Use the two-stage BottleneckPatchEmbed (in_chans→bottleneck_dim→embed_dim). '
+             'Disable with --no-bottleneck to use a single-conv patch embed '
+             '(in_chans→embed_dim) with no rank reduction below embed_dim.',
+    )
     parser.add_argument('--predict_xstart', action=argparse.BooleanOptionalAction, default=True,
                         help='Model predicts x0 directly (default: True). Disable with --no-predict_xstart.')
     parser.add_argument(
@@ -1752,6 +1943,23 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
         help='Init std for LabelEmbedder.embedding_table. Default 0.02 matches the original DiT recipe; '
              'increase (e.g. 0.1) to amplify class conditioning at init.',
     )
+    parser.add_argument(
+        '--null_repel_weight',
+        type=float,
+        default=0.0,
+        help='Weight on the class-from-null cosine repulsion regularizer. '
+             'Pushes class embeddings away from the CFG null token to strengthen '
+             'classifier-free guidance. 0.0 (default) = disabled; override via '
+             'overrides.yaml for hot-reload fine-tuning.',
+    )
+    parser.add_argument(
+        '--null_repel_margin',
+        type=float,
+        default=0.5,
+        help='Cosine margin for the null repulsion hinge. No penalty when '
+             'cos(e_c, e_null) <= margin; quadratic penalty above. Static (set at '
+             'start of training); not hot-reloadable.',
+    )
 
     # Data
     parser.add_argument('--obj_list', type=str, required=True,
@@ -1766,6 +1974,8 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
                         help='Path to object-to-class mapping JSON')
     parser.add_argument('--sphere2plane_path', type=str, default='data/sphere2plane.npy',
                         help='Path to sphere2plane.npy permutation file')
+    parser.add_argument('--exclude_keys_file', type=str, default=None,
+                        help='Optional JSON list of hash_keys to drop from the dataset (e.g. data/outlier_keys_8sigma.json)')
     parser.add_argument('--sh_degree0_only', action=argparse.BooleanOptionalAction, default=False,
                         help='Keep only SH degree-0 / DC coefficients, reducing from 59 to 14 channels')
 

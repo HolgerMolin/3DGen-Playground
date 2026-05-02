@@ -34,12 +34,15 @@ _SCALAR_COLUMNS = (
     "alpha_l1",
     "lpips",
     "aux",
+    "repel",
+    "class_null_cos",
     "grad_norm",
     "grad_norm_mse",
     "grad_norm_render_l1",
     "grad_norm_alpha_l1",
     "grad_norm_lpips",
     "grad_norm_aux",
+    "grad_norm_repel",
     "lr",
     "p_mean",
     "steps_per_sec",
@@ -48,6 +51,10 @@ _SCALAR_COLUMNS = (
 
 def _bucket_edges(num_buckets: int) -> list[tuple[float, float]]:
     return [(i / num_buckets, (i + 1) / num_buckets) for i in range(num_buckets)]
+
+
+def _edges_to_pairs(edges: list[float]) -> list[tuple[float, float]]:
+    return [(edges[i], edges[i + 1]) for i in range(len(edges) - 1)]
 
 
 class LossTracker:
@@ -63,11 +70,21 @@ class LossTracker:
         output_dir: str,
         *,
         num_t_buckets: int,
+        t_bucket_edges: Optional[list[float]] = None,
         enabled: bool = True,
         resume: bool = False,
     ) -> None:
         self.enabled = enabled
         self.num_t_buckets = int(num_t_buckets)
+        if t_bucket_edges is not None:
+            if len(t_bucket_edges) != self.num_t_buckets + 1:
+                raise ValueError(
+                    f"t_bucket_edges has {len(t_bucket_edges)} entries; "
+                    f"expected num_t_buckets+1 = {self.num_t_buckets + 1}"
+                )
+            self.t_bucket_pairs = _edges_to_pairs([float(e) for e in t_bucket_edges])
+        else:
+            self.t_bucket_pairs = _bucket_edges(self.num_t_buckets)
         self.output_dir = output_dir
         self.plots_dir = os.path.join(output_dir, "loss_plots")
         self.csv_path = os.path.join(self.plots_dir, "loss_log.csv")
@@ -120,6 +137,8 @@ class LossTracker:
         alpha_l1: Optional[float] = None,
         lpips: Optional[float] = None,
         aux: Optional[float] = None,
+        repel: Optional[float] = None,
+        class_null_cos: Optional[float] = None,
         grad_norm: Optional[float] = None,
         grad_norm_per_loss: Optional[dict[str, float]] = None,
         lr: Optional[float] = None,
@@ -142,12 +161,15 @@ class LossTracker:
             "alpha_l1": _f(alpha_l1),
             "lpips": _f(lpips),
             "aux": _f(aux),
+            "repel": _f(repel),
+            "class_null_cos": _f(class_null_cos),
             "grad_norm": _f(grad_norm),
             "grad_norm_mse": _f((grad_norm_per_loss or {}).get("mse")),
             "grad_norm_render_l1": _f((grad_norm_per_loss or {}).get("render_l1")),
             "grad_norm_alpha_l1": _f((grad_norm_per_loss or {}).get("alpha_l1")),
             "grad_norm_lpips": _f((grad_norm_per_loss or {}).get("lpips")),
             "grad_norm_aux": _f((grad_norm_per_loss or {}).get("aux")),
+            "grad_norm_repel": _f((grad_norm_per_loss or {}).get("repel")),
             "lr": _f(lr),
             "p_mean": _f(p_mean),
             "steps_per_sec": _f(steps_per_sec),
@@ -186,6 +208,14 @@ class LossTracker:
                 self._plot_single("lpips.png", "Render LPIPS", [("lpips", "LPIPS")])
             if self._has_any_finite("aux"):
                 self._plot_single("aux.png", "Aux classifier CE", [("aux", "Aux CE")])
+            if self._has_any_finite("repel"):
+                self._plot_single("repel.png", "Null repulsion loss", [("repel", "Repel")])
+            if self._has_any_finite("class_null_cos"):
+                self._plot_single(
+                    "class_null_cos.png",
+                    "Mean cos(class, null)",
+                    [("class_null_cos", "cos(c, null)")],
+                )
 
             if self._has_any_finite("grad_norm"):
                 self._plot_single("grad_norm.png", "Grad norm", [("grad_norm", "||grad||")])
@@ -198,6 +228,7 @@ class LossTracker:
                     "grad_norm_alpha_l1",
                     "grad_norm_lpips",
                     "grad_norm_aux",
+                    "grad_norm_repel",
                 )
                 if self._has_any_finite(col)
             ]
@@ -210,6 +241,7 @@ class LossTracker:
                 )
 
             self._plot_bucket_mse()
+            self._plot_bucket_mse_ema(span=10)
         except Exception as exc:
             logger.warning("[loss_tracker] plot flush failed: %s", exc)
 
@@ -250,7 +282,7 @@ class LossTracker:
         """One line per t-bucket: low-t = noisy samples, high-t = clean (FM convention)."""
         steps = self._data["step"]
         fig, ax = plt.subplots(figsize=(8, 4))
-        edges = _bucket_edges(self.num_t_buckets)
+        edges = self.t_bucket_pairs
         plotted = False
         cmap = plt.get_cmap("viridis")
         for i, (lo, hi) in enumerate(edges):
@@ -274,6 +306,35 @@ class LossTracker:
         fig.savefig(os.path.join(self.plots_dir, "mse_by_t_bucket.png"), dpi=110)
         plt.close(fig)
 
+    def _plot_bucket_mse_ema(self, *, span: int = 10) -> None:
+        """EMA-smoothed version of `_plot_bucket_mse`. `span` is in records
+        (one record = one log print), so alpha = 2/(span+1)."""
+        steps = self._data["step"]
+        alpha = 2.0 / (float(span) + 1.0)
+        fig, ax = plt.subplots(figsize=(8, 4))
+        edges = self.t_bucket_pairs
+        plotted = False
+        cmap = plt.get_cmap("viridis")
+        for i, (lo, hi) in enumerate(edges):
+            ys = _ema(self._data[f"bucket{i}_mse"], alpha)
+            xs_clean, ys_clean = _finite_pairs(steps, ys)
+            if not xs_clean:
+                continue
+            color = cmap(i / max(1, self.num_t_buckets - 1))
+            ax.plot(xs_clean, ys_clean, label=f"t∈[{lo:.2f},{hi:.2f}]", linewidth=1.2, color=color)
+            plotted = True
+        if not plotted:
+            plt.close(fig)
+            return
+        ax.set_xlabel("step")
+        ax.set_ylabel("MSE (EMA)")
+        ax.set_title(f"MSE by t-bucket — EMA (~{span}-record memory)")
+        ax.grid(True, alpha=0.3)
+        ax.legend(loc="best", fontsize=8, ncol=2)
+        fig.tight_layout()
+        fig.savefig(os.path.join(self.plots_dir, "mse_by_t_bucket_ema.png"), dpi=110)
+        plt.close(fig)
+
     def close(self) -> None:
         if self._csv_file is not None:
             try:
@@ -283,6 +344,19 @@ class LossTracker:
                 pass
             self._csv_file = None
             self._csv_writer = None
+
+
+def _ema(values: list[float], alpha: float) -> list[float]:
+    """EMA over `values`; NaN inputs are passed through as gaps (state held)."""
+    out: list[float] = []
+    state: Optional[float] = None
+    for v in values:
+        if v != v:  # NaN
+            out.append(float("nan"))
+            continue
+        state = v if state is None else (1.0 - alpha) * state + alpha * v
+        out.append(state)
+    return out
 
 
 def _finite_pairs(xs: list[float], ys: list[float]) -> tuple[list[float], list[float]]:

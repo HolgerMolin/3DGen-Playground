@@ -34,23 +34,29 @@ logger = logging.getLogger(__name__)
 
 FULL_3DGS_FEATURE_DIM = 59
 DC_ONLY_FEATURE_INDICES = (0, 1, 2, 3, 4, 20, 36, 52, 53, 54, 55, 56, 57, 58)
-PRELOAD_CACHE_VERSION = 7
+PRELOAD_CACHE_VERSION = 8
 LAZY_CACHE_LOCK_STRIPES = 256
 _PRELOAD_WORKER_STATE = {}
 
 
 def _default_preload_cache_root() -> Path:
-    """Return the RAM-backed cache directory used for shared CPU preload."""
-    candidate = Path("/dev/shm") / "3dgen_preload_cache"
+    """Return the on-disk cache directory used for the shared CPU preload.
+
+    Defaults to ~/3dgen_cache/preload; override with the DGEN_CACHE_ROOT env var.
+    """
+    override = os.environ.get("DGEN_CACHE_ROOT")
+    candidate = Path(override) if override else Path.home() / "3dgen_cache" / "preload"
     try:
         candidate.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
         raise RuntimeError(
-            "preload_to_cpu requires a writable /dev/shm so the shared cache stays in RAM only"
+            f"preload_to_cpu requires a writable cache directory at {candidate} "
+            "(set DGEN_CACHE_ROOT to override the path)"
         ) from exc
     if not os.access(candidate, os.W_OK):
         raise RuntimeError(
-            "preload_to_cpu requires a writable /dev/shm so the shared cache stays in RAM only"
+            f"preload_to_cpu requires a writable cache directory at {candidate} "
+            "(set DGEN_CACHE_ROOT to override the path)"
         )
     return candidate
 
@@ -402,6 +408,11 @@ class Class3DGenDataset(Dataset):
             hasher.update(b"std:none")
         else:
             _hash_array(hasher, self.base_dataset.std)
+        sphere2plane = getattr(self.base_dataset, "sphere2plane", None)
+        if sphere2plane is None:
+            hasher.update(b"sphere2plane:none")
+        else:
+            _hash_array(hasher, sphere2plane)
         hasher.update(str(self.base_dataset.gs_path).encode("utf-8"))
         hasher.update(
             str(self.base_dataset.rendering_path).encode("utf-8")
@@ -869,6 +880,23 @@ class Class3DGenDataset(Dataset):
             self.cached_ready[idx] = 1
 
     def __getitem__(self, idx):
+        n = len(self)
+        original_idx = idx
+        for attempt in range(16):
+            try:
+                return self._getitem_raw(idx)
+            except FileNotFoundError as e:
+                logger.warning(
+                    f"Missing data at idx={idx} (original={original_idx}, attempt={attempt}): {e}. "
+                    f"Falling back to a neighbor index."
+                )
+                idx = (idx + 1) % n
+        raise RuntimeError(
+            f"Class3DGenDataset: 16 consecutive missing-file errors starting at idx={original_idx}; "
+            f"the obj_list is likely badly out of sync with gs_path."
+        )
+
+    def _getitem_raw(self, idx):
         if self.cached_pc is not None:
             if idx >= self.cached_sample_count:
                 if self.preload_to_cpu:

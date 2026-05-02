@@ -84,7 +84,7 @@ if v: print(v)
     EFFECTIVE_MODEL="${YAML_MODEL:-JiT-XL/8}"
 fi
 
-RESULTS_DIR="output/jit_${EFFECTIVE_MODEL}_results_gsplat"
+RESULTS_DIR="${RESULTS_DIR:-output/jit_${EFFECTIVE_MODEL}_results_gsplat}"
 RUN_TS=$(date +%Y%m%d_%H%M%S)
 RUN_STEM="train_${RUN_TS}_$$"
 
@@ -130,6 +130,9 @@ PY_ARGS+=(
     --mixed_precision "$MIXED_PRECISION"
     --results_dir "$RESULTS_DIR"
 )
+if [ -n "$EXCLUDE_KEYS_FILE" ]; then
+    PY_ARGS+=(--exclude_keys_file "$EXCLUDE_KEYS_FILE")
+fi
 
 OVERFIT=${OVERFIT:-0}
 
