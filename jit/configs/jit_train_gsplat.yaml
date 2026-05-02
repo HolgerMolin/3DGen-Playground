@@ -58,15 +58,17 @@ render_loss_num_cam: 1
 train_render_size: 128
 ref_camera_tar: /home/tiangexiang/gen3d/ref_camera.tar.gz
 enable_render_loss_after: 20000
-# Hard mask on FM t_value: render loss only applies when t_value >= cutoff
-# (i.e. the clean fraction is >= cutoff). 0 disables the mask.
-render_loss_noise_cutoff: 0.4
+# Hard mask on FM t_value: render loss only applies when t_value >= cutoffhttps://vscode-remote+ssh-002dremote-002b34-002e66-002e119-002e50.vscode-resource.vscode-cdn.net/home/hmolin/3DGen-Playground/output/jit_B8_20260429_042413/dit_validation/epoch_023_step_0023000_class001.png?version%3D1777438679927
+# (i.e. the clean fraction is >= cutoff). 0 disables the mask. Samples
+# below the cutoff are SLICED OUT before the render+LPIPS path runs, so
+# the cutoff doubles as a memory cap (lower cutoff → bigger render batch).
+render_loss_noise_cutoff: 0.5
 train_render_log_every: 0
 train_render_log_num_cam: 2
 
 # --- Training ---
 epochs: 200
-batch_size: 16
+batch_size: 64
 lr: 2e-4
 # none | warmup (ramp to lr then hold) | cosine (warmup then decay to lr_min)
 lr_schedule: cosine
@@ -78,15 +80,21 @@ lr_cosine_total_steps: 0
 ema_decay: 0.995
 mixed_precision: fp16
 gradient_accumulation_steps: 1
-gradient_checkpointing: true
+gradient_checkpointing: false
+compile: true
+# Diagnostic only: prints rolling per-phase step-time breakdown (data/h2d/fwd/
+# bwd/opt) every 100 steps on rank 0. Adds explicit GPU syncs around each
+# phase, so totals are higher than non-profile runs — read the *ratios*. Off
+# for normal runs.
+profile_step_times: false
 max_grad_norm: 4.0
 num_workers: 4
 preload_to_cpu: false
-lazy_cache_to_cpu: false
+lazy_cache_to_cpu: true
 preload_max_samples: 0
 preload_workers: 0
 persistent_workers: true
-prefetch_factor: 2
+prefetch_factor: 4
 seed: 0
 # Logit-normal t ~ sigmoid(N(P_mean, P_std)). In this FM convention t=0 is
 # noise and t=1 is clean, so P_mean < 0 biases training toward noisy samples.

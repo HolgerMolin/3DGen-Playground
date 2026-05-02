@@ -17,6 +17,7 @@ import random
 import sys
 import tarfile
 import time
+from collections import deque
 from copy import deepcopy
 from pathlib import Path
 from dataclasses import dataclass
@@ -30,7 +31,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from PIL import Image
 
-from accelerate import Accelerator
+from accelerate import Accelerator, DistributedDataParallelKwargs
 from accelerate.utils import set_seed
 
 # Add repo root to path for imports
@@ -828,10 +829,17 @@ def _measure_per_loss_grad_norms(
 
 def main(args):
     # ── Accelerator ──────────────────────────────────────────────────────
+    # gradient_as_bucket_view=True: gradients alias DDP's bucket tensors
+    # directly, avoiding the layout copy that triggers the "Grad strides do
+    # not match bucket view strides" warning when torch.compile produces
+    # channels-last grads for 1×1 Conv2d weights. Restores comm/compute
+    # overlap on those layers.
+    ddp_kwargs = DistributedDataParallelKwargs(gradient_as_bucket_view=True)
     accelerator = Accelerator(
         mixed_precision="no" if args.mixed_precision == "none" else args.mixed_precision,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         log_with=None,
+        kwargs_handlers=[ddp_kwargs],
     )
     device = accelerator.device
     is_main = accelerator.is_main_process
@@ -908,8 +916,8 @@ def main(args):
         base_dataset, class_map,
         feature_indices=feature_indices,
         return_full_for_render=(
-            (use_render_loss or enable_train_render_log or args.overrides_yaml is not None)
-            and feature_indices is not None
+            (use_render_loss or enable_train_render_log)
+            and feature_indices is None
         ),
         preload_to_cpu=args.preload_to_cpu,
         lazy_cache_to_cpu=args.lazy_cache_to_cpu,
@@ -1006,6 +1014,36 @@ def main(args):
     ema = deepcopy(model)
     requires_grad(ema, False)
     ema.eval()
+
+    # Conv2d weights → channels_last so DDP captures bucket strides matching
+    # the channels-last grads torch.compile/Inductor produces for 1×1 Conv2d.
+    # Must run before torch.compile (so compile sees the new layout) and
+    # before accelerator.prepare (so DDP captures it). Pairs with
+    # DistributedDataParallelKwargs(gradient_as_bucket_view=True) to enable
+    # true grad/bucket aliasing — no per-step copy, restores comm/compute
+    # overlap. EMA was deep-copied above and stays NCHW (not part of DDP;
+    # update_ema copies values, not memory format).
+    #
+    # For 1×1 kernels (H=W=1), .contiguous(memory_format=channels_last) is a
+    # no-op — PyTorch treats NCHW and NHWC as equivalent because spatial
+    # indexing is degenerate, so stride metadata stays NCHW. But Inductor's
+    # grad allocator uses explicit NHWC stride (C*H*W, 1, W*C, C), which is
+    # what DDP needs to see in the param. Force it via as_strided — safe
+    # because for H=W=1 the physical memory layout is identical.
+    n_cl = 0
+    for m in model.modules():
+        if not isinstance(m, nn.Conv2d):
+            continue
+        w = m.weight.data
+        N, C, H, W = w.shape
+        nhwc_stride = (C * H * W, 1, W * C, C)
+        if (H, W) == (1, 1):
+            m.weight.data = w.as_strided(w.shape, nhwc_stride)
+        else:
+            m.weight.data = w.contiguous(memory_format=torch.channels_last)
+        n_cl += 1
+    if is_main:
+        logger.info("[layout] converted %d Conv2d weights to channels_last", n_cl)
 
     # Optional torch.compile (PyTorch 2.0+).  Apply before accelerator.prepare so
     # the compiled forward is wrapped by DDP, not the other way around.
@@ -1264,6 +1302,35 @@ def main(args):
     if is_main:
         logger.info(f"Starting training from epoch {start_epoch}, step {start_step}...")
 
+    # ── Step-time profiling (opt-in via --profile_step_times) ────────────
+    # When on, inserts CUDA syncs around each phase to attribute time
+    # accurately. This disables DDP all-reduce / next-step-fwd overlap, so
+    # numbers are larger than the non-profile run — use the *breakdown*,
+    # not absolute totals, to identify bottlenecks. Zero overhead when off.
+    _prof = bool(args.profile_step_times) and device.type == "cuda"
+    if _prof:
+        _PROF_WIN = 50
+        _PROF_SKIP = 20
+        _PROF_PRINT_EVERY = 100
+        _prof_data_q: deque[float] = deque(maxlen=_PROF_WIN)
+        _prof_h2d_q: deque[float] = deque(maxlen=_PROF_WIN)
+        _prof_fwd_q: deque[float] = deque(maxlen=_PROF_WIN)
+        _prof_bwd_q: deque[float] = deque(maxlen=_PROF_WIN)
+        _prof_opt_q: deque[float] = deque(maxlen=_PROF_WIN)
+        _prof_ev_fwd_start = torch.cuda.Event(enable_timing=True)
+        _prof_ev_bwd_start = torch.cuda.Event(enable_timing=True)
+        _prof_ev_opt_start = torch.cuda.Event(enable_timing=True)
+        _prof_ev_step_end = torch.cuda.Event(enable_timing=True)
+        _prof_t_step_start = time.perf_counter()
+        _prof_data_ms = 0.0
+        _prof_h2d_ms = 0.0
+        if is_main:
+            logger.info(
+                "[profile] step-time breakdown enabled "
+                "(window=%d, skip first %d, print every %d steps)",
+                _PROF_WIN, _PROF_SKIP, _PROF_PRINT_EVERY,
+            )
+
     runtime = TrainRuntimeOverrides.from_args(args)
 
     p_mean_schedule = _parse_p_mean_schedule(args.P_mean_schedule)
@@ -1304,6 +1371,10 @@ def main(args):
 
     for epoch in range(start_epoch, args.epochs):
         for batch in loader:
+            if _prof:
+                _prof_t_data_end = time.perf_counter()
+                _prof_data_ms = (_prof_t_data_end - _prof_t_step_start) * 1000.0
+
             if args.overrides_yaml and step >= args.enable_render_loss_after and (
                 step % max(1, int(args.overrides_every)) == 0 or step == start_step
             ):
@@ -1327,6 +1398,13 @@ def main(args):
                 x_full = None
             y = y.long()  # (B,)
             hash_keys = list(hash_keys)
+
+            if _prof:
+                # Drain pending non_blocking H2D copies issued by accelerate's
+                # wrapped loader. perf_counter delta = wait time on H2D + any
+                # tail of the previous step's GPU work.
+                torch.cuda.synchronize()
+                _prof_h2d_ms = (time.perf_counter() - _prof_t_data_end) * 1000.0
 
             if args.lr_schedule in ('cosine', 'warmup', 'none'):
                 lr_val = _compute_lr(
@@ -1368,6 +1446,9 @@ def main(args):
                 else:
                     drop_mask = None
                     model_kwargs = dict(y=y)
+
+                if _prof:
+                    _prof_ev_fwd_start.record()
 
                 # Forward pass (accelerate handles autocast).
                 loss_dict = diffusion.flow_matching_training_losses(
@@ -1459,28 +1540,29 @@ def main(args):
                     # Per-sample mask on the flow-matching t: keep samples
                     # whose clean-fraction t_value ≥ cutoff (i.e. low-noise),
                     # since render loss at high noise produces useless gradients.
-                    render_sample_weights = None
+                    # Slice the batch here so the masked samples never enter
+                    # gsplat or LPIPS — the cutoff is the memory cap.
+                    x0_pred_render = x0_pred
+                    x_gt_render = x_gt_for_render
                     noise_cutoff = float(args.render_loss_noise_cutoff)
                     if noise_cutoff > 0.0:
-                        render_sample_weights = (t_value >= noise_cutoff).float()
-                        n_masked = int((render_sample_weights == 0).sum().item())
-                        if n_masked > 0 and is_main and step % args.log_every == 0:
+                        keep_mask = (t_value >= noise_cutoff)
+                        n_kept = int(keep_mask.sum().item())
+                        if n_kept < x.shape[0] and is_main and step % args.log_every == 0:
                             logger.info(
-                                "[render-loss] step=%d masked %d/%d samples (t_value < %.2f)",
-                                step, n_masked, x.shape[0], noise_cutoff,
+                                "[render-loss] step=%d kept %d/%d samples (t_value >= %.2f)",
+                                step, n_kept, x.shape[0], noise_cutoff,
                             )
-                        w_sum = render_sample_weights.sum()
-                        if w_sum > 0:
-                            render_sample_weights = render_sample_weights / w_sum * x.shape[0]
-                        else:
-                            # All masked — skip render loss entirely this step.
-                            render_sample_weights = None
+                        if n_kept == 0:
                             should_compute_render = False
+                        else:
+                            x0_pred_render = x0_pred[keep_mask]
+                            x_gt_render = x_gt_for_render[keep_mask]
 
                     if should_compute_render:
                         render_l1_loss, render_alpha_l1_loss, render_lpips_loss = _compute_render_loss_for_batch(
-                            x0_pred=x0_pred,
-                            x_gt_full=x_gt_for_render,
+                            x0_pred=x0_pred_render,
+                            x_gt_full=x_gt_render,
                             norm_mean_pred=norm_mean,
                             norm_std_pred=norm_std,
                             norm_mean_full=norm_mean_full if x_full is not None else norm_mean,
@@ -1492,7 +1574,7 @@ def main(args):
                             device=device,
                             dc_only=dc_only,
                             plane_to_sphere=plane_to_sphere,
-                            sample_weights=render_sample_weights,
+                            sample_weights=None,
                         )
 
                 if train_render_preview_due:
@@ -1601,7 +1683,19 @@ def main(args):
                     log_per_loss_gn_steps += 1
 
                 # Backward pass (accelerate handles scaling + sync)
+                if _prof:
+                    _prof_ev_bwd_start.record()
+
                 accelerator.backward(total_loss)
+
+                if _prof:
+                    # Wait for DDP all-reduces (issued on the NCCL side stream
+                    # during backward) so bwd_time absorbs comm cost. Without
+                    # this sync the all-reduce wait leaks into opt_time when
+                    # clip_grad_norm reads grads.
+                    torch.cuda.synchronize()
+                    _prof_ev_opt_start.record()
+
                 clip_cap = float(runtime.max_grad_norm)
                 if accelerator.sync_gradients:
                     grad_norm = accelerator.clip_grad_norm_(
@@ -1620,6 +1714,20 @@ def main(args):
             # Update EMA only on optimizer steps so the effective decay matches args.ema_decay.
             if accelerator.sync_gradients:
                 update_ema(ema, accelerator.unwrap_model(model), decay=args.ema_decay)
+
+            if _prof:
+                _prof_ev_step_end.record()
+                _prof_ev_step_end.synchronize()
+                _prof_fwd_ms = _prof_ev_fwd_start.elapsed_time(_prof_ev_bwd_start)
+                _prof_bwd_ms = _prof_ev_bwd_start.elapsed_time(_prof_ev_opt_start)
+                _prof_opt_ms = _prof_ev_opt_start.elapsed_time(_prof_ev_step_end)
+                if step >= start_step + _PROF_SKIP:
+                    _prof_data_q.append(_prof_data_ms)
+                    _prof_h2d_q.append(_prof_h2d_ms)
+                    _prof_fwd_q.append(_prof_fwd_ms)
+                    _prof_bwd_q.append(_prof_bwd_ms)
+                    _prof_opt_q.append(_prof_opt_ms)
+                _prof_t_step_start = time.perf_counter()
 
             # Logging
             log_loss += mse_loss.detach()
@@ -1644,6 +1752,23 @@ def main(args):
                 )
             log_steps += 1
             step += 1
+
+            if _prof and is_main and step % _PROF_PRINT_EVERY == 0 and len(_prof_data_q) > 0:
+                _d = sum(_prof_data_q) / len(_prof_data_q)
+                _h = sum(_prof_h2d_q) / len(_prof_h2d_q)
+                _f = sum(_prof_fwd_q) / len(_prof_fwd_q)
+                _b = sum(_prof_bwd_q) / len(_prof_bwd_q)
+                _o = sum(_prof_opt_q) / len(_prof_opt_q)
+                _tot = _d + _h + _f + _b + _o
+                _sps = (1000.0 / _tot) if _tot > 0 else 0.0
+                logger.info(
+                    "[step %d] data: %.1fms (%.0f%%) | h2d: %.1fms (%.0f%%) | "
+                    "fwd: %.1fms (%.0f%%) | bwd: %.1fms (%.0f%%) | opt: %.1fms (%.0f%%) | "
+                    "total: %.1fms | sps: %.2f",
+                    step, _d, _d / _tot * 100, _h, _h / _tot * 100,
+                    _f, _f / _tot * 100, _b, _b / _tot * 100, _o, _o / _tot * 100,
+                    _tot, _sps,
+                )
 
             if step % args.log_every == 0 and is_main:
                 avg_loss = log_loss.item() / log_steps
@@ -2045,6 +2170,10 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
     parser.add_argument('--compile', action=argparse.BooleanOptionalAction, default=False,
                         help='Enable torch.compile on the model for faster training (requires PyTorch 2.0+). '
                              'First step is slow (compilation); subsequent steps are faster.')
+    parser.add_argument('--profile_step_times', action=argparse.BooleanOptionalAction, default=False,
+                        help='Print rolling per-phase step time breakdown (data/h2d/fwd/bwd/opt) every '
+                             '100 steps on rank 0. Adds explicit GPU syncs around each phase, so step '
+                             'times in profile mode are higher than normal — use only for diagnostics.')
     parser.add_argument('--max_grad_norm', type=float, default=1.0,
                         help='Max gradient norm for clipping (0 = disabled)')
     parser.add_argument(
