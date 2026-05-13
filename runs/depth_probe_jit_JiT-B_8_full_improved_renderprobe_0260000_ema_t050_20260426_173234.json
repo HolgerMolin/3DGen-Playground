@@ -1,0 +1,146 @@
+{
+  "checkpoint": "output/jit_JiT-B_8_full_improved_renderprobe/0260000.pt",
+  "step": 260000,
+  "weights": "ema",
+  "model": "JiT-B/8",
+  "num_classes": 120,
+  "in_channels": 14,
+  "depth": 12,
+  "t_value": 0.5,
+  "diffusion_t_disc": 500,
+  "chance_accuracy": 0.008333333333333333,
+  "probe": {
+    "num_train_samples": 4096,
+    "num_eval_samples": 1024,
+    "num_steps": 1500,
+    "lr": 0.001,
+    "weight_decay": 0.0,
+    "batch_size": 128
+  },
+  "class_variance": {
+    "num_xt": 10,
+    "num_classes_sample": 20
+  },
+  "per_block": [
+    {
+      "block_idx": 0,
+      "probe_train_acc": 0.7724609375,
+      "probe_eval_acc": 0.267578125,
+      "probe_final_loss": 1.6225686073303223,
+      "probe_eval_loss": 3.2723283767700195,
+      "class_variance_fraction": 0.0018841788801606714,
+      "residual_total_variance": 9.782044410705566,
+      "residual_class_variance": 0.018431121483445168
+    },
+    {
+      "block_idx": 1,
+      "probe_train_acc": 0.98876953125,
+      "probe_eval_acc": 0.80859375,
+      "probe_final_loss": 0.42347434163093567,
+      "probe_eval_loss": 1.2630298137664795,
+      "class_variance_fraction": 0.00257497412827811,
+      "residual_total_variance": 9.979715347290039,
+      "residual_class_variance": 0.025697508826851845
+    },
+    {
+      "block_idx": 2,
+      "probe_train_acc": 1.0,
+      "probe_eval_acc": 0.97265625,
+      "probe_final_loss": 0.09964585304260254,
+      "probe_eval_loss": 0.37211695313453674,
+      "class_variance_fraction": 0.006027258406066761,
+      "residual_total_variance": 10.534438133239746,
+      "residual_class_variance": 0.06349378079175949
+    },
+    {
+      "block_idx": 3,
+      "probe_train_acc": 1.0,
+      "probe_eval_acc": 0.9892578125,
+      "probe_final_loss": 0.07136925309896469,
+      "probe_eval_loss": 0.23150193691253662,
+      "class_variance_fraction": 0.007740359853275993,
+      "residual_total_variance": 11.780858039855957,
+      "residual_class_variance": 0.09118808060884476
+    },
+    {
+      "block_idx": 4,
+      "probe_train_acc": 1.0,
+      "probe_eval_acc": 0.9970703125,
+      "probe_final_loss": 0.03528242185711861,
+      "probe_eval_loss": 0.09554877877235413,
+      "class_variance_fraction": 0.013784051306330649,
+      "residual_total_variance": 14.421512603759766,
+      "residual_class_variance": 0.1987868696451187
+    },
+    {
+      "block_idx": 5,
+      "probe_train_acc": 1.0,
+      "probe_eval_acc": 0.9892578125,
+      "probe_final_loss": 0.027955524623394012,
+      "probe_eval_loss": 0.12621963024139404,
+      "class_variance_fraction": 0.022330523456432723,
+      "residual_total_variance": 15.917866706848145,
+      "residual_class_variance": 0.35545429587364197
+    },
+    {
+      "block_idx": 6,
+      "probe_train_acc": 1.0,
+      "probe_eval_acc": 0.9921875,
+      "probe_final_loss": 0.026313286274671555,
+      "probe_eval_loss": 0.13014665246009827,
+      "class_variance_fraction": 0.024002645742230964,
+      "residual_total_variance": 18.428325653076172,
+      "residual_class_variance": 0.4423285722732544
+    },
+    {
+      "block_idx": 7,
+      "probe_train_acc": 1.0,
+      "probe_eval_acc": 0.9873046875,
+      "probe_final_loss": 0.02577042207121849,
+      "probe_eval_loss": 0.1445070058107376,
+      "class_variance_fraction": 0.028536729958258646,
+      "residual_total_variance": 24.975221633911133,
+      "residual_class_variance": 0.7127111554145813
+    },
+    {
+      "block_idx": 8,
+      "probe_train_acc": 1.0,
+      "probe_eval_acc": 0.9775390625,
+      "probe_final_loss": 0.029418539255857468,
+      "probe_eval_loss": 0.1825486123561859,
+      "class_variance_fraction": 0.041612613327167335,
+      "residual_total_variance": 29.794967651367188,
+      "residual_class_variance": 1.2398464679718018
+    },
+    {
+      "block_idx": 9,
+      "probe_train_acc": 1.0,
+      "probe_eval_acc": 0.9619140625,
+      "probe_final_loss": 0.03477783501148224,
+      "probe_eval_loss": 0.24773254990577698,
+      "class_variance_fraction": 0.04614585135137057,
+      "residual_total_variance": 45.58498764038086,
+      "residual_class_variance": 2.10355806350708
+    },
+    {
+      "block_idx": 10,
+      "probe_train_acc": 1.0,
+      "probe_eval_acc": 0.953125,
+      "probe_final_loss": 0.04414108395576477,
+      "probe_eval_loss": 0.3104872405529022,
+      "class_variance_fraction": 0.04834586159688977,
+      "residual_total_variance": 54.279937744140625,
+      "residual_class_variance": 2.6242103576660156
+    },
+    {
+      "block_idx": 11,
+      "probe_train_acc": 0.99853515625,
+      "probe_eval_acc": 0.9345703125,
+      "probe_final_loss": 0.10912763327360153,
+      "probe_eval_loss": 0.39381521940231323,
+      "class_variance_fraction": 0.08442658462539968,
+      "residual_total_variance": 57.333648681640625,
+      "residual_class_variance": 4.840484142303467
+    }
+  ]
+}

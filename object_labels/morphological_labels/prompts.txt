@@ -1,0 +1,20 @@
+I need to diagnose why class conditioning signal is weak for most classes. The probe shows cfg_signal mean 0.0589 at t=0.3 (0.097 at t=0.5) across 120 classes, with class_signal > cfg_signal consistently — suggesting class embeddings cluster together but the signal isn't routing strongly to the output. I want to determine whether the bottleneck is upstream (LabelEmbedder geometry) or downstream (AdaLN gates staying near zero).
+Load the EMA checkpoint at output/.../0260000 (find the exact path under output/ — look for the most recent training run with a 0260000 step checkpoint) and produce the following analysis. Save all outputs under output/2026-04-23_weight_inspection/ with descriptive filenames.
+1. LabelEmbedder geometry. Extract the class embedding table (likely label_emb.embedding_table.weight or similar — grep the model definition in jit/ to confirm the attribute path). For the 120 class embeddings plus the null embedding:
+
+Compute pairwise cosine similarity matrix. Save as heatmap PNG and raw .npy.
+Compute distance from each class embedding to the null embedding. Save as sorted bar chart.
+Compute each embedding's L2 norm. Report mean/std/min/max.
+Run PCA to 2D and scatter-plot, coloring null distinctly. Save PNG.
+Cross-reference with the per-class cfg_signal from latest checkpoint: for the 10 weakest and 10 strongest classes by cfg_signal, report their null-distance and their mean cosine similarity to all other classes. I want to know if weak classes are geometrically collapsed or geometrically distinct-but-ignored.
+
+2. AdaLN gate statistics per block. Find all AdaLN modulation layers in the transformer (typically adaLN_modulation submodules inside each block — check the block definition). For each block, the modulation projects class embedding → (scale, shift, gate) triples, one set per sub-layer (attention, MLP). For each block index:
+
+Forward the 120 class embeddings plus null through the AdaLN modulation and extract the gate outputs specifically (not scale/shift).
+Report per-block: mean absolute gate value, std, and the fraction of (class, gate-position) pairs where |gate| < 0.01.
+Plot mean |gate| vs block index as a line chart — I want to see if the final block gates are meaningfully larger than the zero-init would imply, or still near zero.
+For the final block specifically, dump the full gate-magnitude distribution across classes. Correlate per-class mean final-block gate magnitude with per-class cfg_signal from the probe JSON (scatter + Pearson r).
+
+3. AdaLN projection weights directly. For each block, report the Frobenius norm of the adaLN_modulation weight matrix and its bias norm. Plot vs block index. AdaLN-Zero initializes these to zero, so any block with near-zero weight norm has literally not learned to use the class signal there.
+4. Summary writeup. At the end, produce SUMMARY.md with (a) whether the embedder or the AdaLN output injection is the weaker link, (b) which specific blocks have dead gates if any, (c) whether weak-cfg classes are geometrically collapsed in embedding space or geometrically distinct, and (d) a concrete recommendation between: bump CFG dropout, add x̂₀ aux loss, re-init final block gates with small positive value, or re-cluster the weak classes. Base the recommendation on what the weights actually show, not on priors.
+Do not modify any training code. This is read-only inspection. Use torch with weights_only=False if needed to load the checkpoint, and move things to CPU before numpy conversion. If the checkpoint structure is unexpected (e.g., wrapped in a dict under model_ema or ema_state_dict), explore the top-level keys first and report what you find before proceeding.

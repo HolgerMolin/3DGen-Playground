@@ -39,7 +39,12 @@ label_embed_init_std: 0.1
 # --- Data (optional overrides; shell/env usually provides mean/std and paths) ---
 # mean_file: null
 # std_file: null
-class_map: object_labels/object_to_class.json
+# Gaussian rank-transform tables for non-Gaussian channels (built by
+# data/build_rank_transform.py). When set, listed channels are mapped to
+# N(0,1) at load time and inverse-transformed before the renderer's
+# sigmoid/exp activations. Default channels: opacity + 3 scale logits.
+rank_transform_file: data/stats/rank_quantiles.pt
+class_map: object_labels/image_kmeans_k103/object_to_class.json
 sphere2plane_path: data/sphere2plane.npy
 sh_degree0_only: true
 # Inverse-frequency WeightedRandomSampler over class labels. Counters the
@@ -54,8 +59,12 @@ render_loss_weight: 0.1
 alpha_mask_loss_weight: 0.1
 lpips_loss_weight: 0.01
 lpips_net: vgg
+# Perceptual backend for the lpips_loss_weight term: lpips | dinov2.
+# dinov2 = frozen DINOv2 ViT-B/14, mean cosine distance over patch tokens at 224x224.
+# Set at launch only — not hot-reloadable.
+perceptual_backend: vgg
 render_loss_num_cam: 1
-train_render_size: 128
+train_render_size: 224
 ref_camera_tar: /home/tiangexiang/gen3d/ref_camera.tar.gz
 enable_render_loss_after: 20000
 # Hard mask on FM t_value: render loss only applies when t_value >= cutoffhttps://vscode-remote+ssh-002dremote-002b34-002e66-002e119-002e50.vscode-resource.vscode-cdn.net/home/hmolin/3DGen-Playground/output/jit_B8_20260429_042413/dit_validation/epoch_023_step_0023000_class001.png?version%3D1777438679927
@@ -68,7 +77,7 @@ train_render_log_num_cam: 2
 
 # --- Training ---
 epochs: 200
-batch_size: 64
+batch_size: 128
 lr: 2e-4
 # none | warmup (ramp to lr then hold) | cosine (warmup then decay to lr_min)
 lr_schedule: cosine
@@ -78,7 +87,7 @@ lr_min: 1e-5
 # accelerate.prepare — so real dataset size, num_processes, and drop_last are included).
 lr_cosine_total_steps: 0
 ema_decay: 0.995
-mixed_precision: fp16
+mixed_precision: bf16
 gradient_accumulation_steps: 1
 gradient_checkpointing: false
 compile: true
@@ -99,7 +108,7 @@ seed: 0
 # Logit-normal t ~ sigmoid(N(P_mean, P_std)). In this FM convention t=0 is
 # noise and t=1 is clean, so P_mean < 0 biases training toward noisy samples.
 P_mean: 0.0
-P_std: 1.0
+P_std: 1.5
 # Optional P_mean curriculum: list of [step, P_mean] control points, linearly
 # interpolated, held constant outside the endpoints. When set, this overrides
 # `P_mean` (and any P_mean in overrides.yaml).
@@ -119,7 +128,7 @@ P_std: 1.0
 # max values over 30 000 opt steps; held flat thereafter.
 render_weight_schedule:
   - [20000,  0.0, 0.0,  0.0 ]
-  - [60000,  0.6, 0.3, 0.1]
+  - [60000,  1.0, 1.0, 1.0]
 
 # --- Logging / checkpoints / validation ---
 # Training uses JiT flow-matching noising (x_t = t*x_0 + (1-t)*eps, t=0 noise,

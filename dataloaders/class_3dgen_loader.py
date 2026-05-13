@@ -21,6 +21,7 @@ from torch.utils.data import Dataset
 
 from dataloaders.standard_3dgen_loader import (
     Standard3DGenDataset,
+    _apply_rank_transform_numpy,
     _normalize_point_cloud_numpy,
     extract_directory_info,
 )
@@ -34,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 FULL_3DGS_FEATURE_DIM = 59
 DC_ONLY_FEATURE_INDICES = (0, 1, 2, 3, 4, 20, 36, 52, 53, 54, 55, 56, 57, 58)
-PRELOAD_CACHE_VERSION = 8
+PRELOAD_CACHE_VERSION = 9
 LAZY_CACHE_LOCK_STRIPES = 256
 _PRELOAD_WORKER_STATE = {}
 
@@ -123,6 +124,14 @@ def _load_preload_point_cloud(
     tar_gz_path = base_dataset.obj_data[hash_key]
     directory_number, filename = extract_directory_info(tar_gz_path)
     point_cloud, _ = base_dataset._load_3dgs_data(directory_number, filename)
+
+    if getattr(base_dataset, "rank_channels", None) is not None:
+        point_cloud = _apply_rank_transform_numpy(
+            point_cloud,
+            base_dataset.rank_channels,
+            base_dataset.rank_data_quantiles,
+            base_dataset.rank_gauss_quantiles,
+        )
 
     if base_dataset.mean is not None and base_dataset.std is not None:
         point_cloud = _normalize_point_cloud_numpy(point_cloud, base_dataset.mean, base_dataset.std)
@@ -408,6 +417,14 @@ class Class3DGenDataset(Dataset):
             hasher.update(b"std:none")
         else:
             _hash_array(hasher, self.base_dataset.std)
+        rank_channels = getattr(self.base_dataset, "rank_channels", None)
+        if rank_channels is None:
+            hasher.update(b"rank_transform:none")
+        else:
+            hasher.update(b"rank_transform:on")
+            _hash_array(hasher, np.asarray(rank_channels, dtype=np.int64))
+            _hash_array(hasher, np.asarray(self.base_dataset.rank_data_quantiles))
+            _hash_array(hasher, np.asarray(self.base_dataset.rank_gauss_quantiles))
         sphere2plane = getattr(self.base_dataset, "sphere2plane", None)
         if sphere2plane is None:
             hasher.update(b"sphere2plane:none")

@@ -7,7 +7,8 @@ source .env
 # Environment variables:
 #   Path inputs:
 #     OBJ_LIST, GS_DATA_PATH, MEAN_FILE, STD_FILE, CLASS_MAP_PATH,
-#     SPHERE2PLANE_PATH, REF_CAMERA_TAR, RESULTS_DIR, RESUME
+#     SPHERE2PLANE_PATH, REF_CAMERA_TAR, RESULTS_DIR, RESUME,
+#     RANK_TRANSFORM_FILE (optional; overrides YAML's rank_transform_file)
 #   Launch overrides:
 #     NUM_GPUS, NUM_MACHINES, MIXED_PRECISION, DYNAMO_BACKEND
 #   Hyperparameters:
@@ -37,6 +38,7 @@ STD_FILE=${STD_FILE:-${DIT_GSPLAT_STD_FILE:-}}
 CLASS_MAP_PATH=${CLASS_MAP_PATH:-${DIT_GSPLAT_CLASS_MAP:-}}
 SPHERE2PLANE_PATH=${SPHERE2PLANE_PATH:-${DIT_GSPLAT_SPHERE2PLANE_PATH:-}}
 REF_CAMERA_TAR=${REF_CAMERA_TAR:-${DIT_GSPLAT_REF_CAMERA_TAR:-}}
+RANK_TRANSFORM_FILE=${RANK_TRANSFORM_FILE:-}
 RESUME=${RESUME:-}
 
 # If RESUME not set via env, check the YAML config for a resume path
@@ -67,6 +69,11 @@ done
 
 if [ -n "$RESUME" ] && [ ! -e "$RESUME" ]; then
     echo "Configured resume checkpoint does not exist: $RESUME" >&2
+    exit 1
+fi
+
+if [ -n "$RANK_TRANSFORM_FILE" ] && [ ! -e "$RANK_TRANSFORM_FILE" ]; then
+    echo "Configured RANK_TRANSFORM_FILE does not exist: $RANK_TRANSFORM_FILE" >&2
     exit 1
 fi
 
@@ -138,6 +145,10 @@ OVERFIT=${OVERFIT:-0}
 
 if [ -n "$RESUME" ]; then
     PY_ARGS+=(--resume "$RESUME")
+fi
+
+if [ -n "$RANK_TRANSFORM_FILE" ]; then
+    PY_ARGS+=(--rank_transform_file "$RANK_TRANSFORM_FILE")
 fi
 
 if [ "$OVERFIT" -gt 0 ] 2>/dev/null; then

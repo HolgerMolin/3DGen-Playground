@@ -15,6 +15,8 @@ import torch
 import torch.nn as nn
 from PIL import Image
 
+from dataloaders.class_3dgen_loader import DC_ONLY_FEATURE_INDICES
+
 logger = logging.getLogger(__name__)
 
 # Cache the inverse of the sphere-to-plane permutation so _plane_to_point_cloud_batch
@@ -148,6 +150,97 @@ def _plane_to_point_cloud_batch(
     return flat.index_select(1, sphere_to_plane)
 
 
+def load_rank_transform_payload_torch(
+    path: str,
+    device: Optional[torch.device] = None,
+) -> Optional[dict]:
+    """Load a Gaussian rank-transform payload as torch tensors for the inverse path.
+
+    Returns a dict with `channels` (list[int], full 59-channel feature space),
+    `data_quantiles` (C, K) and `gauss_quantiles` (K,) as float32 tensors.
+    Returns None if `path` is None.
+    """
+    if path is None:
+        return None
+    payload = torch.load(path, weights_only=False)
+    data_q = payload["data_quantiles"]
+    gauss_q = payload["gauss_quantiles"]
+    if not isinstance(data_q, torch.Tensor):
+        data_q = torch.as_tensor(data_q)
+    if not isinstance(gauss_q, torch.Tensor):
+        gauss_q = torch.as_tensor(gauss_q)
+    data_q = data_q.float()
+    gauss_q = gauss_q.float()
+    if device is not None:
+        data_q = data_q.to(device=device)
+        gauss_q = gauss_q.to(device=device)
+    return {
+        "channels": [int(c) for c in payload["channels"]],
+        "data_quantiles": data_q,
+        "gauss_quantiles": gauss_q,
+    }
+
+
+def _resolve_rank_layout_for_active_space(
+    rank_full_channels: list[int],
+    dc_only: bool,
+) -> list[tuple[int, int]]:
+    """Return [(active_idx, row_idx)] pairs locating each rank channel in the
+    active feature layout (full or DC-only) used by the renderer."""
+    if not dc_only:
+        return [(c, i) for i, c in enumerate(rank_full_channels)]
+    full_to_dc = {full: pos for pos, full in enumerate(DC_ONLY_FEATURE_INDICES)}
+    layout = []
+    for i, c in enumerate(rank_full_channels):
+        if c not in full_to_dc:
+            raise ValueError(
+                f"Rank-transform channel {c} is absent from the DC-only feature set; "
+                f"rebuild rank_quantiles.pt with channels intersecting "
+                f"DC_ONLY_FEATURE_INDICES = {DC_ONLY_FEATURE_INDICES}"
+            )
+        layout.append((full_to_dc[c], i))
+    return layout
+
+
+def _apply_rank_inverse_for_render(
+    point_cloud: torch.Tensor,
+    layout: list[tuple[int, int]],
+    gauss_q: torch.Tensor,
+    data_q: torch.Tensor,
+) -> torch.Tensor:
+    """Inverse Gaussian rank transform: N(0,1) -> data domain via 1D linear interp.
+
+    Operates on the trailing feature dim. `layout` lists which active-space
+    channel indices to update and which row of `data_q` provides their breakpoints.
+    Values outside the empirical gauss range are saturated to the table endpoints.
+    """
+    if not layout:
+        return point_cloud
+    K = gauss_q.shape[0]
+    g_min = gauss_q[0]
+    g_max = gauss_q[-1]
+    # Functional rebuild: replace per-channel columns and re-stack. Avoids
+    # in-place setitem on a clone, which would bump the clone's version and
+    # invalidate prior-iteration views captured for backward.
+    columns = list(point_cloud.unbind(dim=-1))
+    for active_idx, row_idx in layout:
+        zc = columns[active_idx]
+        zc_clamped = torch.clamp(zc, min=g_min, max=g_max)
+        idx = torch.searchsorted(gauss_q, zc_clamped.contiguous())
+        idx = idx.clamp(min=1, max=K - 1)
+        lo = idx - 1
+        hi = idx
+        g_lo = gauss_q[lo]
+        g_hi = gauss_q[hi]
+        d_row = data_q[row_idx]
+        d_lo = d_row[lo]
+        d_hi = d_row[hi]
+        denom = (g_hi - g_lo).clamp_min(1e-12)
+        t = (zc_clamped - g_lo) / denom
+        columns[active_idx] = d_lo + t * (d_hi - d_lo)
+    return torch.stack(columns, dim=-1)
+
+
 def _normalize_quaternions_with_identity_fallback(rotations_raw: torch.Tensor) -> torch.Tensor:
     quat_norms = rotations_raw.norm(dim=-1, keepdim=True)
     quats = rotations_raw / quat_norms.clamp_min(RENDER_QUAT_EPS)
@@ -173,8 +266,16 @@ def _constrain_denormalized_point_cloud_for_render(
     point_cloud: torch.Tensor,
     *,
     dc_only: bool = False,
+    rank_transform_tables: Optional[dict] = None,
 ) -> torch.Tensor:
-    """Project denormalized predictions into canonical 3DGS parameter space for rendering."""
+    """Project denormalized predictions into canonical 3DGS parameter space for rendering.
+
+    When `rank_transform_tables` is provided, channels listed in the tables are
+    inverse-rank-transformed (N(0,1) -> data domain) before the sigmoid/exp
+    activations apply. The tables' channel indices are interpreted in the full
+    59-channel feature space and remapped to the active layout via
+    `_resolve_rank_layout_for_active_space`.
+    """
     if dc_only:
         scale_slice = slice(7, 10)
         rotation_slice = slice(10, 14)
@@ -183,6 +284,19 @@ def _constrain_denormalized_point_cloud_for_render(
         rotation_slice = slice(55, 59)
 
     safe_point_cloud = torch.nan_to_num(point_cloud, nan=0.0, posinf=0.0, neginf=0.0)
+    if rank_transform_tables is not None:
+        layout = _resolve_rank_layout_for_active_space(
+            rank_transform_tables["channels"], dc_only=dc_only
+        )
+        gauss_q = rank_transform_tables["gauss_quantiles"].to(
+            device=safe_point_cloud.device, dtype=safe_point_cloud.dtype
+        )
+        data_q = rank_transform_tables["data_quantiles"].to(
+            device=safe_point_cloud.device, dtype=safe_point_cloud.dtype
+        )
+        safe_point_cloud = _apply_rank_inverse_for_render(
+            safe_point_cloud, layout, gauss_q, data_q
+        )
     xyz = safe_point_cloud[..., :3]
     opacity = torch.sigmoid(
         safe_point_cloud[..., 3:4].clamp(RENDER_OPACITY_RAW_MIN, RENDER_OPACITY_RAW_MAX)
@@ -205,6 +319,7 @@ def _point_clouds_to_gsplat_inputs(
     dc_only: bool = False,
     detach_input: bool = False,
     semantic_values: bool = False,
+    rank_transform_tables: Optional[dict] = None,
 ) -> dict[str, torch.Tensor | int]:
     """Convert batched denormalized 3DGS point clouds to gsplat-native tensors."""
     del semantic_values
@@ -225,6 +340,7 @@ def _point_clouds_to_gsplat_inputs(
     pc = _constrain_denormalized_point_cloud_for_render(
         point_clouds[..., :expected_dim].to(dtype=torch.float32).contiguous(),
         dc_only=dc_only,
+        rank_transform_tables=rank_transform_tables,
     )
     means = pc[..., 0:3]
 
@@ -310,6 +426,7 @@ def _compute_render_loss_for_batch(
     dc_only: bool = False,
     plane_to_sphere: Optional[torch.Tensor] = None,
     sample_weights: Optional[torch.Tensor] = None,
+    rank_transform_tables: Optional[dict] = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Compute differentiable RGB, alpha-mask, and LPIPS losses over the full batch with gsplat.
 
@@ -317,6 +434,9 @@ def _compute_render_loss_for_batch(
         sample_weights: Optional per-sample weights of shape (B,). When provided, each loss
             is computed as a weighted average (sum(w * per_sample) / sum(w)) instead of a
             uniform mean.  The caller is responsible for detaching these from the graph.
+        rank_transform_tables: Optional Gaussian rank-transform tables; when present
+            both pred and GT point clouds are inverse-rank-transformed on the listed
+            channels before the renderer's sigmoid/exp activations.
     """
     batch_size = x_gt_full.shape[0]
     view_count = max(1, int(num_cam))
@@ -327,7 +447,8 @@ def _compute_render_loss_for_batch(
     gt_pc_raw = _denormalize_point_cloud(gt_pc_norm, norm_mean_full, norm_std_full)
     gt_is_dc_only = gt_pc_raw.shape[-1] == 14
     gt_gaussians = _point_clouds_to_gsplat_inputs(
-        gt_pc_raw.to(device), dc_only=gt_is_dc_only, detach_input=True
+        gt_pc_raw.to(device), dc_only=gt_is_dc_only, detach_input=True,
+        rank_transform_tables=rank_transform_tables,
     )
     if dc_only and not gt_is_dc_only:
         # Drop higher-order SH from GT so both sides render at the same SH degree;
@@ -341,6 +462,7 @@ def _compute_render_loss_for_batch(
         pred_pc_raw.to(device),
         dc_only=dc_only,
         detach_input=False,
+        rank_transform_tables=rank_transform_tables,
     )
 
     with torch.no_grad():
@@ -407,6 +529,7 @@ def _select_preview_sample_and_views(
     renderer_tuple,
     device: torch.device,
     num_cam: int,
+    rank_transform_tables: Optional[dict] = None,
 ) -> tuple[int, list[int]]:
     """Pick a preview sample and views that avoid flat, uninformative GT renders."""
     batch_size = x_gt_full.shape[0]
@@ -430,7 +553,8 @@ def _select_preview_sample_and_views(
     )
     gt_pc_raw = _denormalize_point_cloud(gt_pc_norm, norm_mean_full, norm_std_full)
     gt_gaussians = _point_clouds_to_gsplat_inputs(
-        gt_pc_raw.to(device), dc_only=False, detach_input=True
+        gt_pc_raw.to(device), dc_only=False, detach_input=True,
+        rank_transform_tables=rank_transform_tables,
     )
     gt_views = _render_gsplat_batch(
         renderer_tuple, gt_gaussians, train_cameras, candidate_cam_indices, device
@@ -465,6 +589,7 @@ def _save_training_render_preview(
     num_cam: int,
     dc_only: bool = False,
     plane_to_sphere: Optional[torch.Tensor] = None,
+    rank_transform_tables: Optional[dict] = None,
 ) -> None:
     """Save side-by-side GT/pred train-time renders for quick visual inspection."""
     sample_idx, cam_indices = _select_preview_sample_and_views(
@@ -476,6 +601,7 @@ def _save_training_render_preview(
         renderer_tuple=renderer_tuple,
         device=device,
         num_cam=num_cam,
+        rank_transform_tables=rank_transform_tables,
     )
     rows = []
 
@@ -486,7 +612,8 @@ def _save_training_render_preview(
         gt_pc_raw = _denormalize_point_cloud(gt_pc_norm, norm_mean_full, norm_std_full)
         gt_is_dc_only = gt_pc_raw.shape[-1] == 14
         gt_gaussians = _point_clouds_to_gsplat_inputs(
-            gt_pc_raw.to(device), dc_only=gt_is_dc_only, detach_input=True
+            gt_pc_raw.to(device), dc_only=gt_is_dc_only, detach_input=True,
+            rank_transform_tables=rank_transform_tables,
         )
         if dc_only and not gt_is_dc_only:
             gt_gaussians = {**gt_gaussians, "colors": gt_gaussians["colors"][..., :1, :], "sh_degree": 0}
@@ -499,6 +626,7 @@ def _save_training_render_preview(
             pred_pc_raw.to(device),
             dc_only=dc_only,
             detach_input=True,
+            rank_transform_tables=rank_transform_tables,
         )
 
         target_views = _render_gsplat_batch(
@@ -558,12 +686,15 @@ __all__ = [
     "RENDER_SCALE_RAW_MIN",
     "_camera_intrinsics_from_ref",
     "_camera_viewmat_from_ref",
+    "_apply_rank_inverse_for_render",
     "_compute_render_loss_for_batch",
     "_constrain_denormalized_point_cloud_for_render",
     "_denormalize_point_cloud",
     "_fov2focal",
     "_load_reference_cameras",
     "_normalize_quaternions_with_identity_fallback",
+    "_resolve_rank_layout_for_active_space",
+    "load_rank_transform_payload_torch",
     "_plane_to_point_cloud_batch",
     "_point_clouds_to_gsplat_inputs",
     "_prepare_train_cameras",

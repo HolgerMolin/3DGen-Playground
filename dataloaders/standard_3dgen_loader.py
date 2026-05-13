@@ -124,11 +124,6 @@ def load_ply(path: str) -> np.ndarray:
     for idx, attr_name in enumerate(scale_names):
         scales[:, idx] = np.asarray(plydata.elements[0][attr_name])
 
-    # Scales are stored in log space (pre-exp); below log(5e-4) ≈ -7.6 the gaussian
-    # is sub-half-pixel at 512² render and contributes zero pixels regardless,
-    # so clip the dead-scale tail that otherwise dominates per-channel stats.
-    scales = np.maximum(scales, -7.6)
-
     # Load rotations
     rot_names = [p.name for p in plydata.elements[0].properties if p.name.startswith("rot")]
     rot_names = sorted(rot_names, key=lambda x: int(x.split('_')[-1]))
@@ -179,6 +174,55 @@ def load_sphere2plane(sphere2plane_path: str) -> np.ndarray:
     if not np.array_equal(np.sort(arr), expected):
         raise ValueError(f"sphere2plane at {sphere2plane_path} is not a valid permutation")
     return arr
+
+
+def load_rank_transform_payload(path: str) -> dict:
+    """Load a Gaussian rank-transform payload built by data/build_rank_transform.py.
+
+    Returns a dict with `channels` (list[int], indices into the full 59-channel
+    feature space), `data_quantiles` (np.ndarray of shape (C, K), float32), and
+    `gauss_quantiles` (np.ndarray of shape (K,), float32). Both quantile arrays
+    are strictly monotonic so 1D linear interpolation is well-defined in either
+    direction.
+    """
+    payload = torch.load(path, weights_only=False)
+    data_q = payload["data_quantiles"]
+    gauss_q = payload["gauss_quantiles"]
+    if isinstance(data_q, torch.Tensor):
+        data_q = data_q.cpu().numpy()
+    if isinstance(gauss_q, torch.Tensor):
+        gauss_q = gauss_q.cpu().numpy()
+    return {
+        "channels": [int(c) for c in payload["channels"]],
+        "data_quantiles": np.asarray(data_q, dtype=np.float32),
+        "gauss_quantiles": np.asarray(gauss_q, dtype=np.float32),
+    }
+
+
+def _apply_rank_transform_numpy(
+    point_cloud: np.ndarray,
+    rank_channels: np.ndarray,
+    data_quantiles: np.ndarray,
+    gauss_quantiles: np.ndarray,
+) -> np.ndarray:
+    """Forward Gaussian rank transform: data domain -> N(0,1) on listed channels.
+
+    Accepts (C, H, W) or (N, C). Channels not in `rank_channels` are untouched.
+    """
+    if rank_channels.size == 0:
+        return point_cloud
+    out = point_cloud.copy()
+    if point_cloud.ndim == 3:
+        for i, c in enumerate(rank_channels):
+            out[c] = np.interp(point_cloud[c], data_quantiles[i], gauss_quantiles)
+    elif point_cloud.ndim == 2:
+        for i, c in enumerate(rank_channels):
+            out[:, c] = np.interp(point_cloud[:, c], data_quantiles[i], gauss_quantiles)
+    else:
+        raise ValueError(
+            f"Unsupported point_cloud shape for rank transform: {point_cloud.shape}"
+        )
+    return out
 
 
 def _normalize_point_cloud_numpy(
@@ -235,6 +279,7 @@ class Standard3DGenDataset(Dataset):
         std_file: Optional[str] = None,
         sphere2plane_path: str = "data/sphere2plane.npy",
         exclude_keys_file: Optional[str] = None,
+        rank_transform_file: Optional[str] = None,
     ):
         """Initialize the dataset.
         
@@ -287,7 +332,32 @@ class Standard3DGenDataset(Dataset):
             self.std = torch.load(std_file).cpu().numpy().astype(np.float32)
         else:
             logging.warning("Normalization is NOT enabled, mean or std file not provided.")
-        
+
+        # Load Gaussian rank-transform tables if provided. Channels listed in the
+        # payload are mapped to N(0,1) before the mean/std standardize step; we
+        # then force mean=0, std=1 on those channels so the standardize is a
+        # no-op there (the tables built post-rank are exactly that by
+        # construction, and it lets the rest of the pipeline stay generic).
+        self.rank_channels: Optional[np.ndarray] = None
+        self.rank_data_quantiles: Optional[np.ndarray] = None
+        self.rank_gauss_quantiles: Optional[np.ndarray] = None
+        if rank_transform_file is not None:
+            logging.info(f"Loading Gaussian rank-transform tables from {rank_transform_file}")
+            payload = load_rank_transform_payload(rank_transform_file)
+            self.rank_channels = np.asarray(payload["channels"], dtype=np.int64)
+            self.rank_data_quantiles = payload["data_quantiles"]
+            self.rank_gauss_quantiles = payload["gauss_quantiles"]
+            if self.mean is not None and self.std is not None:
+                self.mean = self.mean.copy()
+                self.std = self.std.copy()
+                self.mean[self.rank_channels] = 0.0
+                self.std[self.rank_channels] = 1.0
+            else:
+                logging.warning(
+                    "rank_transform_file is set without mean/std; non-rank channels "
+                    "will pass through un-standardized."
+                )
+
         logging.info(f"Initialized dataset with {len(self.keys)} samples")
     
     def __len__(self) -> int:
@@ -504,7 +574,16 @@ class Standard3DGenDataset(Dataset):
         
         # Load 3DGS data
         point_cloud, gs2sphere = self._load_3dgs_data(directory_number, filename)
-        
+
+        # Apply Gaussian rank transform on selected channels (if loaded)
+        if self.rank_channels is not None:
+            point_cloud = _apply_rank_transform_numpy(
+                point_cloud,
+                self.rank_channels,
+                self.rank_data_quantiles,
+                self.rank_gauss_quantiles,
+            )
+
         # Normalize if enabled
         if self.mean is not None and self.std is not None:
             point_cloud = _normalize_point_cloud_numpy(point_cloud, self.mean, self.std)
@@ -549,6 +628,7 @@ def create_dataloader(
     mean_file: Optional[str] = None,
     std_file: Optional[str] = None,
     sphere2plane_path: str = "data/sphere2plane.npy",
+    rank_transform_file: Optional[str] = None,
     batch_size: int = 1,
     num_workers: int = 0,
     shuffle: bool = True,
@@ -582,6 +662,7 @@ def create_dataloader(
         mean_file=mean_file,
         std_file=std_file,
         sphere2plane_path=sphere2plane_path,
+        rank_transform_file=rank_transform_file,
     )
     
     dataloader = DataLoader(

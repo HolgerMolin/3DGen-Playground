@@ -20,15 +20,18 @@ def _build_inference_timesteps(
     num_inference_steps: int,
     schedule: str,
     device: torch.device,
+    P_mean: float = 0.0,
+    P_std: float = 1.0,
 ) -> torch.Tensor:
     """Build the inference timestep grid for heun/euler from ``t=0`` to ``t=1``.
 
     schedule="linear":       evenly spaced in t.
     schedule="logit_normal": evenly spaced in the quantile of the trainer's
-        ``sigmoid(N(0,1))`` t-distribution. Concentrates inference points
-        around t=0.5 where the velocity field is best-trained — empirically
-        cuts scale-tail outliers by ~20–30% on JiT-B/8 at 100 steps (see
-        ``docs/sampler_ood_diagnosis.md`` test 8).
+        ``sigmoid(N(P_mean, P_std))`` t-distribution. Pass the same ``P_mean``
+        and ``P_std`` used at training time so the inference grid mirrors
+        the t-density the model actually saw — otherwise the sampler concentrates
+        steps in regions the model is undertrained on. Defaults reproduce the
+        legacy ``sigmoid(N(0, 1))`` grid for backward compatibility.
     """
     if schedule == "linear":
         return torch.linspace(0.0, 1.0, num_inference_steps + 1, device=device, dtype=torch.float32)
@@ -38,7 +41,7 @@ def _build_inference_timesteps(
             eps, 1.0 - eps, num_inference_steps + 1, device=device, dtype=torch.float32,
         )
         z = torch.erfinv(2 * quantiles - 1) * math.sqrt(2.0)
-        return torch.sigmoid(z)
+        return torch.sigmoid(P_mean + P_std * z)
     raise ValueError(
         f"Unknown timestep_schedule {schedule!r}. Choices: {', '.join(TIMESTEP_SCHEDULE_CHOICES)}"
     )
@@ -263,6 +266,8 @@ def sample_with_jit_ode(
     t_eps: float = 5e-2,
     noise_scale: float = 1.0,
     timestep_schedule: str = "logit_normal",
+    P_mean: float = 0.0,
+    P_std: float = 1.0,
     generator: Optional[torch.Generator] = None,
 ) -> torch.Tensor:
     if not predict_xstart:
@@ -284,6 +289,8 @@ def sample_with_jit_ode(
         num_inference_steps=num_inference_steps,
         schedule=timestep_schedule,
         device=device,
+        P_mean=P_mean,
+        P_std=P_std,
     )
 
     was_training = model.training
@@ -529,6 +536,8 @@ def sample_model(
     noise_scale: float = 1.0,
     ddim_eta: float = 0.0,
     timestep_schedule: str = "logit_normal",
+    P_mean: float = 0.0,
+    P_std: float = 1.0,
     generator: Optional[torch.Generator] = None,
 ) -> torch.Tensor:
     if sampler in {"heun", "euler"}:
@@ -546,6 +555,8 @@ def sample_model(
             t_eps=t_eps,
             noise_scale=noise_scale,
             timestep_schedule=timestep_schedule,
+            P_mean=P_mean,
+            P_std=P_std,
             generator=generator,
         )
     if sampler == "dpm":

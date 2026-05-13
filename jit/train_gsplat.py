@@ -64,6 +64,7 @@ from utils.gsplat_render_util import (
     _save_training_render_preview,
     _try_import_lpips,
     _try_import_renderer,
+    load_rank_transform_payload_torch,
 )
 
 
@@ -699,6 +700,9 @@ def _run_validation_render(
     dpm_use_karras_sigmas: bool = False,
     ddim_eta: float = 0.0,
     cfg_scale: float = 1.0,
+    P_mean: float = 0.0,
+    P_std: float = 1.0,
+    rank_transform_tables: Optional[dict] = None,
 ) -> None:
     """Generate a validation sample, render it, and save the result."""
     y_label = random.randrange(num_classes)
@@ -722,6 +726,8 @@ def _run_validation_render(
         use_karras_sigmas=dpm_use_karras_sigmas,
         ddim_eta=ddim_eta,
         cfg_scale=cfg_scale,
+        P_mean=P_mean,
+        P_std=P_std,
     )
 
     # Build GS inputs from generated sample.
@@ -731,6 +737,7 @@ def _run_validation_render(
         pred_pc_raw.to(device),
         dc_only=dc_only,
         detach_input=True,
+        rank_transform_tables=rank_transform_tables,
     )
 
     cam_indices = [random.randrange(int(train_cameras["viewmats"].shape[0]))]
@@ -877,6 +884,7 @@ def main(args):
         std_file=args.std_file,
         sphere2plane_path=args.sphere2plane_path,
         exclude_keys_file=args.exclude_keys_file,
+        rank_transform_file=args.rank_transform_file,
     )
 
     # Resolve feature indices for sh_degree0_only
@@ -1124,6 +1132,12 @@ def main(args):
             args.lr,
         )
 
+    # Load Gaussian rank-transform tables (used to invert the dataloader's
+    # forward rank transform on opacity / scale channels before sigmoid/exp).
+    rank_transform_tables = load_rank_transform_payload_torch(
+        args.rank_transform_file, device=device
+    )
+
     # Load normalization stats for render loss denormalization
     norm_mean = None
     norm_std = None
@@ -1133,6 +1147,17 @@ def main(args):
         # Load directly to device so _denormalize_point_cloud's .to(device=...) is a no-op.
         norm_mean_full = torch.load(args.mean_file, weights_only=True).float().to(device)
         norm_std_full = torch.load(args.std_file, weights_only=True).float().to(device)
+        if rank_transform_tables is not None:
+            # Rank-transformed channels are N(0,1) by construction; force their
+            # stats to (0,1) so the destandardize is a no-op for them and the
+            # inverse rank transform inside _constrain owns the round-trip.
+            rank_idx = torch.tensor(
+                rank_transform_tables["channels"], dtype=torch.long, device=device
+            )
+            norm_mean_full = norm_mean_full.clone()
+            norm_std_full = norm_std_full.clone()
+            norm_mean_full[rank_idx] = 0.0
+            norm_std_full[rank_idx] = 1.0
         if feature_indices is not None:
             norm_mean = norm_mean_full[feature_indices]
             norm_std = norm_std_full[feature_indices]
@@ -1187,24 +1212,49 @@ def main(args):
             renderer_for_train = renderer_probe
             train_cameras = _prepare_train_cameras(ref_cameras, args.train_render_size, device)
             if use_render_loss and args.lpips_loss_weight > 0.0:
-                lpips_probe = _try_import_lpips()
-                if isinstance(lpips_probe, Exception):
-                    if is_main:
-                        logger.warning(f"[render-loss] LPIPS disabled: import failed: {lpips_probe}")
+                if args.perceptual_backend == 'dinov2':
+                    # torch.hub.load downloads on first call; serialize ranks to keep
+                    # 4 processes from racing on the same cache file.
+                    try:
+                        from utils.dinov2_perceptual import DinoV2Perceptual
+                        if is_main:
+                            lpips_fn_for_train = DinoV2Perceptual().to(device).eval()
+                        accelerator.wait_for_everyone()
+                        if not is_main:
+                            lpips_fn_for_train = DinoV2Perceptual().to(device).eval()
+                        for p in lpips_fn_for_train.parameters():
+                            p.requires_grad_(False)
+                        if is_main:
+                            logger.info("[render-loss] perceptual backend = dinov2_vitb14 (cosine, 224x224)")
+                    except Exception as exc:
+                        if is_main:
+                            logger.warning(
+                                f"[render-loss] DINOv2 perceptual disabled: init failed: {exc}"
+                            )
+                        lpips_fn_for_train = None
                 else:
-                    lpips_fn_for_train = lpips_probe.LPIPS(net=args.lpips_net).to(device).eval()
-                    for p in lpips_fn_for_train.parameters():
-                        p.requires_grad_(False)
+                    lpips_probe = _try_import_lpips()
+                    if isinstance(lpips_probe, Exception):
+                        if is_main:
+                            logger.warning(f"[render-loss] LPIPS disabled: import failed: {lpips_probe}")
+                    else:
+                        lpips_fn_for_train = lpips_probe.LPIPS(net=args.lpips_net).to(device).eval()
+                        for p in lpips_fn_for_train.parameters():
+                            p.requires_grad_(False)
         else:
             if is_main:
                 logger.warning(f"[renderer] disabled: import failed: {renderer_probe}")
             needs_renderer = False
             enable_val = False
 
-    # Resume from checkpoint if provided
+    # Resume from checkpoint if provided.
+    # `step` now means optimizer steps (post-refactor). Legacy checkpoints saved
+    # `step` as micro-batch count and a separate `opt_step` as the optim count;
+    # detect that format via the presence of `opt_step` and use it directly.
     start_step = 0
     start_epoch = 0
-    opt_step = 0
+    ga = max(1, int(args.gradient_accumulation_steps))
+    optim_steps_per_epoch = max(1, (len(loader) + ga - 1) // ga)
     if args.resume:
         if is_main:
             logger.info(f"Resuming from checkpoint: {args.resume}")
@@ -1238,15 +1288,14 @@ def main(args):
                 )
         del ckpt['model'], ckpt['ema'], ckpt['opt']
         torch.cuda.empty_cache()
-        start_step = ckpt['step']
-        start_epoch = start_step // len(loader)
-        if args.lr_schedule in ('cosine', 'warmup'):
-            fallback_opt = start_step // max(1, args.gradient_accumulation_steps)
-            opt_step = int(ckpt.get('opt_step', fallback_opt))
+        if 'opt_step' in ckpt:
+            # Legacy: 'step' = micro-batch count, 'opt_step' = optim count.
+            start_step = int(ckpt['opt_step'])
+        else:
+            start_step = int(ckpt['step'])
+        start_epoch = start_step // optim_steps_per_epoch
         if is_main:
-            logger.info(f"Resumed at step {start_step}")
-            if args.lr_schedule in ('cosine', 'warmup'):
-                logger.info(f"Resumed LR opt_step={opt_step}")
+            logger.info(f"Resumed at optim step {start_step}, epoch {start_epoch}")
 
     # Per-t-bucket MSE accumulators: t in (0,1) split into custom-width bins
     # to give finer resolution near t=1 (clean end) where loss falls fastest.
@@ -1281,7 +1330,8 @@ def main(args):
     log_class_null_cos = torch.zeros([], device=device)
     log_grad_norm = 0.0
     log_grad_steps = 0
-    log_steps = 0
+    log_steps = 0  # micro-batches contributing to running loss averages
+    log_optim_steps = 0  # optim steps in window (used for steps_per_sec)
     log_mse_gn = 0.0
     log_rl1_gn = 0.0
     log_alpha_gn = 0.0
@@ -1375,21 +1425,43 @@ def main(args):
                 _prof_t_data_end = time.perf_counter()
                 _prof_data_ms = (_prof_t_data_end - _prof_t_step_start) * 1000.0
 
-            if args.overrides_yaml and step >= args.enable_render_loss_after and (
-                step % max(1, int(args.overrides_every)) == 0 or step == start_step
-            ):
-                _load_and_apply_overrides_yaml(args.overrides_yaml, runtime, is_main=is_main)
+            # Pre-step work that uses `step` as a gate. `step` is constant
+            # across the `ga` micro-batches of an accumulation cycle, so any
+            # `step % N == 0` gate would otherwise fire `ga` times in a row.
+            # Gate on sync_gradients so each runs once per optim step. Schedules
+            # and LR computation are also gated even though they only read
+            # `step` (no modulo): values they push are only consumed at the
+            # next opt.step(), which itself fires only on sync.
+            if accelerator.sync_gradients:
+                if args.overrides_yaml and step >= args.enable_render_loss_after and (
+                    step % max(1, int(args.overrides_every)) == 0 or step == start_step
+                ):
+                    _load_and_apply_overrides_yaml(args.overrides_yaml, runtime, is_main=is_main)
 
-            if p_mean_schedule is not None:
-                runtime.P_mean = _p_mean_at_step(p_mean_schedule, step)
+                if p_mean_schedule is not None:
+                    runtime.P_mean = _p_mean_at_step(p_mean_schedule, step)
 
-            if render_weight_schedule is not None:
-                rl1_s, alpha_s, lpips_s = _render_weights_at_step(
-                    render_weight_schedule, step
-                )
-                runtime.render_loss_weight = rl1_s
-                runtime.alpha_mask_loss_weight = alpha_s
-                runtime.lpips_loss_weight = lpips_s
+                if render_weight_schedule is not None:
+                    rl1_s, alpha_s, lpips_s = _render_weights_at_step(
+                        render_weight_schedule, step
+                    )
+                    runtime.render_loss_weight = rl1_s
+                    runtime.alpha_mask_loss_weight = alpha_s
+                    runtime.lpips_loss_weight = lpips_s
+
+                if args.lr_schedule in ('cosine', 'warmup', 'none'):
+                    lr_val = _compute_lr(
+                        schedule=args.lr_schedule,
+                        opt_step=step,
+                        base_lr=args.lr,
+                        lr_min=args.lr_min,
+                        lr_warmup_steps=args.lr_warmup_steps,
+                        max_opt_steps=max_opt_steps,
+                    )
+                    eff_lr = lr_val * float(runtime.lr_scale)
+                    for pg in opt.param_groups:
+                        pg['lr'] = eff_lr
+                    last_lr_val = eff_lr
 
             if has_full_for_render:
                 x, y, x_full, hash_keys = batch
@@ -1405,20 +1477,6 @@ def main(args):
                 # tail of the previous step's GPU work.
                 torch.cuda.synchronize()
                 _prof_h2d_ms = (time.perf_counter() - _prof_t_data_end) * 1000.0
-
-            if args.lr_schedule in ('cosine', 'warmup', 'none'):
-                lr_val = _compute_lr(
-                    schedule=args.lr_schedule,
-                    opt_step=opt_step,
-                    base_lr=args.lr,
-                    lr_min=args.lr_min,
-                    lr_warmup_steps=args.lr_warmup_steps,
-                    max_opt_steps=max_opt_steps,
-                )
-                eff_lr = lr_val * float(runtime.lr_scale)
-                for pg in opt.param_groups:
-                    pg['lr'] = eff_lr
-                last_lr_val = eff_lr
 
             with accelerator.accumulate(model):
                 # JiT-style logit-normal timestep sampling. ``t_value`` drives
@@ -1524,7 +1582,11 @@ def main(args):
                     x0_pred = model_out.float()
 
                 if should_compute_render and x0_pred is not None:
-                    if runtime.lpips_loss_weight > 0.0 and lpips_fn_for_train is None:
+                    if (
+                        runtime.lpips_loss_weight > 0.0
+                        and lpips_fn_for_train is None
+                        and args.perceptual_backend == 'lpips'
+                    ):
                         lpips_probe = _try_import_lpips()
                         if isinstance(lpips_probe, Exception):
                             if is_main:
@@ -1575,6 +1637,7 @@ def main(args):
                             dc_only=dc_only,
                             plane_to_sphere=plane_to_sphere,
                             sample_weights=None,
+                            rank_transform_tables=rank_transform_tables,
                         )
 
                 if train_render_preview_due:
@@ -1618,6 +1681,7 @@ def main(args):
                             num_cam=args.train_render_log_num_cam,
                             dc_only=dc_only,
                             plane_to_sphere=plane_to_sphere,
+                            rank_transform_tables=rank_transform_tables,
                         )
                         loss_tracker.flush_plots()
                     accelerator.wait_for_everyone()
@@ -1708,12 +1772,14 @@ def main(args):
                 opt.step()
                 opt.zero_grad()
 
-            if args.lr_schedule in ('cosine', 'warmup') and accelerator.sync_gradients:
-                opt_step += 1
-
-            # Update EMA only on optimizer steps so the effective decay matches args.ema_decay.
+            # `step` is the optim-step counter — advance it (and update EMA)
+            # only when accelerate actually fired opt.step(). All post-step
+            # work below is gated on the same condition so its `step % N == 0`
+            # gates fire once per optim step rather than once per micro-batch.
             if accelerator.sync_gradients:
                 update_ema(ema, accelerator.unwrap_model(model), decay=args.ema_decay)
+                step += 1
+                log_optim_steps += 1
 
             if _prof:
                 _prof_ev_step_end.record()
@@ -1751,9 +1817,12 @@ def main(args):
                     0, bucket_idx, torch.ones_like(per_sample)
                 )
             log_steps += 1
-            step += 1
 
-            if _prof and is_main and step % _PROF_PRINT_EVERY == 0 and len(_prof_data_q) > 0:
+            # All `step % N == 0` gates below run only on optim-step boundaries
+            # — `step` doesn't change across the `ga` micro-batches of an
+            # accumulation cycle, so without the sync_gradients guard each
+            # block would fire `ga` times in a row on the boundary cycle.
+            if _prof and is_main and accelerator.sync_gradients and step % _PROF_PRINT_EVERY == 0 and len(_prof_data_q) > 0:
                 _d = sum(_prof_data_q) / len(_prof_data_q)
                 _h = sum(_prof_h2d_q) / len(_prof_h2d_q)
                 _f = sum(_prof_fwd_q) / len(_prof_fwd_q)
@@ -1770,10 +1839,13 @@ def main(args):
                     _tot, _sps,
                 )
 
-            if step % args.log_every == 0 and is_main:
+            if step % args.log_every == 0 and is_main and accelerator.sync_gradients:
                 avg_loss = log_loss.item() / log_steps
                 elapsed = time.time() - start_time
-                steps_per_sec = log_steps / elapsed
+                # Optim steps / sec — log_optim_steps counts sync micro-batches
+                # only, while log_steps counts every micro-batch (used for
+                # averaging losses across the window).
+                steps_per_sec = log_optim_steps / elapsed if elapsed > 0 else 0.0
                 msg = (
                     f"Step {step:>7d} | Epoch {epoch:>3d} | "
                     f"MSE: {avg_loss:.4f} | "
@@ -1913,6 +1985,7 @@ def main(args):
                 log_grad_norm = 0.0
                 log_grad_steps = 0
                 log_steps = 0
+                log_optim_steps = 0
                 log_mse_gn = 0.0
                 log_rl1_gn = 0.0
                 log_alpha_gn = 0.0
@@ -1924,7 +1997,7 @@ def main(args):
                 log_t_bucket_cnt.zero_()
                 start_time = time.time()
 
-            checkpoint_due = step % args.ckpt_every == 0
+            checkpoint_due = accelerator.sync_gradients and step % args.ckpt_every == 0
             if checkpoint_due:
                 accelerator.wait_for_everyone()
                 if is_main:
@@ -1935,7 +2008,6 @@ def main(args):
                         'opt': opt.state_dict(),
                         'args': vars(args),
                         'step': step,
-                        'opt_step': opt_step,
                     }, ckpt_path)
                     logger.info(f"Saved checkpoint to {ckpt_path}")
                     if args.class_dropout_prob > 0:
@@ -1959,7 +2031,9 @@ def main(args):
                         )
                 accelerator.wait_for_everyone()
 
-            validation_due = enable_val and step % args.val_every == 0
+            validation_due = (
+                enable_val and accelerator.sync_gradients and step % args.val_every == 0
+            )
             if validation_due:
                 accelerator.wait_for_everyone()
                 if is_main:
@@ -1989,6 +2063,9 @@ def main(args):
                         dpm_use_karras_sigmas=args.dpm_use_karras_sigmas,
                         ddim_eta=args.ddim_eta,
                         cfg_scale=args.val_cfg_scale,
+                        P_mean=runtime.P_mean,
+                        P_std=args.P_std,
+                        rank_transform_tables=rank_transform_tables,
                     )
                     loss_tracker.flush_plots()
                 accelerator.wait_for_everyone()
@@ -2003,7 +2080,6 @@ def main(args):
             'opt': opt.state_dict(),
             'args': vars(args),
             'step': step,
-            'opt_step': opt_step,
         }, ckpt_path)
         logger.info(f"Training complete. Final checkpoint: {ckpt_path}")
         loss_tracker.flush_plots()
@@ -2095,6 +2171,13 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
                         help='Path to normalization mean file')
     parser.add_argument('--std_file', type=str, default=None,
                         help='Path to normalization std file')
+    parser.add_argument('--rank_transform_file', type=str, default=None,
+                        help='Path to Gaussian rank-transform tables built by '
+                             'data/build_rank_transform.py. Listed channels are '
+                             'mapped to N(0,1) at load time and the inverse is '
+                             'applied before the renderer\'s sigmoid/exp. '
+                             'mean/std for these channels are forced to (0,1) '
+                             'so the standardize round-trip is a no-op.')
     parser.add_argument('--class_map', type=str, default='object_labels/object_to_class.json',
                         help='Path to object-to-class mapping JSON')
     parser.add_argument('--sphere2plane_path', type=str, default='data/sphere2plane.npy',
@@ -2110,9 +2193,15 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
     parser.add_argument('--alpha_mask_loss_weight', type=float, default=0.0,
                         help='Weight for render alpha-mask L1 loss term')
     parser.add_argument('--lpips_loss_weight', type=float, default=0.0,
-                        help='Weight for render LPIPS photometric loss term')
+                        help='Weight for render perceptual photometric loss term '
+                             '(applied to whichever --perceptual_backend is active)')
     parser.add_argument('--lpips_net', type=str, default='vgg', choices=('vgg', 'alex', 'squeeze'),
-                        help='LPIPS backbone')
+                        help='LPIPS backbone (only used when --perceptual_backend=lpips)')
+    parser.add_argument('--perceptual_backend', type=str, default='lpips',
+                        choices=('lpips', 'dinov2'),
+                        help='Perceptual backend for the render perceptual loss term. '
+                             'lpips = lpips package; dinov2 = frozen DINOv2 ViT-B/14 cosine-distance '
+                             'over patch tokens. Set at launch only — not hot-reloadable.')
     parser.add_argument('--render_loss_num_cam', type=int, default=1,
                         help='Number of cameras to randomly sample per render loss step')
     parser.add_argument('--train_render_size', type=int, default=128,
@@ -2187,7 +2276,7 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
         '--overrides_every',
         type=int,
         default=1000,
-        help='Re-load --overrides_yaml every N training steps (step at loop start, same counter as logging).',
+        help='Re-load --overrides_yaml every N optim steps (same counter as logging/ckpt/val).',
     )
     parser.add_argument('--num_workers', type=int, default=4)
     parser.add_argument('--preload_to_cpu', action=argparse.BooleanOptionalAction, default=False,

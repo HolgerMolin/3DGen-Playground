@@ -67,6 +67,7 @@ from jit.sampling import (
 from utils.plane_utils import load_sphere2plane
 from utils.gsplat_render_util import (
     _denormalize_point_cloud,
+    load_rank_transform_payload_torch,
     _load_reference_cameras,
     _plane_to_point_cloud_batch,
     _point_clouds_to_gsplat_inputs,
@@ -199,12 +200,33 @@ def main(args: argparse.Namespace) -> None:
     plane_to_sphere = load_sphere2plane(args.sphere2plane_path, num_points)
     logger.info("Loaded sphere2plane permutation")
 
+    # ── Gaussian rank-transform tables (resolved from CLI or checkpoint) ──────
+    rank_transform_file = _resolve_arg(
+        args.rank_transform_file, ckpt, "rank_transform_file", None
+    )
+    rank_transform_tables = load_rank_transform_payload_torch(
+        rank_transform_file, device=device
+    )
+    if rank_transform_tables is not None:
+        logger.info(
+            "Loaded Gaussian rank-transform tables for channels %s",
+            rank_transform_tables["channels"],
+        )
+
     # ── Normalization stats ───────────────────────────────────────────────────
     norm_mean: Optional[torch.Tensor] = None
     norm_std:  Optional[torch.Tensor] = None
     if args.mean_file and args.std_file:
         norm_mean_full = torch.load(args.mean_file, weights_only=True).float().cpu()
         norm_std_full  = torch.load(args.std_file,  weights_only=True).float().cpu()
+        if rank_transform_tables is not None:
+            rank_idx = torch.tensor(
+                rank_transform_tables["channels"], dtype=torch.long
+            )
+            norm_mean_full = norm_mean_full.clone()
+            norm_std_full = norm_std_full.clone()
+            norm_mean_full[rank_idx] = 0.0
+            norm_std_full[rank_idx] = 1.0
         if feature_indices is not None:
             norm_mean = norm_mean_full[feature_indices]
             norm_std  = norm_std_full[feature_indices]
@@ -239,9 +261,11 @@ def main(args: argparse.Namespace) -> None:
     # ── Sampling loop ─────────────────────────────────────────────────────────
     logger.info(
         "Generating %d sample(s) | sampler=%s | steps=%d | t_schedule=%s | "
+        "P_mean=%+.3f | P_std=%.3f | "
         "cfg_scale=%.2f | cfg_interval=(%.2f, %.2f) | t_eps=%.4f | noise_scale=%.3f | "
         "predict_xstart=%s",
         args.num_samples, args.sampler, args.num_steps, args.timestep_schedule,
+        args.P_mean, args.P_std,
         args.cfg_scale, args.cfg_interval[0], args.cfg_interval[1],
         args.t_eps, args.noise_scale, predict_x0,
     )
@@ -277,6 +301,8 @@ def main(args: argparse.Namespace) -> None:
                 t_eps=args.t_eps,
                 noise_scale=args.noise_scale,
                 timestep_schedule=args.timestep_schedule,
+                P_mean=args.P_mean,
+                P_std=args.P_std,
                 ddim_eta=args.ddim_eta,
                 generator=generator,
             )
@@ -288,6 +314,7 @@ def main(args: argparse.Namespace) -> None:
             pred_pc_raw.to(device),
             dc_only=sh_degree0,
             detach_input=True,
+            rank_transform_tables=rank_transform_tables,
         )
 
         # Pick camera indices: sequential or random
@@ -334,6 +361,9 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--ref_camera_tar",   required=True, help="Path to ref_camera.tar.gz")
     p.add_argument("--mean_file",        required=True, help="Path to normalization mean .pt")
     p.add_argument("--std_file",         required=True, help="Path to normalization std .pt")
+    p.add_argument("--rank_transform_file", default=None,
+                   help="Path to Gaussian rank-transform tables (data/build_rank_transform.py "
+                        "output). Auto-resolved from checkpoint args if omitted.")
     p.add_argument("--sphere2plane_path",required=True, help="Path to sphere2plane.npy")
     p.add_argument("--class_map",        required=True, help="Path to object_to_class.json")
 
@@ -391,9 +421,18 @@ def _build_parser() -> argparse.ArgumentParser:
                           default="logit_normal",
                           help="Inference timestep spacing for heun/euler. "
                                "'logit_normal' matches the trainer's t-density "
-                               "(sigmoid(N(0,1))) and reduces scale-tail outliers "
-                               "by ~20-30%% over 'linear' on JiT-B/8 (see "
+                               "(sigmoid(N(P_mean, P_std))) and reduces scale-tail "
+                               "outliers by ~20-30%% over 'linear' on JiT-B/8 (see "
                                "docs/sampler_ood_diagnosis.md test 8).")
+    g_sample.add_argument("--P_mean", type=float, default=0.0,
+                          help="Trainer's P_mean for the logit-normal t-distribution. "
+                               "Pass the value used at training time so the inference "
+                               "grid mirrors the t-density the model actually saw. "
+                               "Only applies when --timestep_schedule logit_normal.")
+    g_sample.add_argument("--P_std", type=float, default=1.0,
+                          help="Trainer's P_std for the logit-normal t-distribution. "
+                               "Pass the value used at training time. "
+                               "Only applies when --timestep_schedule logit_normal.")
     g_sample.add_argument("--ddim_eta", type=float, default=0.0,
                           help="DDIM eta: 0.0 = deterministic, 1.0 ≈ DDPM. "
                                "Only applies to the ddim sampler.")

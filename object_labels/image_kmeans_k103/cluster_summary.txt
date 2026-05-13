@@ -1,0 +1,2497 @@
+================================================================================
+Refined Cluster Summary — 103 clusters
+================================================================================
+
+────────────────────────────────────────────────────────────
+Cluster   0  (2,294 objects)
+
+  [1913/9559854]
+    Blue ball with a red cap.
+
+  [1893/9461798]
+    A black and gold basketball with a round shape, a gold stripe running
+    around the circumference, and a gold rim.
+
+  [1893/9462939]
+    A red and black Poké Ball with a pink spiked ball, a red cat, and a fish
+    inside glass spheres.
+
+  [1882/9407311]
+    A spherical object resembling a planet with green and dark patches and
+    white polar caps.
+
+  [1893/9462942]
+    A spherical green ball with a leafy texture, covered in green leaves,
+    and displaying a natural and organic appearance.
+
+────────────────────────────────────────────────────────────
+Cluster   1  (2,068 objects)
+
+  [1877/9380112]
+    A small rectangular wooden board with a flat surface, positioned on a
+    flat surface and surrounded by blue dots, resembling an elevated terrain
+    with a flat top and sloping sides.
+
+  [1927/9630899]
+    A rectangular wooden shelf with a flat surface, suitable for holding
+    books, decorations, or other small objects. The shelf is made of wood
+    and is designed to be mounted on a wall. It has a smooth finish and
+    natural wooden texture.
+
+  [1932/9657067]
+    A sleek and modern black remote control with buttons, a touchpad, and a
+    screen.
+
+  [1895/9469754]
+    A sleek and modern white and black computer keyboard with a rectangular
+    shape, raised keys, and a grid-like pattern. It has a row of function
+    keys at the top, a row of arrow keys at the bottom, and a numeric
+    keypad.
+
+  [1881/9402665]
+    A rectangular deck of playing cards, with a unique design and color on
+    each card, arranged neatly and organized in a stack, ready for various
+    card games.
+
+────────────────────────────────────────────────────────────
+Cluster   2  (3,661 objects)
+
+  [1900/9497706]
+    A stylized Christmas tree with a star on top, surrounded by scattered
+    particles and a purple base, featuring the words "FELIZ NAVIDAD" in
+    pink.
+
+  [1920/9596122]
+    A small pink flower in a pot.
+
+  [1882/9405180]
+    Coronavirus - Preview No. 1 (Royalty Free)
+
+  [1905/9522021]
+    A small, yellow daisy in full bloom with multiple petals surrounding a
+    central stem, positioned on a white background.
+
+  [1925/9620000]
+    A tall, slender and realistic green tree with a trunk and branches,
+    standing on a white background.
+
+────────────────────────────────────────────────────────────
+Cluster   3  (2,958 objects)
+
+  [1872/9354084]
+    An assault rifle.
+
+  [1919/9589431]
+    A wooden tripod with three legs.
+
+  [1890/9446475]
+    Futuristic gun with a green and grey metallic body, featuring multiple
+    barrels and detailed with orange-yellow accents and buttons.
+
+  [1939/9688892]
+    A compact and portable green and yellow handheld electric lawn mower
+    designed for easy maneuverability and efficient cutting of grass.
+
+  [1927/9632571]
+    A detailed and well-made wooden and metal rifle with a rustic and
+    vintage appearance. It has a long barrel and is designed to be held by
+    the user. It suggests that it is an antique or a replica of an older
+    firearm.
+
+────────────────────────────────────────────────────────────
+Cluster   4  (3,079 objects)
+
+  [1890/9445329]
+    A small, weathered red barn with a sloping roof, situated on a grassy
+    field.
+
+  [1891/9453620]
+    A small blue and white shop with a slanted roof, situated on a wooden
+    base. It has a sign that reads "Crush Your Trash" and is surrounded by a
+    fence. The shop is set up in a park with table and chairs, giving it a
+    fun and playful appearance.
+
+  [1925/9622811]
+    A tall wooden watchtower with a stone base, small balcony, railing, and
+    decorative wooden supports near the top.
+
+  [1944/9716390]
+    A large, gray rectangular box with a flat surface, potentially made of
+    metal or plastic, and with a wooden base or legs.
+
+  [1920/9593847]
+    A unique, intricate, cave-like cube structure with a green and purple
+    color scheme and various colored blocks, resembling a fantasy creature
+    with a long tail.
+
+────────────────────────────────────────────────────────────
+Cluster   5  (3,208 objects)
+
+  [1932/9658062]
+    White low-poly man running and holding a sword.
+
+  [1917/9580744]
+    A detailed skeleton of a small animal, possibly a rodent or similar
+    mammal, with a prominent skull and visible rib cage, limbs, and tail
+    bones.
+
+  [1944/9718596]
+    A green monster with claws and horns.
+
+  [1882/9408009]
+    A tall, thin, black sculpture made of metal with a unique shape and
+    design, resembling a robotic arm or a tripod, with multiple joints and a
+    flexible structure.
+
+  [1877/9381860]
+    A stylized green multi-limbed creature with elongated arms and legs, a
+    blue eye on the front, purple spikes on its back, and claw-like fingers.
+
+────────────────────────────────────────────────────────────
+Cluster   6  (3,137 objects)
+
+  [1893/9461735]
+    A detailed and realistic stone sculpture of a dog sitting on a stone
+    base, with intricate details and a lifelike appearance.
+
+  [1912/9556766]
+    A white stone lion statue with a detailed and realistic design,
+    featuring a prominent mane, standing on a pedestal.
+
+  [1914/9568027]
+    A detailed and realistic stone bust of a woman, with a clean and
+    polished finish, mounted on a pedestal.
+
+  [1915/9569929]
+    A statue of a woman wrapped in silver foil.
+
+  [1899/9489334]
+    A detailed and realistic stone lion statue with a fierce expression,
+    placed on a pedestal. The lion statue is made of white stone.
+
+────────────────────────────────────────────────────────────
+Cluster   7  (2,271 objects)
+
+  [1923/9609660]
+    A small orange and gray robot with a gun attached and two arms.
+
+  [1885/9421113]
+    A futuristic metallic tank or robot with a unique angular shape, yellow
+    and black color scheme, hexagonal base, and a cylindrical barrel. It has
+    a large bulky body, a tower-like structure on top, and a weapon mounted
+    on the tower.
+
+  [1881/9402204]
+    A white plastic cylindrical pipe fitting with two openings, a flange at
+    one end, and a black cap on top.
+
+  [1939/9693449]
+    A large, futuristic-looking metallic gun with a distinct shape, long
+    barrel, and grip, positioned on a white background. It has a unique
+    design and appears to be advanced.
+
+  [1933/9660779]
+    A light blue refrigerator with a top freezer section, a power cord
+    extending from the back, and pink items placed on top.
+
+────────────────────────────────────────────────────────────
+Cluster   8  (2,739 objects)
+
+  [1875/9371050]
+    A white marble sculpture with intricate carvings of people and animals,
+    likely depicting a historical or mythological event. It is a rectangular
+    plaque mounted on a wall, used for displaying information or
+    commemorating an event or person.
+
+  [1871/9348881]
+    A stone wall section features a carved fountain or basin with a spout
+    and a sculpted relief above, partially covered with moss.
+
+  [1927/9631324]
+    A large, round, brown stone structure with a unique shape and texture,
+    resembling a rough-textured human head with features such as eyes, nose,
+    and mouth. It has a dome-like structure on top and a stone-like base,
+    possibly a part of an old building or ruin.
+
+  [1902/9505616]
+    A cushioned sofa upholstered with fabric featuring a dolphin and
+    underwater design.
+
+  [1906/9527913]
+    A vertical rectangular frame featuring an arrangement of various fruits,
+    vegetables, and natural elements such as garlic clusters and dried
+    plants, organized to create a colorful, textured display on a dark
+    background.
+
+────────────────────────────────────────────────────────────
+Cluster   9  (4,502 objects)
+
+  [1935/9672100]
+    A tall, cylindrical black and gold vase with intricate patterns and
+    designs, featuring a unique shape, curved body, and narrow neck.
+
+  [1921/9601907]
+    Ancient Chinese bronze ding vessel with intricate patterns and two loop
+    handles on a round body supported by three legs; features a domed lid
+    with a central knob handle. The surface exhibits a green patina with
+    areas of encrusted corrosion, suggesting significant age.
+
+  [1912/9554324]
+    A blue and gray motorcycle helmet with a dome-like structure, visor, and
+    a distinctive shape and design.
+
+  [1892/9456537]
+    A purple glass potion bottle with a wooden lid.
+
+  [1934/9666549]
+    A broken old blue vase.
+
+────────────────────────────────────────────────────────────
+Cluster  10  (3,205 objects)
+
+  [1903/9513475]
+    A rectangular wooden table with a distressed finish, weathered wood and
+    aged appearance, likely used for dining or as a workspace.
+
+  [1895/9472712]
+    A colorful children's wooden abacus combined with a small attached table
+    or desk featuring a green backrest, blue horizontal bars, and a red
+    slanted writing surface.
+
+  [1938/9685001]
+    A white dining table with a shelf.
+
+  [1944/9715910]
+    A small wooden lookout tower with ladders and stairs.
+
+  [1904/9514203]
+    A wooden table with a rectangular shape, a brown surface, and a drawer
+    on one side. It has a natural and rustic appearance. Additionally, it
+    may have a bench attached to it or be accompanied by two stools or two
+    benches. The table is functional and aesthetically pleasing.
+
+────────────────────────────────────────────────────────────
+Cluster  11  (2,175 objects)
+
+  [1921/9601640]
+    A large, brown, carved wooden object with a unique shape, featuring a
+    bulbous base and a long, narrow stem extending from it.
+
+  [1911/9549137]
+    A small, round, white bread roll with a soft and fluffy texture,
+    commonly used for sandwiches or as a side dish. It has a slightly
+    flattened appearance and appears to be freshly baked or recently
+    prepared.
+
+  [1943/9712585]
+    A large white rock with a smooth, rounded surface, likely made of marble
+    or another type of stone.
+
+  [1891/9450583]
+    An egg-shaped object nestled on a bed of multi-colored rocks.
+
+  [1893/9461766]
+    A small, round, brown bowl with a curved shape, rough texture, and a
+    rustic and organic appearance, resembling a rock or a piece of wood.
+
+────────────────────────────────────────────────────────────
+Cluster  12  (4,760 objects)
+
+  [1925/9623298]
+    Three distinct knives with metallic blades and different handle designs:
+    one with a simple black handle, one with a wooden handle and metal
+    rivets, and one with a black handle featuring an angular guard.
+
+  [1900/9497052]
+    A well-crafted knife with a sharp silver blade and a comfortable wooden
+    handle, designed for precise cutting tasks.
+
+  [1917/9580695]
+    A well-crafted medieval sword with a long, curved blade, a pointed tip,
+    and a hilt.
+
+  [1880/9397178]
+    A traditional samurai sword with a long, curved metal blade and a wooden
+    handle, displayed on a white background.
+
+  [1871/9349948]
+    A silver metal knife with a sharp blade, pointed tip, and a handle
+    designed for comfortable grip. It has a sleek and modern appearance with
+    a polished finish.
+
+────────────────────────────────────────────────────────────
+Cluster  13  (898 objects)
+
+  [1913/9561480]
+    A gold bracelet with a green stone in the center, intricately designed
+    with a combination of gold and green colors, featuring a decorative
+    pattern of curved lines, swirls, leaves, vines, and intricate gold
+    filigree.
+
+  [1939/9689116]
+    A visually appealing and brightly colored ball made up of multiple
+    small, colorful pieces of plastic or rubber, resembling a cluster of
+    bones.
+
+  [1925/9618701]
+    A cylindrical base supports a wide, rounded, and sloping conical shape
+    with a narrow, threaded cylindrical opening at the top and an uneven
+    surface near the opening.
+
+  [1940/9697273]
+    A translucent, dome-shaped structure with multiple rounded openings
+    covers an internal framework made of a lattice-like pattern and an
+    irregularly shaped base.
+
+  [1920/9596469]
+    A central orange and cream-patterned spherical core encased in a
+    mechanical cage, surrounded by a large dark ring with intricate
+    connectors extending horizontally on both sides.
+
+────────────────────────────────────────────────────────────
+Cluster  14  (3,526 objects)
+
+  [1942/9704072]
+    A blue and white cartoon character with blue eyes, wearing a lab coat.
+
+  [1904/9514844]
+    A small, round pink cupcake with black frosting and a decorative face on
+    top, designed to look like a character. It is placed on a white plate
+    and has a lit candle, giving it a festive and celebratory appearance.
+
+  [1877/9380372]
+    A small, purple robot toy with a round body, a small head, and a unique
+    design.
+
+  [1927/9632858]
+    Small Batman figurine
+
+  [1872/9357380]
+    A cute and adorable brown teddy bear with a soft, plush texture,
+    designed to look like a stuffed animal. It is sitting on a white
+    background. Suitable for children to cuddle with.
+
+────────────────────────────────────────────────────────────
+Cluster  15  (1,783 objects)
+
+  [1913/9561898]
+    A brown broken stick-like object made of wood, with one end missing,
+    likely used for decorative or educational purposes.
+
+  [1896/9475632]
+    A small white rectangular box with a unique pattern on it, open
+    revealing its contents, which include a collection of small items such
+    as soap, a small bag, and a small piece of paper.
+
+  [1921/9601290]
+    A rectangular piece of paper, white background, folded in half, with a
+    crease in the middle, thin and flat.
+
+  [1932/9657177]
+    A large rectangular block of white stone, likely made of marble, with a
+    smooth surface. It features a circular plaque with a relief image of a
+    detailed carving of a woman's face.
+
+  [1888/9437956]
+    A circular metal manhole cover with a smooth surface, likely made of
+    cast iron, typically found on the street. It has a raised center and is
+    designed to be placed over an opening in the ground, serving as a
+    functional component of urban infrastructure.
+
+────────────────────────────────────────────────────────────
+Cluster  16  (3,475 objects)
+
+  [1887/9428757]
+    A unique and intriguing stone sandal with a distinctive shape, natural
+    and rustic touch, displayed on a table or pedestal.
+
+  [1875/9371541]
+    A small stack of rocks forming a rough and uneven stone wall with a
+    unique shape and a natural, organic appearance.
+
+  [1940/9695732]
+    A brown and white feather with a slightly curved shape, possibly from a
+    wing, contrasting with the white color.
+
+  [1925/9619682]
+    A black angel with intricate details, distinctive wing shape, and
+    outstretched wings, standing on a white background.
+
+  [1900/9496018]
+    A large, irregularly shaped piece of wood or tree trunk, with a rough
+    and weathered texture and a distinct flat surface.
+
+────────────────────────────────────────────────────────────
+Cluster  17  (1,398 objects)
+
+  [1882/9407436]
+    A unique white necklace with blue and green beads, displayed on a
+    mannequin, featuring a distinctive shape.
+
+  [1943/9710370]
+    A white Adidas shoe with a mesh upper and a modern design, providing
+    lightweight construction, breathability, and support for running or
+    athletic activities.
+
+  [1934/9667450]
+    A brown leather shoe with a unique shape and design, featuring a wooden
+    heel, lace-up design, and rubber sole.
+
+  [1944/9714567]
+    A black flat shoe with an orange and white swirl design on the toe.
+
+  [1930/9646614]
+    A pair of black and yellow hiking boots with a rugged and sturdy design,
+    suitable for outdoor activities like hiking. They have a distinctive
+    yellow color and are made with durable materials. The boots feature a
+    lace-up closure system and a sturdy sole for added support and
+    protection. Designed to fit the contours of the wearer's feet, they
+    ensure a comfortable and secure fit during hiking or other outdoor
+    activities.
+
+────────────────────────────────────────────────────────────
+Cluster  18  (2,386 objects)
+
+  [1876/9374808]
+    A modern, sleek white rectangular vending machine with a glass front
+    panel and a variety of bottles or containers inside.
+
+  [1927/9633573]
+    A wooden rectangular box with metal hinges on one side and a reinforced
+    panel on top.
+
+  [1921/9599779]
+    A small wooden structure resembling a rustic cabin or shed, with a
+    rectangular shape, a thatched roof, and a simple yet functional design.
+
+  [1929/9642648]
+    A well-crafted, brown wooden rectangular box or cabinet with a hinged
+    lid and a drawer at the bottom.
+
+  [1899/9491970]
+    A rectangular block with a smooth surface on the top and sides,
+    featuring three horizontal indented lines on one face and short legs at
+    the bottom corners.
+
+────────────────────────────────────────────────────────────
+Cluster  19  (2,304 objects)
+
+  [1908/9535237]
+    A toy truck with a wooden bed and a crate on it.
+
+  [1926/9626672]
+    A sharp and ornate golden metal sword with a curved blade and a detailed
+    hilt, positioned on a white background.
+
+  [1927/9629007]
+    A red and black miniature toy motorcycle with a sleek and aerodynamic
+    design, featuring a unique and detailed appearance, including a seat,
+    handlebars, and wheels.
+
+  [1940/9697567]
+    A weathered yellow vintage truck with wooden side panels carrying crates
+    and bricks in its cargo bed.
+
+  [1934/9668574]
+    A toy go-kart with two wheels and a steering wheel.
+
+────────────────────────────────────────────────────────────
+Cluster  20  (3,809 objects)
+
+  [1880/9398157]
+    A small, realistic and detailed orange scooter miniature model, placed
+    on a white base, designed to be a collectible or a decorative item.
+
+  [1929/9642664]
+    A simple deer stands on a circular platform with a green surface and
+    gray edge.
+
+  [1944/9716014]
+    A sword on a stand with a round base.
+
+  [1885/9423116]
+    A rectangular pool table with a green felt surface, brown wooden frame,
+    and legs, designed for playing pool or billiards. It is placed on a
+    wooden floor.
+
+  [1908/9538607]
+    A small green toy truck with a boxy design and a flatbed, placed on a
+    rocky terrain.
+
+────────────────────────────────────────────────────────────
+Cluster  21  (2,520 objects)
+
+  [1878/9388171]
+    A tall, slender humanoid robot made of metal with a distinctive and
+    intricate design, featuring a mix of metallic and organic elements. It
+    stands on two legs in a walking stance, with arms raised upwards and a
+    robot-like head. The robot has a futuristic and unique appearance, ready
+    to move or perform tasks.
+
+  [1894/9468015]
+    A cute and friendly blue stuffed toy bunny with a fluffy texture,
+    designed for play, decoration, or as a gift.
+
+  [1898/9484172]
+    A worn brown animatronic character with sharp claws and teeth holding a
+    green pumpkin-like object.
+
+  [1875/9370105]
+    A stylized humanoid bear figure with segmented white and purple body
+    parts, holding a small blue bear figure in one hand.
+
+  [1882/9407546]
+    A black and white mannequin-like figure of a person in a stretched-out
+    pose with arms outstretched, standing with a square-shaped head.
+
+────────────────────────────────────────────────────────────
+Cluster  22  (4,738 objects)
+
+  [1881/9402553]
+    A worn, blue metal gas cylinder with a handle on top and visible text
+    around the valve area.
+
+  [1899/9492582]
+    A trash can.
+
+  [1920/9597211]
+    A white paper cup with a unique shape, featuring a yellow star pattern
+    on its surface.
+
+  [1937/9679025]
+    A unique and intricate purple and pink vase-shaped bottle with a curved
+    body and a narrow neck. The bottle has a broken top and appears to be
+    empty.
+
+  [1886/9428532]
+    A small black glass bottle with a cylindrical shape and a dropper,
+    filled with liquid.
+
+────────────────────────────────────────────────────────────
+Cluster  23  (3,666 objects)
+
+  [1923/9609836]
+    A wooden stool with a unique design, featuring a curved shape, round
+    base, and a curved seat for a natural and rustic appearance.
+
+  [1913/9561856]
+    A detailed miniature model of a city, showcasing various buildings,
+    roads, and urban elements, including a church, a school, and a
+    residential area. It is designed to provide a bird's-eye perspective of
+    the city's layout and features, resembling a topographical map.
+
+  [1941/9699644]
+    A medieval-style castle with multiple towers and a large central tower,
+    made of stone and surrounded by a green grassy area. The castle is
+    partially in ruins, with some walls and towers collapsed.
+
+  [1920/9594206]
+    A large, rusty cylindrical metal container or barrel with a dark brown
+    color and a rough texture. It is sitting on a dirt surface.
+
+  [1923/9612572]
+    A small, unique stone-like structure made of wood and metal, with a flat
+    top, curved bottom, and a distinctive shape, possibly glass, resembling
+    a cottage or house.
+
+────────────────────────────────────────────────────────────
+Cluster  24  (2,069 objects)
+
+  [1905/9519587]
+    Three chess pieces—rook, bishop, and queen—are aligned side by side.
+
+  [1916/9577562]
+    A collection of small wooden boats with varying designs and colors.
+
+  [1876/9374592]
+    A golden cylindrical stick, resembling a straw or a decorative item,
+    with a slender and long shape.
+
+  [1944/9717215]
+    A long, rectangular metal beam with a flat top and bottom, straight
+    edge, smooth surface, and a slightly rusty appearance.
+
+  [1919/9591412]
+    A rectangular metal rod or strip, likely made of aluminum or steel,
+    placed on a white background.
+
+────────────────────────────────────────────────────────────
+Cluster  25  (2,170 objects)
+
+  [1918/9586180]
+    A shell is displayed.
+
+  [1874/9366200]
+    A light brown doughnut with a round shape and a hole in the center, made
+    of a soft and fluffy material.
+
+  [1885/9422269]
+    A round loaf of crusty bread with a rustic, flour-dusted surface and
+    deep, scored slashes on top.
+
+  [1933/9660134]
+    A large and heavy rock with a rough and uneven surface, likely made of
+    natural materials such as granite or marble. It has an irregular and
+    asymmetrical shape.
+
+  [1905/9520331]
+    Fragment of a ceramic bowl with a rough beige surface and traces of
+    handwritten text and symbols, showing evidence of wear and age.
+
+────────────────────────────────────────────────────────────
+Cluster  26  (3,138 objects)
+
+  [1885/9419901]
+    A detailed and accurate miniature model of an ancient city, created
+    using computer-aided design (CAD) software, displayed on a table.
+
+  [1940/9697220]
+    A grassy terrain with scattered rocks, leafy plants, a stone fire pit, a
+    wooden bucket, and various wooden crates and barrels.
+
+  [1919/9590259]
+    A small brown and white lighthouse with a cylindrical shape, situated on
+    a rocky hill, featuring intricate details and textures.
+
+  [1891/9449245]
+    A large white clock tower with a unique shape, featuring a clock face on
+    top and a tower-like structure below it. The tower is made of white
+    bricks and is placed on a green field.
+
+  [1940/9696559]
+    A wooden barrel with metal bands, topped with a skull candle and a bag
+    of gold coins, accompanied by two green bottles lying at its base on a
+    wooden floor.
+
+────────────────────────────────────────────────────────────
+Cluster  27  (1,078 objects)
+
+  [1921/9598750]
+    A streamlined fish with a yellowish tail and dorsal side, a light
+    underside, and prominent fins.
+
+  [1925/9620008]
+    A detailed and realistic red fish with a long body, large head, and
+    fins, positioned as if swimming or floating in the air. It is likely a
+    model or a decorative piece.
+
+  [1914/9563742]
+    A detailed and intricate purple and blue fish-shaped decorative object,
+    with a pattern of polka dots and a curved tail, likely made of plastic
+    or paper, displayed on a white background.
+
+  [1896/9478298]
+    A lifelike and detailed 3D yellow fish model with a distinctive shape, a
+    long body, a large mouth, a black stripe, black fins, a white belly, a
+    blue tail, and a realistic appearance, swimming in the water.
+
+  [1894/9464005]
+    A detailed and realistic brown and white 3D representation of a fish,
+    with a long, slender body, fins, and a curved tail, appears to be
+    swimming in the water.
+
+────────────────────────────────────────────────────────────
+Cluster  28  (1,342 objects)
+
+  [1943/9713485]
+    A green vintage biplane with a yellow nose cone, wooden propeller, and
+    the number 17 on its tail.
+
+  [1916/9575282]
+    A yellow vintage-style toy airplane with a wooden body and propeller,
+    sitting on the ground.
+
+  [1902/9506737]
+    A small white and blue propeller plane with a sleek and streamlined
+    design, featuring red and blue stripes, a single propeller, and a
+    cockpit for the pilot.
+
+  [1942/9708600]
+    A large gray and white military transport plane with a distinctive
+    shape, long fuselage, large wings, tail, and propellers, flying in the
+    sky.
+
+  [1886/9424505]
+    Monochromatic fighter jet with detailed cockpit, fuselage, air intakes,
+    tail fin, and underwing armaments.
+
+────────────────────────────────────────────────────────────
+Cluster  29  (4,506 objects)
+
+  [1902/9504243]
+    A computer-generated representation of a man in a blue shirt and gray
+    sweatshirt, standing with his arm extended and his hand pointing
+    upwards.
+
+  [1927/9629919]
+    A stylized character with purple skin, red hair, a single visible horn,
+    wearing a gray shirt with white trim, blue pants, brown boots, and a
+    spiked bracelet, along with a long tail.
+
+  [1920/9595440]
+    A highly detailed 3D model of a female warrior, confidently standing in
+    a dynamic pose. She is wearing a brown and red outfit with a gold belt,
+    and has intricate tattoos on her body.
+
+  [1901/9501500]
+    A lifelike 3D representation of a muscular man in a dynamic yoga pose,
+    with arms outstretched, body bent forward, and one leg extended, wearing
+    jeans and displaying a well-defined body.
+
+  [1893/9462752]
+    A detailed and realistic 3D representation of Spider-Man, wearing a red
+    and blue suit with a spider symbol on the chest, standing in a dynamic
+    pose with arms outstretched.
+
+────────────────────────────────────────────────────────────
+Cluster  30  (3,354 objects)
+
+  [1891/9453308]
+    A raccoon with distinctive facial markings, a ringed tail, and detailed
+    fur.
+
+  [1902/9505522]
+    Low poly elephant with tusks.
+
+  [1892/9453859]
+    A white cat with a large, round head, slender body, red eyes, and big
+    expressive eyes, sitting on its hind legs.
+
+  [1893/9461177]
+    A small, white and brown lion figurine with a distinctive mane,
+    resembling a toy or decorative piece.
+
+  [1916/9574443]
+    Low poly deer with antlers and horns.
+
+────────────────────────────────────────────────────────────
+Cluster  31  (2,093 objects)
+
+  [1933/9661121]
+    A single-story building with an outdoor patio area featuring tables and
+    decorative elements, a small parking area with motorcycles, and interior
+    spaces including a dining area and kitchen.
+
+  [1923/9611007]
+    A wooden triangular structure with a brown color and nature-themed
+    decorations, resembling a piece of furniture or a decorative tree.
+
+  [1911/9553217]
+    A gray medieval church with a tall rectangular structure, pointed roof,
+    and a tower, made of stone and brick.
+
+  [1900/9494112]
+    A black electronic device with blue rectangular buttons and small
+    indicator lights, featuring a USB connector and multiple cylindrical
+    components on one side.
+
+  [1877/9379085]
+    A vintage-style steam locomotive with red and black accents, a wooden
+    cabin, and a red tender labeled WILD WILD WEST on wooden railroad
+    tracks.
+
+────────────────────────────────────────────────────────────
+Cluster  32  (1,144 objects)
+
+  [1907/9530302]
+    A gold bracelet featuring an intricate braided band, with a sun design
+    on one end and a dragon head on the other.
+
+  [1907/9533109]
+    A sleek and polished silver cross necklace with a unique design,
+    featuring a simple cross shape hanging from a chain.
+
+  [1943/9712576]
+    A coiled, snake-like shape with a pointed tail and a thicker, slightly
+    irregular head.
+
+  [1892/9455099]
+    Three colorful beach umbrellas.
+
+  [1935/9670928]
+    A colorful beaded bracelet and necklace with a unique and intricate
+    design, featuring multiple beads of different colors and materials,
+    arranged in a visually pleasing pattern.
+
+────────────────────────────────────────────────────────────
+Cluster  33  (2,342 objects)
+
+  [1871/9348913]
+    A glass of white wine.
+
+  [1904/9518175]
+    A small blue bottle with a curved body, cylindrical shape, and a narrow
+    neck. It has a gold cap and is likely used for decorative or functional
+    purposes.
+
+  [1943/9709826]
+    A large, round, hollow container made of ceramic or stone with a black
+    and white exterior. It has a distinct opening at the top and a rough,
+    textured surface. Suitable for decorative purposes.
+
+  [1878/9386836]
+    A vintage metal samovar with black handles, a spout, and decorative vent
+    holes, standing on four curved legs.
+
+  [1877/9379508]
+    White cone-shaped lamp holder.
+
+────────────────────────────────────────────────────────────
+Cluster  34  (4,158 objects)
+
+  [1904/9516359]
+    A wooden ruler with a rectangular shape, flat surface, long straight
+    edge, and markings on one side for precise measurements.
+
+  [1876/9377625]
+    Facebook logo in the shape of a blue cube.
+
+  [1893/9458873]
+    A tall, cylindrical white grain silo, likely made of concrete or steel,
+    situated on a hill and used for storing grain or agricultural products.
+
+  [1914/9568268]
+    A red wind speed meter with a propeller and a black handle.
+
+  [1927/9631568]
+    A rectangular, wedge-shaped object with small protrusions along its
+    edges.
+
+────────────────────────────────────────────────────────────
+Cluster  35  (1,120 objects)
+
+  [1920/9594692]
+    A detailed and realistic representation of a green and black vintage
+    motorcycle with a sidecar decorated with colorful flowers and equipped
+    with tools.
+
+  [1888/9434084]
+    A blocky humanoid figure dressed in a white outfit with red patterns,
+    yellow headgear resembling horns, and beige hands.
+
+  [1878/9388522]
+    A small gray and white robot.
+
+  [1943/9712390]
+    A sleek and modern cylindrical robotic arm made of metal, equipped with
+    a long, thin arm extending from the center and a drill bit at the end,
+    designed for construction and drilling tasks.
+
+  [1943/9711921]
+    A large, gray, detailed replica of a Star Wars AT-AT walker, a
+    four-legged, armored transport vehicle used by the Empire in the Star
+    Wars universe. It is massive and imposing with a distinctive shape and
+    design.
+
+────────────────────────────────────────────────────────────
+Cluster  36  (2,844 objects)
+
+  [1876/9376194]
+    White rabbit figurine on top of a round base.
+
+  [1898/9484780]
+    A white plastic toy duck with a realistic appearance, standing on its
+    hind legs and with a curved beak and long curved tail. It appears to be
+    in motion, as if it is walking or running across the floor.
+
+  [1907/9532582]
+    A small sheep figurine with a fluffy body, rounded ears, and short legs.
+
+  [1871/9351308]
+    A fluffy teddy bear sits on a wrinkled blue cloth.
+
+  [1927/9632512]
+    A stylized figure resembling a pink pig wearing a red vest.
+
+────────────────────────────────────────────────────────────
+Cluster  37  (3,613 objects)
+
+  [1906/9527985]
+    A white rectangular box with blue horizontal stripes and small square
+    details on its surface.
+
+  [1929/9643337]
+    A set of electronic devices including a dark rectangular box with a
+    glowing blue strip, a larger dark main unit, and a connected flat
+    rectangular controller.
+
+  [1932/9655195]
+    A small white rectangular bathroom with a sink, toilet, door and window,
+    designed with a modern and minimalist aesthetic.
+
+  [1938/9687314]
+    A white bathroom sink with a cabinet, countertop, and wall-mounted
+    shelf.
+
+  [1943/9708923]
+    A large gray rectangular metal container with a flat top and bottom,
+    straight sides, and a sturdy construction, commonly used for industrial
+    or commercial purposes.
+
+────────────────────────────────────────────────────────────
+Cluster  38  (3,907 objects)
+
+  [1930/9645441]
+    A detailed and intricate purple and black dragonfly with distinctive
+    wings, flying through the air.
+
+  [1891/9450379]
+    Pac-Man: a yellow toy character with outstretched arms.
+
+  [1878/9383974]
+    A 3D model of a man wearing a black jacket and a red cape, standing in a
+    pose, possibly ready to take action. He has a fox tail and is wearing a
+    headset.
+
+  [1912/9555819]
+    A detailed and realistic representation of a Tusken Raider from Star
+    Wars, a humanoid creature with a white and gray color scheme and
+    distinctive headpiece featuring two horns.
+
+  [1889/9440319]
+    A blue plastic toy turtle with a realistic appearance, sitting on the
+    ground.
+
+────────────────────────────────────────────────────────────
+Cluster  39  (2,891 objects)
+
+  [1874/9365494]
+    A unique and interesting spider-like robot with a triangular body, a
+    large yellow head with two eyes, and multiple black legs, likely made of
+    plastic or metal.
+
+  [1875/9372330]
+    A minimalist representation of a whimsical scene, featuring a stylized
+    red bench with a yellow stripe, three graduated green trees with white
+    gradient snowcaps, and a fluffy gray cloud above—all set on a simple
+    white platform.
+
+  [1912/9554734]
+    A voxel-based colorful chicken featuring a pixel art style with primary
+    colors, predominantly yellow with touches of red, blue, white, and
+    black.
+
+  [1913/9561698]
+    A blocky humanoid figure wearing a white outfit with a black belt and
+    gray gloves, a brown wide-brimmed hat, and holding a long brown staff.
+
+  [1934/9664518]
+    A wooden toy train consisting of an engine and a connected open cargo
+    car, with detailed wheels and coupling.
+
+────────────────────────────────────────────────────────────
+Cluster  40  (3,229 objects)
+
+  [1877/9383086]
+    A small child holding a teddy bear stands beside a seated adult with
+    brown hair.
+
+  [1889/9438909]
+    A small wooden table with a rectangular shape, flat surface, four legs,
+    and a natural and rustic look.
+
+  [1893/9463295]
+    A sleek and modern wooden table with a rectangular shape, black base,
+    and a wooden top. The table also features a minimalist design and a
+    natural elegant appearance.
+
+  [1875/9371186]
+    A small, rectangular, light blue object with rounded edges.
+
+  [1881/9401899]
+    A square table with a thick, ornate central pedestal base.
+
+────────────────────────────────────────────────────────────
+Cluster  41  (1,752 objects)
+
+  [1918/9585172]
+    A blue elephant figurine with a realistic design, featuring a
+    combination of blue and yellow colors. It has a distinctive shape, with
+    a large head and a body that tapers towards the back. The figurine is
+    likely made of plastic or ceramic and is used as a decorative item or a
+    toy.
+
+  [1900/9496643]
+    A Buddha head sculpture.
+
+  [1934/9668276]
+    A detailed and realistic representation of a woman's head with short
+    curly hair styled in a bun, intricate details of the face, eyes, nose,
+    and lips, and a neutral pose, displayed on a white background.
+
+  [1937/9678785]
+    A horned head combining both demon and human features.
+
+  [1901/9499400]
+    A baby in a curled fetal position with distinct head, arm, and leg
+    shapes.
+
+────────────────────────────────────────────────────────────
+Cluster  42  (2,713 objects)
+
+  [1916/9573764]
+    A lamp post with a white base.
+
+  [1919/9592310]
+    A gray metal frying pan with a round shape, flat bottom and curved
+    sides, filled with food items like eggs, sausages, and onions.
+
+  [1890/9444972]
+    A cylindrical flashlight with a brown body and red ends, featuring a
+    white circular light source on one end.
+
+  [1921/9601573]
+    A sleek and modern silver faucet with a single handle for controlling
+    water flow, designed to be mounted on a wall.
+
+  [1929/9638989]
+    A unique and ornate brown wooden lamp with a curved base, long slender
+    stem, and a bulbous glass shade, giving it a vintage or antique
+    appearance.
+
+────────────────────────────────────────────────────────────
+Cluster  43  (2,741 objects)
+
+  [1878/9386688]
+    A gray octagonal ring with jagged outer edges and pink inner and outer
+    accents supports a tall, pointed, light purple obelisk in the center.
+
+  [1925/9621836]
+    A small white rabbit figurine with a round body, long ears, and a cute
+    and adorable appearance, standing on a green grassy field.
+
+  [1893/9461033]
+    A raised, irregularly shaped garden bed with wooden sides and soil
+    inside.
+
+  [1908/9536771]
+    A detailed and realistic representation of a green corn on the cob made
+    from paper, with yellow color and a natural appearance.
+
+  [1894/9463912]
+    A geometric sculpture composed of multiple stacked, offset cubic frames
+    forming a complex, spiked structure.
+
+────────────────────────────────────────────────────────────
+Cluster  44  (1,561 objects)
+
+  [1876/9378288]
+    A brown wooden barrel with a cylindrical shape, flat bottom and curved
+    top, equipped with a spigot or tap. It is placed on a wooden stand or
+    base and likely used for storing or serving wine.
+
+  [1892/9456342]
+    A stack of wooden barrels.
+
+  [1874/9365463]
+    A brown wooden barrel with a cylindrical shape, rustic appearance, and
+    sturdy construction. It has a round base, flat top, and is commonly used
+    for storing or transporting various items.
+
+  [1919/9592588]
+    Wooden barrel with white tape on it.
+
+  [1929/9639444]
+    A pair of wooden bongo drums.
+
+────────────────────────────────────────────────────────────
+Cluster  45  (2,715 objects)
+
+  [1920/9595855]
+    A unique stone Buddha statue with a realistic and natural appearance,
+    featuring a large, round head, a serene facial expression, and intricate
+    design, seated on a pedestal.
+
+  [1893/9460696]
+    A wooden sculpture of a woman holding a baby, showcasing intricate
+    details and realistic appearance. It is likely a decorative piece or
+    religious icon, possibly made of light-colored material such as marble.
+
+  [1887/9429757]
+    A realistic white human head sculpture with a white curly wig and a red
+    base.
+
+  [1916/9575675]
+    A detailed metal statue of a woman holding a torch or spear, with a
+    unique shape and design.
+
+  [1889/9441903]
+    A small white statue of a crouching angel with spread wings, made of
+    stone or similar material, showcasing intricate details and a lifelike
+    appearance.
+
+────────────────────────────────────────────────────────────
+Cluster  46  (1,579 objects)
+
+  [1896/9476418]
+    Red boxing shorts with a white logo.
+
+  [1934/9666397]
+    A well-made and fitted plaid dress with a unique and distinctive
+    pattern, tailored shape, and designed for women.
+
+  [1893/9460650]
+    A medieval-style armored gauntlet glove.
+
+  [1876/9374648]
+    Two helmets with distinct shapes: one larger and rounder with a
+    protruding brim, the other smaller and more streamlined.
+
+  [1893/9463191]
+    A black, well-fitted and tailored jacket for women, with a sleek and
+    fitted shape, displayed on a life-size mannequin or dress form
+    representing a realistic and detailed representation of a woman's body.
+
+────────────────────────────────────────────────────────────
+Cluster  47  (1,513 objects)
+
+  [1921/9600076]
+    A unique and creative 3D object made of wood and metal, featuring a dog
+    riding a bicycle. The dog is standing on the bicycle, while the bicycle
+    itself is adorned with various parts such as a toy car, toy plane, and
+    toy boat. The object also includes a long snout and tail, resembling a
+    wolf.
+
+  [1882/9404523]
+    A small plastic figure of a gray and white wizard with a pointy hat,
+    holding a green wand with a sphere on the end, standing on a green grass
+    field.
+
+  [1919/9593384]
+    A character in armor with a red cape, wielding a sword, shield, and axe.
+
+  [1919/9591409]
+    A small, detailed 3D figurine of a female character in a dynamic and
+    captivating pose, holding a sword and wearing a brown jacket and a
+    backpack.
+
+  [1894/9466361]
+    A cozy and inviting brown hammock with a green and black pattern, shaped
+    like a bed or a couch, is suspended between two poles or supports. It is
+    designed to provide a comfortable and relaxing sleeping experience, and
+    is portable and easy to set up. The hammock is covered with a blanket,
+    giving a relaxing and peaceful appearance.
+
+────────────────────────────────────────────────────────────
+Cluster  48  (2,882 objects)
+
+  [1902/9507769]
+    A staff featuring a bone-shaped top secured with metal and two brown
+    grips on a white shaft.
+
+  [1872/9354658]
+    A long-handled broom with a brush head made of bristles, typically used
+    for sweeping and cleaning.
+
+  [1874/9368058]
+    A wooden fishing rod with a long, slender cylindrical shape, featuring a
+    curved handle at one end and a hook at the other.
+
+  [1905/9521870]
+    A cylindrical syringe with a white or transparent body, typically made
+    of plastic or metal. It has a needle attached to the end and is used for
+    administering medication, injecting fluids, or drawing blood.
+
+  [1885/9420555]
+    A lightsaber
+
+────────────────────────────────────────────────────────────
+Cluster  49  (1,390 objects)
+
+  [1891/9451708]
+    A simplified human head with guide lines and circles indicating
+    proportions and facial structure.
+
+  [1933/9660439]
+    A small wooden bed with a headboard and footboard, intended for a child
+    or small adult. The bed has a simple design, rectangular shape, and
+    wooden frame.
+
+  [1912/9556197]
+    A metal bunk bed with purple sheets and lighting.
+
+  [1900/9495553]
+    A rectangular brown wooden cabinet with a flat top, standing on four
+    legs. It has a hinged door and a vintage look with a dark brown finish.
+    It also features a chalkboard on the front and likely used for storage,
+    with a drawer underneath.
+
+  [1894/9467174]
+    A house with a roof structure.
+
+────────────────────────────────────────────────────────────
+Cluster  50  (932 objects)
+
+  [1943/9712141]
+    A detailed crab with a textured oval shell and articulated legs and
+    claws.
+
+  [1942/9706721]
+    A highly detailed and realistic representation of a black and yellow bee
+    in flight position, showcasing intricate wing and body features.
+
+  [1918/9587839]
+    A red and brown beetle with a distinctive shape, long body, six legs,
+    and two antennae, crawling on a white background.
+
+  [1930/9647545]
+    A detailed and realistic yellow and black bee with a white background,
+    featuring an elongated and curved body, two pairs of wings, and legs.
+
+  [1923/9610516]
+    A moth with a striped yellow and brown body, and patterned wings
+    displaying various shades of brown, yellow, and black.
+
+────────────────────────────────────────────────────────────
+Cluster  51  (3,160 objects)
+
+  [1914/9567547]
+    A maroon sports car with a sleek design, yellow wheels, and dual exhaust
+    pipes.
+
+  [1898/9485374]
+    A dark red Lamborghini sports car with a sleek and aerodynamic design,
+    low profile, curved body, and powerful engine.
+
+  [1889/9443102]
+    A vintage-style red telephone with a cylindrical shape and a rotary
+    dial. It has a curved handset and a base connected by a cord.
+
+  [1894/9464854]
+    A brown classic sedan with a boxy shape and large windows, sitting on a
+    white background.
+
+  [1932/9655995]
+    A heavily armored, green and brown military tank with a boxy shape,
+    equipped with a cannon mounted on top and tracks for off-road
+    operations.
+
+────────────────────────────────────────────────────────────
+Cluster  52  (2,317 objects)
+
+  [1942/9705301]
+    A terrain patch featuring three tall, irregular wooden structures,
+    scattered stone blocks, and a dark brick block, all situated on a
+    raised, jagged dirt and rocky surface.
+
+  [1886/9425234]
+    A detailed 3D model of a medieval castle built into a cliff, featuring a
+    stone structure, wooden bridge, tower, and multiple levels. The castle
+    has a rustic and ancient appearance, adding to its dramatic and imposing
+    atmosphere.
+
+  [1880/9397048]
+    A small wooden church with a rectangular shape and a steeple on top,
+    situated on a grassy area. It has a brown color, a thatched roof, and a
+    rustic appearance.
+
+  [1892/9456492]
+    A small house with a brown gable roof, white walls, a stone foundation,
+    a porch with wooden beams, and adjacent paved and grassy areas.
+
+  [1933/9659816]
+    A modern two-story building with a flat roof features large rectangular
+    volumes, multiple windows, and exterior railings on the upper floor.
+
+────────────────────────────────────────────────────────────
+Cluster  53  (1,787 objects)
+
+  [1944/9717540]
+    A row of freshly ripe yellow bananas with realistic texture and curved
+    shape, displayed on a white background.
+
+  [1892/9455298]
+    A small, round, metal decorative item or jewelry piece with a unique
+    shape resembling a small, hollowed-out apple or container.
+
+  [1933/9659752]
+    A brown wooden bone-shaped stick.
+
+  [1926/9623734]
+    A wooden spear with a long, thin shape, pointed tip, and a brown, smooth
+    and curved piece of wood.
+
+  [1906/9528038]
+    A lifelike, curved brown object with a unique shape resembling a bone or
+    deer antler, possibly made of bone, wood or plastic, displayed on a
+    white background.
+
+────────────────────────────────────────────────────────────
+Cluster  54  (1,978 objects)
+
+  [1942/9703748]
+    A stone brazier with jagged spikes encircling a blue flame, and a
+    red-handled axe embedded in its side.
+
+  [1893/9461369]
+    A white hard hat.
+
+  [1898/9487743]
+    A gray robot head.
+
+  [1888/9434046]
+    A military-style helmet with a camouflage pattern, featuring a black
+    visor and red shark teeth design on the lower front side, along with
+    white text markings on the upper side.
+
+  [1906/9525442]
+    A white helmet.
+
+────────────────────────────────────────────────────────────
+Cluster  55  (2,354 objects)
+
+  [1876/9376698]
+    A blue and yellow fighter jet spaceship.
+
+  [1885/9422220]
+    A starship with a circular main body, a secondary elevated section, and
+    two elongated nacelles extending from the rear.
+
+  [1882/9406997]
+    A futuristic blue and black speedboat-inspired spaceship and fighter
+    jet.
+
+  [1892/9456137]
+    A detailed futuristic spaceship with multiple protrusions and intricate
+    structures along its hull.
+
+  [1925/9620959]
+    Monochromatic white helicopter with a streamlined fuselage, main rotor
+    on top, a rear tail rotor, and landing skids.
+
+────────────────────────────────────────────────────────────
+Cluster  56  (1,627 objects)
+
+  [1937/9683486]
+    A stone monument resembling a tomb, with an upright rectangular pillar
+    at one end and a sloped rectangular slab forming the main body, set on a
+    stepped base.
+
+  [1912/9556441]
+    A detailed, realistic stone statue of a man's head with a beard,
+    depicting a historical figure or event, placed on a tall, white and gray
+    pedestal.
+
+  [1886/9425044]
+    A unique, tall and slender vase with a curved base and a narrow neck. It
+    is made of a combination of metal and ceramic or porcelain, and is
+    placed on a wooden base. The vase has intricate details and patterns,
+    and its color is black and white.
+
+  [1938/9685319]
+    A visually appealing and impressive large white marble sculpture
+    depicting a group of people, displayed on a pedestal, with intricate
+    details and craftsmanship.
+
+  [1943/9712112]
+    A large, dark-colored decorative vase with a curved body and a tall,
+    slender neck. It has intricate details and designs on its surface.
+
+────────────────────────────────────────────────────────────
+Cluster  57  (1,022 objects)
+
+  [1893/9458848]
+    A white and yellow triangular tent with a dome-like structure, supported
+    by three poles.
+
+  [1924/9613803]
+    A small red ball with a flat surface, made of plastic or foam, used for
+    decoration, placed on top of a rectangular pedestal.
+
+  [1929/9640704]
+    A unique curved green lamp with a wooden base and a green shade
+    resembling leaves.
+
+  [1925/9621768]
+    Two connected green cymbals with a handle.
+
+  [1904/9515179]
+    A sturdy and stable wooden stool with a round seat and three legs,
+    featuring a simple and minimalist design.
+
+────────────────────────────────────────────────────────────
+Cluster  58  (3,170 objects)
+
+  [1902/9507886]
+    A red fox character, with a cartoonish appearance, standing on its hind
+    legs and holding a tool or weapon.
+
+  [1943/9712208]
+    A majestic mythical creature, resembling a dragon, with a white and gold
+    color scheme and intricate details, soaring through the air. The
+    creature is adorned with ornate gold and silver accents and has a unique
+    and distinctive design.
+
+  [1927/9630856]
+    A detailed and realistic 3D model of a yellow, anthropomorphic dinosaur
+    from Super Mario, holding a hammer and a chain, with a red and blue
+    shell on its back and standing on its hind legs.
+
+  [1892/9458595]
+    A figure wearing a red and orange patterned cloak with flowing ribbons,
+    white pants, and black shoes interacts with several white butterflies.
+
+  [1914/9566401]
+    A small figurine of a character with dark purple hair, a blue face, and
+    a unique appearance. The character is wearing a futuristic blue and
+    purple suit and is posed in a dynamic stance.
+
+────────────────────────────────────────────────────────────
+Cluster  59  (2,040 objects)
+
+  [1921/9599761]
+    A visually appealing, well-decorated chocolate cake with a cream filling
+    and a smooth, round shape, displayed on a white plate.
+
+  [1895/9469394]
+    A large, hollowed-out wooden bowl with a natural and organic appearance,
+    placed on a white surface.
+
+  [1934/9666556]
+    A wooden ruler with a rectangular shape, flat surface, and a handle on
+    one end, used for measuring lengths and distances.
+
+  [1874/9364261]
+    Fried eggs in a black bowl.
+
+  [1876/9377617]
+    A flat, circular red disc with an intricate pattern of cut-out shapes
+    arranged in a curved grid.
+
+────────────────────────────────────────────────────────────
+Cluster  60  (3,584 objects)
+
+  [1938/9687782]
+    A small, rectangular brown cardboard box with a slightly distressed
+    appearance and a vintage look. It has a flat surface, straight edges,
+    and a slightly raised edge.
+
+  [1926/9627113]
+    A small, highly detailed model of a city, featuring various buildings
+    and structures, including a circular base with arches or domes on top,
+    and a rectangular model of ancient city ruins. The model is made of
+    plastic or resin and showcases a unique and intricate map-like object
+    with a grid-like pattern and different materials.
+
+  [1896/9473950]
+    A white dragon-shaped decorative artwork made of stone or ceramic,
+    placed on a white surface, resembling a folded, torn paper object.
+
+  [1876/9378018]
+    A white sculpture of a person lying on a white bed, with intricate
+    details and ornate design.
+
+  [1891/9450932]
+    A white marble gravestone with a weathered stone cross on top, adorned
+    with sculpted cherubs or angels on either side.
+
+────────────────────────────────────────────────────────────
+Cluster  61  (3,720 objects)
+
+  [1894/9465335]
+    A well-crafted, detailed wooden axe with a long handle and a sharp,
+    curved blade.
+
+  [1882/9404140]
+    A large, round spiky ball with numerous spikes protruding from its
+    surface, resembling a medieval weapon called a mace.
+
+  [1908/9537237]
+    A weathered, curved blade with a jagged edge and an ornate, aged handle.
+
+  [1885/9421746]
+    An axe with a wooden handle and metal blade for sale.
+
+  [1925/9619039]
+    A wooden bow and arrow set, with a brown bow and a yellow feathered
+    arrow. The bow is held in a ready-to-shoot position, and the arrow is
+    attached to the bowstring. The arrow has a sharp tip and is long and
+    curved in shape.
+
+────────────────────────────────────────────────────────────
+Cluster  62  (4,065 objects)
+
+  [1900/9494021]
+    A unique, white and blue 3D object with a distinct shape resembling a
+    whale tail, made of plastic or metal, suitable for decoration or as a
+    representation of marine life.
+
+  [1886/9424344]
+    A small rectangular house with a flat roof, situated on a hillside
+    surrounded by trees.
+
+  [1887/9429855]
+    A hilly landscape featuring scattered buildings, greenery, and pathways.
+
+  [1902/9506747]
+    A visually appealing, detailed and accurate representation of a small
+    rocky island with a unique shape, rugged terrain, surrounded by water,
+    and lush vegetation.
+
+  [1920/9595396]
+    A stone statue of a mythical fish with a dragon head, set on a
+    decorative pedestal and surrounded by a manicured hedge.
+
+────────────────────────────────────────────────────────────
+Cluster  63  (3,269 objects)
+
+  [1914/9565467]
+    A section of a brick wall supported by two vertical pillars on each
+    side.
+
+  [1917/9579281]
+    A small yellow rectangular raincoat with a hood, depicted in a blocky
+    and pixelated style reminiscent of Minecraft.
+
+  [1942/9707667]
+    A small, brown animal resembling a beaver or rodent, with a long,
+    cylindrical body, a flat, wide tail, a distinctive snout, and covered in
+    fur.
+
+  [1881/9402921]
+    A vintage gramophone with a cylindrical shape, a large horn on top, and
+    a brown wooden base.
+
+  [1894/9467734]
+    Colorful alphabet blocks featuring letters A-G and "Olympics" on wooden
+    cubes.
+
+────────────────────────────────────────────────────────────
+Cluster  64  (1,486 objects)
+
+  [1935/9671211]
+    A sleek, black and metallic futuristic gun with a unique design
+    featuring a long barrel, curved shape, and a comfortable grip, optimized
+    for precision and accuracy.
+
+  [1940/9697850]
+    A compact submachine gun with a large sight attachment on top and a
+    pistol grip.
+
+  [1902/9506487]
+    A sleek and modern black handgun replica or toy with a unique shape,
+    long barrel, and stock, designed for shooting shotgun shells, making it
+    a functional and potentially powerful weapon.
+
+  [1907/9530877]
+    A Mauser C96 semi-automatic pistol with a wooden grip and a long barrel.
+
+  [1935/9670765]
+    A gray and black rectangular remote control with buttons, a joystick,
+    and a sleek modern design.
+
+────────────────────────────────────────────────────────────
+Cluster  65  (2,072 objects)
+
+  [1915/9571488]
+    A brown mountain with a distinct peak, sloping sides, and a realistic
+    shape and texture.
+
+  [1915/9571689]
+    Collection of stylized wooden toy airplanes in various colors, including
+    natural wood, green, red, yellow, and blue accents.
+
+  [1881/9399955]
+    A detailed, accurate representation of a snow-capped mountain on a
+    topographical map, placed on a wooden surface.
+
+  [1926/9623648]
+    A wedge-shaped object with a curved, perforated, arch-like handle
+    attached on top.
+
+  [1918/9585457]
+    A dark green rectangular block with an uneven, multicolored top edge.
+
+────────────────────────────────────────────────────────────
+Cluster  66  (1,633 objects)
+
+  [1904/9514242]
+    A small, silver circular coin with a raised design on one side,
+    featuring a unique shape and intricate details.
+
+  [1930/9645093]
+    A blue circular light object.
+
+  [1940/9696672]
+    A white circular plate with a red, green, and blue floral design and a
+    logo.
+
+  [1906/9527363]
+    A yellow lightning bolt, shaped like a curved leaf with a smooth
+    surface, representing The Flash's iconic symbol, commonly associated
+    with electricity and power.
+
+  [1872/9355109]
+    A golden coin with a unique design featuring a raised letter "G" and a
+    number "1" in the center.
+
+────────────────────────────────────────────────────────────
+Cluster  67  (3,416 objects)
+
+  [1933/9661354]
+    A detailed and realistic representation of a female character from a
+    video game or anime, wearing a black outfit with a red and black
+    pattern, a long flowing black coat, and high heels. She is standing in a
+    unique and dynamic pose on a white background.
+
+  [1882/9403644]
+    A Roman soldier holding a spear and a shield.
+
+  [1941/9702747]
+    A man in a red and black suit.
+
+  [1944/9714233]
+    A man wearing a beanie, purple gloves, and a coat with a high collar,
+    dark pants, and boots, carrying a belt pouch.
+
+  [1918/9587335]
+    A small, green, glowing ball floating in the air, held by a person's
+    hand.
+
+────────────────────────────────────────────────────────────
+Cluster  68  (2,962 objects)
+
+  [1908/9535555]
+    A blue and red rectangular ping pong table with foldable legs and a flat
+    surface, suitable for outdoor use.
+
+  [1888/9434362]
+    A two-story house with a flat base, featuring wooden framing and
+    railings on the upper level and a partial roof structure.
+
+  [1925/9623587]
+    A black rectangular frame with a minimalist design, used as a table with
+    two chairs for a birthday party setup. The table is covered with a white
+    tablecloth and decorated with balloons.
+
+  [1904/9513715]
+    A set of two black teapots, one larger than the other, placed on a white
+    square surface.
+
+  [1927/9632468]
+    A gray rectangular metal box with a flat surface and a folded edge,
+    sitting on a white background.
+
+────────────────────────────────────────────────────────────
+Cluster  69  (3,262 objects)
+
+  [1900/9494398]
+    A unique and artistic red vintage car with graffiti-like artwork on its
+    body, featuring colorful and unique designs.
+
+  [1871/9350940]
+    A sleek and aerodynamic sports car with a yellow body and black stripes.
+
+  [1916/9574475]
+    A black sports car with a sleek and aerodynamic design, low profile,
+    wide tires, curved body shape, convertible top, two doors, and a focus
+    on speed and performance. It has a futuristic-looking pointed nose and
+    appears to be a hybrid model.
+
+  [1918/9586975]
+    A black and yellow sports car with yellow rims, resembling the
+    Batmobile.
+
+  [1915/9569691]
+    Futuristic low-profile vehicle with angular design elements, featuring a
+    predominantly light gray body with black accents, subtle red rear
+    lights, and a sleek cockpit area.
+
+────────────────────────────────────────────────────────────
+Cluster  70  (2,199 objects)
+
+  [1878/9386492]
+    A small black and white bird with a long curved beak and a small body,
+    positioned on a white background.
+
+  [1921/9599295]
+    A monochromatic set of stylized representations of common objects,
+    including a submarine, a runner, a table with chairs, a streetlight, a
+    well, a tower, and a fence.
+
+  [1939/9691814]
+    A colorful playground structure with a central circular platform, two
+    spiral climbing ladders, and connecting bars.
+
+  [1905/9523130]
+    A complex network of intertwined, curved tubular structures resembling a
+    dynamic, abstract branching form.
+
+  [1934/9668478]
+    A marine scene featuring a shark with a humanoid form, surrounded by
+    colorful fish, a purple squid, a rocky base with scattered debris, and
+    an open underwater cage.
+
+────────────────────────────────────────────────────────────
+Cluster  71  (1,903 objects)
+
+  [1895/9471048]
+    A stone grinding wheel with a wooden handle protruding from the center.
+
+  [1923/9609115]
+    A floating purple balloon.
+
+  [1911/9551589]
+    A realistic representation of a ripe, red and green apple with a
+    detailed texture, sitting on a white background.
+
+  [1935/9670451]
+    A large, brown, rough-looking bowl with a unique shape, curved base, and
+    a raised, pointed top. It is made of clay or a similar natural material,
+    giving it a rustic and earthy appearance.
+
+  [1908/9538513]
+    A large, round brown bowl made of natural material, with a curved shape
+    and a unique starfish design etched on its surface.
+
+────────────────────────────────────────────────────────────
+Cluster  72  (2,344 objects)
+
+  [1896/9474608]
+    A sleek and modern white rectangular freestanding bathtub with a drain,
+    faucet, and a flat bottom and curved sides.
+
+  [1920/9595570]
+    A gray video game controller with a curved shape, multiple buttons, and
+    joystick, resembling a PlayStation controller.
+
+  [1889/9440660]
+    Colorful coffee makers and pots.
+
+  [1905/9518865]
+    A circular arrangement of pedestals topped with various ornamental and
+    figurative sculptures, featuring a tall central obelisk.
+
+  [1877/9382349]
+    A white rectangular bathtub made of porcelain or ceramic material, with
+    a faucet attached, ready for use in contemporary bathroom designs.
+
+────────────────────────────────────────────────────────────
+Cluster  73  (1,908 objects)
+
+  [1893/9459454]
+    A dark, irregularly shaped, flat stone fragment with rough edges and
+    white markings on one surface.
+
+  [1893/9461917]
+    A cylindrical metal rod is embedded in the center of an irregularly
+    shaped flat base.
+
+  [1885/9418842]
+    A circular arrangement of small stones, resembling a stone circle
+    formation, with a natural and earthy appearance, sitting on a white
+    background.
+
+  [1940/9698383]
+    A plate featuring an omelette topped with sauces alongside a piece of
+    fried chicken drizzled with sauce.
+
+  [1932/9655588]
+    A large white round plate with a hole in the center, smooth surface and
+    flat base, made of light-colored material, possibly wood.
+
+────────────────────────────────────────────────────────────
+Cluster  74  (2,815 objects)
+
+  [1875/9369159]
+    A festive Santa Claus figure riding a curved surfboard with a pointed
+    nose, ready to ride the wave.
+
+  [1891/9450020]
+    A unique wooden chair with a simple and classic design, featuring a
+    curved backrest and an elevated seat.
+
+  [1929/9640155]
+    A yellow Islamic Arabic calligraphy sculpture.
+
+  [1940/9698077]
+    A colorful toy train with a red front, blue wheels and base, a green
+    cabin, and a beige rope coiled on top.
+
+  [1875/9371346]
+    A set of objects resembling wooden slices, red circular tokens, red and
+    white cube-like pieces, and cylindrical objects with yellow tips.
+
+────────────────────────────────────────────────────────────
+Cluster  75  (1,208 objects)
+
+  [1892/9458583]
+    A mossy rock with grass.
+
+  [1900/9495298]
+    A realistic representation of a white jawbone with a curved shape,
+    resembling a bone or a claw, likely used for educational or scientific
+    purposes.
+
+  [1881/9402787]
+    A unique and intricate blue cylindrical object with a twisted shape and
+    intricate design, resembling a decorative sculpture or piece, placed on
+    a white background.
+
+  [1905/9521622]
+    A small, detailed representation of a brown curved bone-like structure,
+    possibly used for educational or decorative purposes.
+
+  [1935/9672644]
+    A long, curved and textured bone with a hole in the center, resembling a
+    vertebra or a femur bone, possibly used for educational or medical
+    purposes.
+
+────────────────────────────────────────────────────────────
+Cluster  76  (1,442 objects)
+
+  [1913/9559355]
+    A small, detailed 3D model of a medieval-style knight standing on a
+    white background, holding a sword and shield.
+
+  [1896/9474302]
+    An orange and blue Lego robot.
+
+  [1932/9654285]
+    A multicolored robot composed of five distinct lion-shaped components
+    forming the limbs and torso, with a humanoid structure and a detailed
+    head featuring antenna-like protrusions.
+
+  [1938/9687816]
+    A colorful, geometric robot figure with a blocky design featuring red,
+    white, and yellow patterns.
+
+  [1900/9497981]
+    A powerful and imposing metallic humanoid robot with a large head and a
+    body resembling a human's. It has a futuristic or sci-fi theme and is
+    armed with a large blue sword. The robot has a gray and blue color
+    scheme and a distinctive shape, with a round base and a tall, slender
+    structure. It also features intricate details and a blue glowing light,
+    giving it a futuristic and technological appearance.
+
+────────────────────────────────────────────────────────────
+Cluster  77  (1,162 objects)
+
+  [1911/9553254]
+    A small, cute, cartoon-like figurine of a female character with a
+    distinctive and unique design. It has long, curly hair, a pair of wings,
+    and a cat tail. The figurine is made of plastic and is placed on a
+    yellow base. It is likely designed for use with a Nintendo gaming system
+    and can be used as a decoration or collectible item.
+
+  [1939/9692018]
+    A tree trunk boat with four colorful cartoon characters sitting inside,
+    including a blue rabbit and various other animal-like figures.
+
+  [1917/9580264]
+    A brown turkey leg with bone structure, positioned on a plate,
+    surrounded by a variety of meats.
+
+  [1892/9453719]
+    A white and red robotic creature with a spherical body, a long tail,
+    multiple antennas, and a combination of mechanical and organic elements.
+
+  [1917/9579844]
+    A stylized black dog figure with a red tongue protrudes from a
+    hemisphere container filled with simulated curly fry-shaped objects, all
+    set against a neutral background.
+
+────────────────────────────────────────────────────────────
+Cluster  78  (1,058 objects)
+
+  [1919/9592299]
+    A rectangular white tissue box with a gold-colored border and open lid.
+
+  [1881/9402555]
+    A yellow juice box made of cardboard or plastic with a rectangular
+    shape, a slanted top and flat bottom, a yellow lid, and a straw inside.
+    It contains Faragello juice.
+
+  [1899/9491371]
+    A white rectangular cardboard box with a flat top and open lid, likely
+    made of cardboard or plastic, empty and standard size, designed for
+    storing or displaying small items.
+
+  [1935/9669844]
+    A pink and white Vans shoebox with a rectangular shape and a flat base.
+    It has a lid that can be opened and closed and is made of cardboard
+    material. The box features the Vans logo and branding.
+
+  [1895/9470009]
+    A rectangular black and white Nintendo game box featuring a turtle on
+    the front, designed to hold a game cartridge or disc, such as the
+    Nintendo Wii game "Teenage Mutant Ninja Turtles: Turtles in Time" or
+    "Teenage Mutant Ninja Turtles: Smash-Up."
+
+────────────────────────────────────────────────────────────
+Cluster  79  (2,199 objects)
+
+  [1880/9397584]
+    A sleek and modern white cylindrical object with a rectangular base and
+    a flat top, likely made of durable material such as plastic or metal,
+    providing a stable surface for placing items or using it as a stand.
+
+  [1878/9387410]
+    A sleek and modern white and silver coffee machine with a cylindrical
+    shape and a red handle, designed for single cup brewing. It is compact,
+    has a lid on top, and can brew coffee using coffee pods or ground
+    coffee.
+
+  [1893/9460320]
+    A worn wooden crate reinforced with metal bands, featuring a recessed
+    handle on each end.
+
+  [1891/9450818]
+    A wooden book cover with intricate carvings and a glowing green center,
+    revealing open pages and thick contents. The book has a vintage or
+    antique appearance and is framed in a brown cover.
+
+  [1889/9440243]
+    Rusty metal jerry can with a cap on top and embossed text on the side.
+
+────────────────────────────────────────────────────────────
+Cluster  80  (3,766 objects)
+
+  [1926/9628185]
+    A small, brown and white ceramic figurine resembling a Viking or knight,
+    with intricate and detailed designs, featuring a round body, a head with
+    a Viking hat, and a unique and whimsical design.
+
+  [1878/9384931]
+    A white wolf or dog skull.
+
+  [1893/9463562]
+    A white plastic chair with a unique and intricate design, resembling a
+    puzzle structure.
+
+  [1900/9496506]
+    A small realistic horse sculpture, made of light-colored material,
+    sitting on a wooden base.
+
+  [1901/9499395]
+    A human pelvic bone in a skeleton.
+
+────────────────────────────────────────────────────────────
+Cluster  81  (2,619 objects)
+
+  [1876/9374846]
+    A decorative architectural molding with a detailed, layered design and a
+    curved top edge.
+
+  [1900/9497458]
+    A concrete structure composed of two connected rectangular blocks with a
+    small square window on one side.
+
+  [1942/9707032]
+    A room with a window featuring curtains and a hanging birdcage,
+    accompanied by a small separate table or cabinet.
+
+  [1892/9457245]
+    A two-seater sofa with a backrest and armrests on each side.
+
+  [1882/9404550]
+    A transparent cylindrical bucket filled with tools such as a hammer,
+    wrench, and screwdriver. It has a clear plastic lid and is designed to
+    hold and store the tools in an organized manner.
+
+────────────────────────────────────────────────────────────
+Cluster  82  (2,589 objects)
+
+  [1912/9558317]
+    A well-maintained yellow and green John Deere tractor, used for
+    agricultural tasks. It has a distinctive shape with a large round body,
+    smaller rectangular cab, and wheels. It is sitting on a dirt field with
+    a trailer attached to it.
+
+  [1943/9710168]
+    A large rectangular box made of concrete with a textured surface and
+    colorful graffiti artwork on it.
+
+  [1904/9516300]
+    A small, rustic stone castle with a pointed top and wider base, situated
+    on a grassy field.
+
+  [1881/9401823]
+    A white 1950s vintage car with a sleek and classic design, parked on a
+    black surface, featuring an open convertible top.
+
+  [1940/9693958]
+    Sushi platter on a wooden cutting board.
+
+────────────────────────────────────────────────────────────
+Cluster  83  (1,948 objects)
+
+  [1901/9502288]
+    A green, white, and red flag with a tree on it, representing a country
+    or a region, waving in the wind.
+
+  [1925/9620919]
+    A gold ring with a smooth, polished surface, a curved shape, and a
+    minimalistic design.
+
+  [1880/9395179]
+    A unique red and gold ring with a distinct shape, raised design, and a
+    red gemstone on top.
+
+  [1905/9519365]
+    A dual-layered torus with a distinct pattern resembling carved stone or
+    metal.
+
+  [1935/9671091]
+    A gold ring with a slightly irregular band and an inset rectangular dark
+    stone.
+
+────────────────────────────────────────────────────────────
+Cluster  84  (2,516 objects)
+
+  [1881/9400836]
+    A visually appealing wooden chair with a unique curved shape, featuring
+    a blue seat and a curved backrest.
+
+  [1876/9375325]
+    A gray office chair with casters and wheels.
+
+  [1876/9377208]
+    A brown wooden stool with a rustic and natural appearance, featuring a
+    rectangular shape, flat top and base, and a simple and functional
+    design.
+
+  [1913/9560453]
+    White Eames molded plastic side chair with wooden legs.
+
+  [1932/9658414]
+    A simple chair with a dark frame and a woven seat made of wide, flat
+    strips.
+
+────────────────────────────────────────────────────────────
+Cluster  85  (2,101 objects)
+
+  [1892/9456521]
+    A rectangular metal frame with a simple, clean design, designed to hold
+    a picture or artwork.
+
+  [1939/9689949]
+    A black server rack with a sleek and modern design, used in data centers
+    or server rooms to hold multiple computer servers. It is a large rack
+    made of metal or durable material, with multiple compartments or shelves
+    for secure and organized storage of servers and other electronic
+    equipment.
+
+  [1907/9531297]
+    A sleek and modern black rectangular device with a digital display
+    screen, buttons for setting time or alarms, and the ability to measure
+    radiation levels or function as a timer or counter.
+
+  [1871/9349952]
+    A sleek and modern wooden cabinet with a rectangular shape, brown
+    finish, and a sliding door for storage.
+
+  [1912/9554733]
+    A classroom featuring a wooden table, chairs, a bench, and a bookshelf.
+
+────────────────────────────────────────────────────────────
+Cluster  86  (1,376 objects)
+
+  [1932/9654518]
+    A small wooden statue of a boy with angel wings, standing on a pedestal,
+    made of brown material. It has a unique and intricate design with
+    detailed wings and a realistic appearance.
+
+  [1877/9382587]
+    White figurine of a cloaked warrior holding a sword.
+
+  [1934/9667653]
+    A high-heeled sandal with an ankle strap and an open-toe design.
+
+  [1883/9409230]
+    Ornate porcelain vase with a deep blue body, gold accents, and two white
+    decorative handles shaped like ribbons or bows, featuring intricate
+    floral and geometric designs.
+
+  [1937/9682237]
+    White figurine of a girl holding a sword.
+
+────────────────────────────────────────────────────────────
+Cluster  87  (1,946 objects)
+
+  [1891/9452437]
+    A small, round, weathered copper bowl with a curved shape and a flat
+    bottom, featuring a unique design.
+
+  [1877/9382011]
+    A ceramic cup with a gradient from dark brown to beige, sitting on an
+    oblong wooden tray with a smooth finish.
+
+  [1911/9549717]
+    A small, round, and flat yellow cake with a layer of frosting on top,
+    placed on a brown surface.
+
+  [1916/9575328]
+    A yellow decorative object resembling a lemon with a round shape and a
+    large protruding eye on one side.
+
+  [1924/9616653]
+    A detailed model of a Roman Colosseum, featuring a large circular
+    amphitheater with arches and columns, in a red and white color scheme.
+
+────────────────────────────────────────────────────────────
+Cluster  88  (2,016 objects)
+
+  [1926/9626480]
+    A long, slender object resembling a decorated scroll or strip with a
+    series of illustrated panels featuring various characters and scenes.
+
+  [1877/9381032]
+    A visually striking white stone circle with a unique and intricate
+    design, featuring a raised center on a flat base.
+
+  [1874/9364607]
+    A long, narrow strip or ribbon-like object with a rectangular shape,
+    flat surface, smooth texture, and the ability to be bent or curved. It
+    is visually appealing and can be used for display purposes.
+
+  [1881/9400731]
+    A topographic relief map with a blue border and additional information
+    panels attached at the bottom.
+
+  [1876/9375380]
+    A small white building with a rectangular shape, flat roof, and a few
+    windows, made of stone or concrete.
+
+────────────────────────────────────────────────────────────
+Cluster  89  (4,181 objects)
+
+  [1872/9356658]
+    A white rock with a rough and uneven surface, featuring a distinct
+    tree-like structure growing out of it.
+
+  [1882/9406646]
+    A large brownish rock with an irregular and jagged shape, rough texture,
+    and a distinct flat surface.
+
+  [1875/9373434]
+    A large, black rock with a rough and uneven surface, irregular shape,
+    and jagged texture, likely found in a natural setting.
+
+  [1877/9380329]
+    A large white arrowhead with a sharp pointed tip and curved shape.
+
+  [1907/9532769]
+    A large, rough and uneven gray rock with a distinctive shape and natural
+    formation.
+
+────────────────────────────────────────────────────────────
+Cluster  90  (1,476 objects)
+
+  [1905/9519005]
+    A set of nine rectangular blocks arranged in a line, each featuring
+    varying heights and cut-out sections on their tops and sides.
+
+  [1872/9357145]
+    A small white and red sailboat with intricate details, a white hull, and
+    a red sail.
+
+  [1886/9426677]
+    A small, rectangular building with a brown body and a red pitched roof.
+    It has a flat top and a chimney on top.
+
+  [1874/9367907]
+    A three-masted sailing ship with a distinctive keel and rigged sails.
+
+  [1930/9648473]
+    A segmented mechanical arm with a broad rectangular base and an angular,
+    claw-like end.
+
+────────────────────────────────────────────────────────────
+Cluster  91  (1,620 objects)
+
+  [1937/9680981]
+    A layered cubic arrangement with multiple internal cavities and
+    extrusions, exhibiting complex geometric interlocking sections.
+
+  [1895/9471943]
+    A rugged and imposing rectangular rock formation with a rough and uneven
+    surface, made up of small cubes in gray and blue colors.
+
+  [1914/9565979]
+    A white rectangular window frame with a flat surface and a hollow
+    interior, resembling a wooden box with a slanted roof.
+
+  [1924/9616891]
+    A sleek and modern black wooden storage box with a rectangular shape,
+    flat top, and hinged lid.
+
+  [1921/9599523]
+    A black die
+
+────────────────────────────────────────────────────────────
+Cluster  92  (1,047 objects)
+
+  [1896/9476887]
+    White microphone on a stand.
+
+  [1882/9407770]
+    A blue and white lollipop on a stick.
+
+  [1915/9569237]
+    A purple cylindrical bucket with a flat bottom and curved top, standing
+    next to a yellow broom with a long handle and a brush at the end.
+
+  [1938/9684070]
+    A modern adjustable desk lamp with a rectangular light panel,
+    articulated arms, and a sturdy square base.
+
+  [1918/9588490]
+    A vintage industrial lamp with a metal base, tall slender stem, and a
+    cylindrical shade. It has a rustic and antique look, with a combination
+    of metallic and wooden elements.
+
+────────────────────────────────────────────────────────────
+Cluster  93  (791 objects)
+
+  [1935/9670671]
+    White gun.
+
+  [1918/9583992]
+    A gun and a magazine.
+
+  [1913/9559707]
+    A brown metallic handgun with a realistic appearance, slim and sleek,
+    featuring intricate details and textures designed to look like a real
+    firearm.
+
+  [1888/9435613]
+    Semi-automatic pistol with a textured grip, trigger, hammer, and barrel,
+    in matte gray.
+
+  [1942/9705353]
+    A realistic wooden replica gun with intricate details and a lifelike
+    appearance, designed for display.
+
+────────────────────────────────────────────────────────────
+Cluster  94  (2,520 objects)
+
+  [1874/9366881]
+    A colorful, inflatable bounce house with a red frame, netted sides, and
+    a base featuring alternating blue and red sections, sitting on a brown
+    and green platform.
+
+  [1921/9600932]
+    A compact and sleek black and white video game console, resembling a
+    black rectangular box, with rounded edges. It features a black and white
+    color scheme and a rectangular cassette tape for recording and playing
+    audio content.
+
+  [1904/9517559]
+    A tall building.
+
+  [1880/9396087]
+    A sleek and modern silver metal display stand with a flat surface,
+    designed to be mounted on a wall. It is filled with bottles of shampoo,
+    conditioner, and other hair care products, as well as two bottles of
+    perfume.
+
+  [1899/9491682]
+    A rectangular pool filled with water, featuring a functional and
+    aesthetic design. It is black and white and has two people standing in
+    it.
+
+────────────────────────────────────────────────────────────
+Cluster  95  (1,560 objects)
+
+  [1925/9621292]
+    A pink and white toy airplane with a pointed nose, curved body, sleek
+    and streamlined shape, and vibrant color.
+
+  [1942/9706613]
+    A small green leaf with a distinct curved shape and pointed tip,
+    detached from its original context, floating in the air.
+
+  [1920/9594124]
+    A realistic, standalone metal sword with a sharp blade and a hilt.
+
+  [1906/9524733]
+    A small cylindrical object with a wooden knob handle on top, featuring a
+    metal clamp mechanism along its side.
+
+  [1935/9669468]
+    A smooth, asymmetrical, hollow object with a tapered cylindrical
+    extension at its base.
+
+────────────────────────────────────────────────────────────
+Cluster  96  (1,971 objects)
+
+  [1927/9629164]
+    A human head with distinct facial features, including a nose, lips,
+    chin, and a rounded back of the skull.
+
+  [1905/9521214]
+    A small, round, white ball with a unique and intricate design of raised
+    dots or bumps, as well as a floral pattern. The ball has both smooth and
+    textured surfaces, and is made of a light-colored material. It is likely
+    a decorative item or a piece of artwork.
+
+  [1882/9404218]
+    White balls on a gray background.
+
+  [1915/9573113]
+    Royalty-free pine cone - Preview No. 1
+
+  [1932/9656584]
+    A human heart with distinct color-coded regions and attached major blood
+    vessels.
+
+────────────────────────────────────────────────────────────
+Cluster  97  (2,239 objects)
+
+  [1919/9591720]
+    A rustic wooden bridge with a sturdy structure, multiple beams, and
+    supports, designed for pedestrians or train traffic. It features an aged
+    and weathered appearance, adding to its vintage charm.
+
+  [1888/9436889]
+    A black metal rectangular rack or shelf, suitable for storage and
+    organization, with multiple shelves or brackets.
+
+  [1886/9425706]
+    Japanese torii gate
+
+  [1905/9519036]
+    A wooden bridge with a curved design, featuring two arches, ornate
+    decorations, and a red and black color scheme.
+
+  [1903/9513374]
+    A wooden curved object, possibly a bed frame, bench or chair, or bridge,
+    with a brown color and slat design. It has a rustic and traditional
+    appearance, and may feature a red and yellow striped pattern or two
+    arches. It is sturdy, well-crafted, and comfortable.
+
+────────────────────────────────────────────────────────────
+Cluster  98  (3,265 objects)
+
+  [1900/9495678]
+    A small stone-like statue of a weathered man in a standing position,
+    with one hand raised and the other on his hip, made of a natural and
+    earthy material.
+
+  [1920/9595542]
+    A white and yellow humanoid creature with a long snout, sharp teeth, a
+    large mouth, and a long, slender body. It is standing on its hind legs.
+
+  [1899/9490832]
+    A detailed and intricately carved wooden sculpture of a man's head,
+    featuring a distinct facial structure and realistic appearance. The
+    sculpture showcases intricate details, including a long beard and a
+    distinctive headpiece, making it a unique and intricate decorative piece
+    or artwork.
+
+  [1915/9568733]
+    A red monster with claws.
+
+  [1923/9612087]
+    A dark humanoid creature with elongated limbs, a distorted torso, and a
+    head featuring an open mouth.
+
+────────────────────────────────────────────────────────────
+Cluster  99  (2,557 objects)
+
+  [1874/9367031]
+    A large rectangular white warehouse with a flat roof, situated on a dirt
+    lot or plain field. It is designed for storage or manufacturing
+    purposes, made of durable materials, and features loading docks and
+    garage doors.
+
+  [1902/9506899]
+    A modern, asymmetrical house with a unique design, situated on a
+    hillside with a pool and lush green landscape.
+
+  [1880/9396970]
+    A large, modern rectangular office building made of concrete with a flat
+    roof, multiple floors, large windows, and a minimalist design.
+
+  [1938/9686456]
+    Pixelated black and orange robot with a gun.
+
+  [1920/9597278]
+    A blue plastic cup with a round shape, curved sides, and a flat bottom,
+    placed on a small blue table or ledge.
+
+────────────────────────────────────────────────────────────
+Cluster 100  (2,232 objects)
+
+  [1900/9495985]
+    Two assault rifles with suppressors attached, accompanied by multiple
+    bullets.
+
+  [1932/9658204]
+    A long, slender object with a segmented cylindrical body and a
+    rectangular base, featuring a small protrusion near one end.
+
+  [1915/9568731]
+    A detailed and realistic brown and black AK-47 assault rifle with a
+    wooden stock, metal barrel, and a long barrel, designed for military
+    use.
+
+  [1892/9456309]
+    Vintage lever-action rifle with a wooden stock and forend, featuring a
+    metal barrel and receiver with ornamental inlays on the stock.
+
+  [1889/9439073]
+    A realistic and detailed green and blue rifle with a long barrel and a
+    stock, featuring intricate details typical of a modern military-style
+    rifle.
+
+────────────────────────────────────────────────────────────
+Cluster 101  (2,906 objects)
+
+  [1871/9351629]
+    A large rectangular block of ice with a snowy appearance and a smooth
+    curved surface.
+
+  [1882/9407303]
+    A weathered and aged rectangular wooden plank with a rough texture and
+    unique shape, likely used as a decorative element or functional piece of
+    furniture.
+
+  [1929/9641745]
+    A stack of pancakes on a rectangular paper object, placed on a white
+    background, with a small bag of cookies nearby.
+
+  [1881/9402785]
+    A rocky coastal landform with greenery along the top and smaller
+    offshore rock formations.
+
+  [1919/9591442]
+    A small rectangular rug with a brown and red color scheme, featuring a
+    vibrant and old design. It has a rug-like texture and is a decorative
+    item that adds warmth and texture to a room's floor.
+
+────────────────────────────────────────────────────────────
+Cluster 102  (2,597 objects)
+
+  [1912/9554408]
+    A sleek and modern silver and blue vending machine with a glass front,
+    metal frame, and rectangular shape, designed to dispense food items such
+    as hot dogs and baked goods. It has a display screen, buttons for
+    customer interaction, and is placed on a sidewalk.
+
+  [1915/9572590]
+    A detailed and realistic 3D model of a cityscape with various buildings,
+    roads, and urban elements. The buildings are made of different materials
+    such as stone, brick, or concrete. The model includes a park in the
+    center and is likely created for architectural or urban planning
+    purposes. It is used to visualize and analyze aspects of urban design
+    such as traffic flow, building placement, and land use. The city has a
+    mix of residential and commercial properties, as well as a church and
+    school. The model has a compact shape with a central park and a few
+    streets branching out from it.
+
+  [1896/9474076]
+    A unique and intricate brown brick building with a triangular shape,
+    windows and balconies, a tower on top, and a base that is wider at the
+    bottom, situated in a city setting.
+
+  [1932/9654629]
+    A unique and intricate small building with a mix of different materials
+    and textures, featuring a distinctive shape and well-constructed
+    details.
+
+  [1886/9428608]
+    A compact, modern interior space featuring a kitchen area, a seating
+    nook with black couches and red cushions, and a small dining table with
+    chairs, all set on a gray-toned floor.
