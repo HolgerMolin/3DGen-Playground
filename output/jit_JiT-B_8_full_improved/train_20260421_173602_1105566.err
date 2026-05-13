@@ -1,0 +1,188 @@
+2026-04-21 17:36:07,746 - INFO - Accelerator: num_processes=2, mixed_precision=bf16, device=cuda:0
+2026-04-21 17:36:07,747 - INFO - Validation sampler: heun
+2026-04-21 17:36:08,196 - INFO - Loading class map from /home/hmolin/3DGen-Playground/object_labels/improved_labels/object_to_class.json
+2026-04-21 17:36:08,340 - INFO - Number of classes: 120
+2026-04-21 17:36:08,340 - INFO - Creating base dataset...
+2026-04-21 17:36:08,340 - INFO - Loading sphere2plane permutation from /home/tiangexiang/gen3d/gaussianverse/sphere2plane.npy
+2026-04-21 17:36:08,341 - INFO - Loading sphere2plane permutation from /home/tiangexiang/gen3d/gaussianverse/sphere2plane.npy
+2026-04-21 17:36:08,347 - INFO - Loading obj list from /home/tiangexiang/gen3d/gaussianverse/all_obj_list.json
+2026-04-21 17:36:08,347 - INFO - Loading obj list from /home/tiangexiang/gen3d/gaussianverse/all_obj_list.json
+2026-04-21 17:36:08,541 - INFO - Loaded 254339 entries from /home/tiangexiang/gen3d/gaussianverse/all_obj_list.json
+2026-04-21 17:36:08,547 - INFO - Total merged entries: 254339
+2026-04-21 17:36:08,547 - INFO - Loaded 254339 entries from /home/tiangexiang/gen3d/gaussianverse/all_obj_list.json
+2026-04-21 17:36:08,553 - INFO - Total merged entries: 254339
+2026-04-21 17:36:08,554 - INFO - Loading normalization statistics from /home/hmolin/3DGen-Playground/data/stats/all_mean.pt and /home/hmolin/3DGen-Playground/data/stats/all_std.pt
+2026-04-21 17:36:08,561 - INFO - Loading normalization statistics from /home/hmolin/3DGen-Playground/data/stats/all_mean.pt and /home/hmolin/3DGen-Playground/data/stats/all_std.pt
+2026-04-21 17:36:08,565 - INFO - Initialized dataset with 254339 samples
+2026-04-21 17:36:08,566 - INFO - sh_degree0_only: selecting 14 features from 59
+2026-04-21 17:36:08,569 - INFO - Initialized dataset with 254339 samples
+2026-04-21 17:36:08,634 - INFO - Loaded sphere2plane permutation: 16384 points
+2026-04-21 17:36:08,896 - INFO - Class3DGenDataset: 254339 valid samples, 0 skipped (class -1 or missing)
+2026-04-21 17:36:08,908 - INFO - Class3DGenDataset: 254339 valid samples, 0 skipped (class -1 or missing)
+2026-04-21 17:36:08,917 - INFO - [class-balanced] sampling with inverse-frequency weights over 120 classes (min=682, max=4315, mean=2119.5 samples/class)
+2026-04-21 17:36:08,917 - INFO - Dataset size: 254339, Per-GPU batch size: 16
+2026-04-21 17:36:08,917 - INFO - Creating model: JiT-B/8
+2026-04-21 17:36:10,652 - INFO - JiT spatial folding: disabled (factor=1)
+2026-04-21 17:36:10,653 - INFO - Model parameters: 130,734,720 (130.7M)
+2026-04-21 17:36:10,973 - INFO - Diffusion timesteps: 1000, predict=x0, schedule=squaredcos_cap_v2
+2026-04-21 17:36:10,973 - INFO - Training mode: DDPM (sampler=heun), timestep sampling: sigmoid(N(0.000, 1.000)) mapped to discrete steps [0, 999]
+2026-04-21 17:36:13,401 - INFO - LR schedule: cosine | warmup=500 opt steps | max_opt_steps=556360 | lr_min=1e-05
+2026-04-21 17:36:13,463 - INFO - [channel_loss_weights] active: 14 values, mean=1.0000, min=0.6440, max=1.7350
+2026-04-21 17:36:13,626 - INFO - Loaded 52 reference cameras from /home/hmolin/3DGen-Playground/artifacts/ref_camera.tar.gz
+/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+2026-04-21 17:36:16,801 - INFO - Starting training from epoch 0, step 0...
+2026-04-21 17:36:16,801 - INFO - [render_weight_schedule] active with 2 control points: (50000, rl1=0.000, a=0.000, lp=0.0000), (80000, rl1=0.300, a=0.150, lp=0.0200) | initial weights at step 0: rl1=0.0000, alpha=0.0000, lpips=0.0000
+2026-04-21 17:37:24,725 - INFO - Step     200 | Epoch   0 | MSE: 0.7763 | Steps/sec: 2.94 | LR: 8.00e-05 | GradNorm: 0.1959 | MSE/t: [0.00-0.25]0.851(n=434) [0.25-0.50]0.776(n=1156) [0.50-0.75]0.738(n=1151) [0.75-1.00]0.803(n=459)
+2026-04-21 17:38:27,484 - INFO - Step     400 | Epoch   0 | MSE: 0.5708 | Steps/sec: 3.19 | LR: 1.60e-04 | GradNorm: 0.1860 | MSE/t: [0.00-0.25]0.671(n=457) [0.25-0.50]0.586(n=1156) [0.50-0.75]0.538(n=1164) [0.75-1.00]0.510(n=423)
+2026-04-21 17:39:31,347 - INFO - Step     600 | Epoch   0 | MSE: 0.5606 | Steps/sec: 3.13 | LR: 2.00e-04 | GradNorm: 0.1424 | MSE/t: [0.00-0.25]0.653(n=439) [0.25-0.50]0.580(n=1153) [0.50-0.75]0.539(n=1147) [0.75-1.00]0.477(n=461)
+2026-04-21 17:40:34,064 - INFO - Step     800 | Epoch   0 | MSE: 0.5255 | Steps/sec: 3.19 | LR: 2.00e-04 | GradNorm: 0.1000 | MSE/t: [0.00-0.25]0.626(n=485) [0.25-0.50]0.540(n=1109) [0.50-0.75]0.496(n=1150) [0.75-1.00]0.458(n=456)
+2026-04-21 17:41:37,020 - INFO - Step    1000 | Epoch   0 | MSE: 0.5259 | Steps/sec: 3.18 | LR: 2.00e-04 | GradNorm: 0.0801 | MSE/t: [0.00-0.25]0.632(n=435) [0.25-0.50]0.566(n=1136) [0.50-0.75]0.485(n=1177) [0.75-1.00]0.428(n=452)
+2026-04-21 17:41:46,019 - INFO - [validation] saved: output/jit_JiT-B_8_full_improved/dit_validation/epoch_000_step_0001000_class108.png (class=108, sampler=heun, steps=100)
+2026-04-21 17:42:50,509 - INFO - Step    1200 | Epoch   0 | MSE: 0.5131 | Steps/sec: 2.72 | LR: 2.00e-04 | GradNorm: 0.0726 | MSE/t: [0.00-0.25]0.652(n=383) [0.25-0.50]0.544(n=1150) [0.50-0.75]0.474(n=1237) [0.75-1.00]0.421(n=430)
+2026-04-21 17:43:52,984 - INFO - Step    1400 | Epoch   0 | MSE: 0.5049 | Steps/sec: 3.20 | LR: 2.00e-04 | GradNorm: 0.0575 | MSE/t: [0.00-0.25]0.604(n=441) [0.25-0.50]0.509(n=1144) [0.50-0.75]0.480(n=1162) [0.75-1.00]0.461(n=453)
+2026-04-21 17:44:56,810 - INFO - Step    1600 | Epoch   0 | MSE: 0.5047 | Steps/sec: 3.13 | LR: 2.00e-04 | GradNorm: 0.0817 | MSE/t: [0.00-0.25]0.635(n=435) [0.25-0.50]0.532(n=1177) [0.50-0.75]0.458(n=1126) [0.75-1.00]0.426(n=462)
+2026-04-21 17:46:00,150 - INFO - Step    1800 | Epoch   0 | MSE: 0.5018 | Steps/sec: 3.16 | LR: 2.00e-04 | GradNorm: 0.0710 | MSE/t: [0.00-0.25]0.576(n=435) [0.25-0.50]0.530(n=1165) [0.50-0.75]0.474(n=1178) [0.75-1.00]0.425(n=422)
+2026-04-21 17:47:03,529 - INFO - Step    2000 | Epoch   0 | MSE: 0.4991 | Steps/sec: 3.16 | LR: 2.00e-04 | GradNorm: 0.0604 | MSE/t: [0.00-0.25]0.611(n=423) [0.25-0.50]0.524(n=1141) [0.50-0.75]0.458(n=1163) [0.75-1.00]0.440(n=473)
+2026-04-21 17:47:11,689 - INFO - [validation] saved: output/jit_JiT-B_8_full_improved/dit_validation/epoch_000_step_0002000_class097.png (class=97, sampler=heun, steps=100)
+2026-04-21 17:48:16,011 - INFO - Step    2200 | Epoch   0 | MSE: 0.4918 | Steps/sec: 2.76 | LR: 2.00e-04 | GradNorm: 0.0502 | MSE/t: [0.00-0.25]0.614(n=411) [0.25-0.50]0.524(n=1133) [0.50-0.75]0.453(n=1189) [0.75-1.00]0.404(n=467)
+2026-04-21 17:49:19,598 - INFO - Step    2400 | Epoch   0 | MSE: 0.4993 | Steps/sec: 3.15 | LR: 2.00e-04 | GradNorm: 0.0779 | MSE/t: [0.00-0.25]0.616(n=416) [0.25-0.50]0.537(n=1166) [0.50-0.75]0.444(n=1161) [0.75-1.00]0.438(n=457)
+2026-04-21 17:50:23,271 - INFO - Step    2600 | Epoch   0 | MSE: 0.4957 | Steps/sec: 3.14 | LR: 2.00e-04 | GradNorm: 0.0553 | MSE/t: [0.00-0.25]0.608(n=446) [0.25-0.50]0.531(n=1183) [0.50-0.75]0.451(n=1167) [0.75-1.00]0.397(n=404)
+2026-04-21 17:51:26,860 - INFO - Step    2800 | Epoch   0 | MSE: 0.4882 | Steps/sec: 3.15 | LR: 2.00e-04 | GradNorm: 0.0481 | MSE/t: [0.00-0.25]0.570(n=439) [0.25-0.50]0.536(n=1161) [0.50-0.75]0.441(n=1168) [0.75-1.00]0.404(n=432)
+2026-04-21 17:52:30,628 - INFO - Step    3000 | Epoch   0 | MSE: 0.4815 | Steps/sec: 3.14 | LR: 2.00e-04 | GradNorm: 0.0450 | MSE/t: [0.00-0.25]0.604(n=437) [0.25-0.50]0.499(n=1119) [0.50-0.75]0.449(n=1210) [0.75-1.00]0.405(n=434)
+2026-04-21 17:52:39,218 - INFO - [validation] saved: output/jit_JiT-B_8_full_improved/dit_validation/epoch_000_step_0003000_class005.png (class=5, sampler=heun, steps=100)
+2026-04-21 17:53:43,552 - INFO - Step    3200 | Epoch   0 | MSE: 0.4994 | Steps/sec: 2.74 | LR: 2.00e-04 | GradNorm: 0.0514 | MSE/t: [0.00-0.25]0.610(n=418) [0.25-0.50]0.542(n=1205) [0.50-0.75]0.447(n=1136) [0.75-1.00]0.414(n=441)
+2026-04-21 17:54:46,492 - INFO - Step    3400 | Epoch   0 | MSE: 0.4753 | Steps/sec: 3.18 | LR: 2.00e-04 | GradNorm: 0.0515 | MSE/t: [0.00-0.25]0.551(n=428) [0.25-0.50]0.518(n=1156) [0.50-0.75]0.440(n=1175) [0.75-1.00]0.386(n=441)
+2026-04-21 17:55:50,164 - INFO - Step    3600 | Epoch   0 | MSE: 0.4942 | Steps/sec: 3.14 | LR: 2.00e-04 | GradNorm: 0.0617 | MSE/t: [0.00-0.25]0.651(n=457) [0.25-0.50]0.531(n=1149) [0.50-0.75]0.433(n=1136) [0.75-1.00]0.395(n=458)
+2026-04-21 17:56:52,807 - INFO - Step    3800 | Epoch   0 | MSE: 0.4886 | Steps/sec: 3.19 | LR: 2.00e-04 | GradNorm: 0.0595 | MSE/t: [0.00-0.25]0.612(n=420) [0.25-0.50]0.519(n=1170) [0.50-0.75]0.453(n=1164) [0.75-1.00]0.386(n=446)
+2026-04-21 17:57:55,916 - INFO - Step    4000 | Epoch   0 | MSE: 0.4802 | Steps/sec: 3.17 | LR: 2.00e-04 | GradNorm: 0.0546 | MSE/t: [0.00-0.25]0.602(n=427) [0.25-0.50]0.508(n=1200) [0.50-0.75]0.426(n=1162) [0.75-1.00]0.424(n=411)
+2026-04-21 17:58:04,234 - INFO - [validation] saved: output/jit_JiT-B_8_full_improved/dit_validation/epoch_000_step_0004000_class065.png (class=65, sampler=heun, steps=100)
+2026-04-21 17:59:08,020 - INFO - Step    4200 | Epoch   0 | MSE: 0.4881 | Steps/sec: 2.77 | LR: 2.00e-04 | GradNorm: 0.0477 | MSE/t: [0.00-0.25]0.621(n=434) [0.25-0.50]0.527(n=1182) [0.50-0.75]0.437(n=1166) [0.75-1.00]0.383(n=418)
+2026-04-21 18:00:12,002 - INFO - Step    4400 | Epoch   0 | MSE: 0.4796 | Steps/sec: 3.13 | LR: 2.00e-04 | GradNorm: 0.0464 | MSE/t: [0.00-0.25]0.571(n=473) [0.25-0.50]0.525(n=1168) [0.50-0.75]0.425(n=1143) [0.75-1.00]0.400(n=416)
+2026-04-21 18:01:15,026 - INFO - Step    4600 | Epoch   0 | MSE: 0.4856 | Steps/sec: 3.17 | LR: 2.00e-04 | GradNorm: 0.0447 | MSE/t: [0.00-0.25]0.603(n=464) [0.25-0.50]0.520(n=1172) [0.50-0.75]0.428(n=1155) [0.75-1.00]0.415(n=409)
+2026-04-21 18:02:18,087 - INFO - Step    4800 | Epoch   0 | MSE: 0.4875 | Steps/sec: 3.17 | LR: 2.00e-04 | GradNorm: 0.0439 | MSE/t: [0.00-0.25]0.576(n=450) [0.25-0.50]0.537(n=1143) [0.50-0.75]0.438(n=1168) [0.75-1.00]0.400(n=439)
+2026-04-21 18:03:21,977 - INFO - Step    5000 | Epoch   0 | MSE: 0.4707 | Steps/sec: 3.13 | LR: 2.00e-04 | GradNorm: 0.0382 | MSE/t: [0.00-0.25]0.578(n=436) [0.25-0.50]0.513(n=1123) [0.50-0.75]0.426(n=1207) [0.75-1.00]0.378(n=434)
+2026-04-21 18:03:30,248 - INFO - [validation] saved: output/jit_JiT-B_8_full_improved/dit_validation/epoch_000_step_0005000_class051.png (class=51, sampler=heun, steps=100)
+2026-04-21 18:04:33,730 - INFO - Step    5200 | Epoch   0 | MSE: 0.4714 | Steps/sec: 2.79 | LR: 2.00e-04 | GradNorm: 0.0443 | MSE/t: [0.00-0.25]0.606(n=445) [0.25-0.50]0.494(n=1161) [0.50-0.75]0.429(n=1168) [0.75-1.00]0.386(n=426)
+2026-04-21 18:05:37,277 - INFO - Step    5400 | Epoch   0 | MSE: 0.4789 | Steps/sec: 3.15 | LR: 2.00e-04 | GradNorm: 0.0471 | MSE/t: [0.00-0.25]0.567(n=457) [0.25-0.50]0.528(n=1101) [0.50-0.75]0.426(n=1194) [0.75-1.00]0.408(n=448)
+2026-04-21 18:06:40,091 - INFO - Step    5600 | Epoch   0 | MSE: 0.4719 | Steps/sec: 3.18 | LR: 2.00e-04 | GradNorm: 0.0425 | MSE/t: [0.00-0.25]0.578(n=446) [0.25-0.50]0.502(n=1140) [0.50-0.75]0.428(n=1179) [0.75-1.00]0.402(n=435)
+2026-04-21 18:07:43,013 - INFO - Step    5800 | Epoch   0 | MSE: 0.4871 | Steps/sec: 3.18 | LR: 2.00e-04 | GradNorm: 0.0547 | MSE/t: [0.00-0.25]0.612(n=422) [0.25-0.50]0.527(n=1144) [0.50-0.75]0.436(n=1184) [0.75-1.00]0.403(n=450)
+2026-04-21 18:08:45,820 - INFO - Step    6000 | Epoch   0 | MSE: 0.4858 | Steps/sec: 3.18 | LR: 2.00e-04 | GradNorm: 0.0509 | MSE/t: [0.00-0.25]0.599(n=413) [0.25-0.50]0.532(n=1196) [0.50-0.75]0.425(n=1160) [0.75-1.00]0.412(n=431)
+2026-04-21 18:08:54,334 - INFO - [validation] saved: output/jit_JiT-B_8_full_improved/dit_validation/epoch_000_step_0006000_class106.png (class=106, sampler=heun, steps=100)
+2026-04-21 18:09:57,299 - INFO - Step    6200 | Epoch   0 | MSE: 0.4735 | Steps/sec: 2.80 | LR: 2.00e-04 | GradNorm: 0.0456 | MSE/t: [0.00-0.25]0.587(n=474) [0.25-0.50]0.497(n=1163) [0.50-0.75]0.431(n=1144) [0.75-1.00]0.397(n=419)
+2026-04-21 18:11:01,489 - INFO - Step    6400 | Epoch   0 | MSE: 0.4673 | Steps/sec: 3.12 | LR: 2.00e-04 | GradNorm: 0.0370 | MSE/t: [0.00-0.25]0.592(n=419) [0.25-0.50]0.504(n=1183) [0.50-0.75]0.418(n=1164) [0.75-1.00]0.378(n=434)
+2026-04-21 18:12:04,057 - INFO - Step    6600 | Epoch   0 | MSE: 0.4781 | Steps/sec: 3.20 | LR: 2.00e-04 | GradNorm: 0.0463 | MSE/t: [0.00-0.25]0.571(n=431) [0.25-0.50]0.509(n=1180) [0.50-0.75]0.446(n=1173) [0.75-1.00]0.387(n=416)
+2026-04-21 18:13:07,341 - INFO - Step    6800 | Epoch   0 | MSE: 0.4761 | Steps/sec: 3.16 | LR: 2.00e-04 | GradNorm: 0.0382 | MSE/t: [0.00-0.25]0.596(n=445) [0.25-0.50]0.516(n=1132) [0.50-0.75]0.427(n=1169) [0.75-1.00]0.385(n=454)
+2026-04-21 18:14:10,204 - INFO - Step    7000 | Epoch   0 | MSE: 0.4776 | Steps/sec: 3.18 | LR: 2.00e-04 | GradNorm: 0.0376 | MSE/t: [0.00-0.25]0.619(n=440) [0.25-0.50]0.508(n=1144) [0.50-0.75]0.426(n=1178) [0.75-1.00]0.396(n=438)
+2026-04-21 18:14:18,413 - INFO - [validation] saved: output/jit_JiT-B_8_full_improved/dit_validation/epoch_000_step_0007000_class061.png (class=61, sampler=heun, steps=100)
+2026-04-21 18:15:22,705 - INFO - Step    7200 | Epoch   0 | MSE: 0.4721 | Steps/sec: 2.76 | LR: 2.00e-04 | GradNorm: 0.0626 | MSE/t: [0.00-0.25]0.586(n=457) [0.25-0.50]0.516(n=1139) [0.50-0.75]0.422(n=1158) [0.75-1.00]0.372(n=446)
+2026-04-21 18:16:25,341 - INFO - Step    7400 | Epoch   0 | MSE: 0.4772 | Steps/sec: 3.19 | LR: 2.00e-04 | GradNorm: 0.0395 | MSE/t: [0.00-0.25]0.613(n=417) [0.25-0.50]0.519(n=1173) [0.50-0.75]0.429(n=1176) [0.75-1.00]0.365(n=434)
+2026-04-21 18:17:28,285 - INFO - Step    7600 | Epoch   0 | MSE: 0.4663 | Steps/sec: 3.18 | LR: 2.00e-04 | GradNorm: 0.0341 | MSE/t: [0.00-0.25]0.569(n=414) [0.25-0.50]0.514(n=1208) [0.50-0.75]0.412(n=1143) [0.75-1.00]0.380(n=435)
+2026-04-21 18:18:31,275 - INFO - Step    7800 | Epoch   0 | MSE: 0.4837 | Steps/sec: 3.18 | LR: 2.00e-04 | GradNorm: 0.0583 | MSE/t: [0.00-0.25]0.637(n=448) [0.25-0.50]0.523(n=1144) [0.50-0.75]0.425(n=1164) [0.75-1.00]0.382(n=444)
+2026-04-21 18:19:34,545 - INFO - Step    8000 | Epoch   1 | MSE: 0.4782 | Steps/sec: 3.16 | LR: 2.00e-04 | GradNorm: 0.0391 | MSE/t: [0.00-0.25]0.597(n=446) [0.25-0.50]0.529(n=1149) [0.50-0.75]0.431(n=1147) [0.75-1.00]0.351(n=458)
+2026-04-21 18:19:43,087 - INFO - [validation] saved: output/jit_JiT-B_8_full_improved/dit_validation/epoch_001_step_0008000_class074.png (class=74, sampler=heun, steps=100)
+2026-04-21 18:20:47,342 - INFO - Step    8200 | Epoch   1 | MSE: 0.4688 | Steps/sec: 2.75 | LR: 2.00e-04 | GradNorm: 0.0476 | MSE/t: [0.00-0.25]0.575(n=431) [0.25-0.50]0.522(n=1228) [0.50-0.75]0.408(n=1119) [0.75-1.00]0.368(n=422)
+2026-04-21 18:21:49,335 - INFO - Step    8400 | Epoch   1 | MSE: 0.4702 | Steps/sec: 3.23 | LR: 2.00e-04 | GradNorm: 0.0486 | MSE/t: [0.00-0.25]0.579(n=414) [0.25-0.50]0.525(n=1172) [0.50-0.75]0.412(n=1165) [0.75-1.00]0.376(n=449)
+2026-04-21 18:22:53,794 - INFO - Step    8600 | Epoch   1 | MSE: 0.4743 | Steps/sec: 3.10 | LR: 2.00e-04 | GradNorm: 0.0407 | MSE/t: [0.00-0.25]0.611(n=431) [0.25-0.50]0.498(n=1161) [0.50-0.75]0.435(n=1173) [0.75-1.00]0.383(n=435)
+2026-04-21 18:23:56,577 - INFO - Step    8800 | Epoch   1 | MSE: 0.4757 | Steps/sec: 3.19 | LR: 2.00e-04 | GradNorm: 0.0470 | MSE/t: [0.00-0.25]0.588(n=444) [0.25-0.50]0.508(n=1163) [0.50-0.75]0.434(n=1170) [0.75-1.00]0.386(n=423)
+2026-04-21 18:25:00,421 - INFO - Step    9000 | Epoch   1 | MSE: 0.4680 | Steps/sec: 3.13 | LR: 2.00e-04 | GradNorm: 0.0346 | MSE/t: [0.00-0.25]0.589(n=439) [0.25-0.50]0.513(n=1177) [0.50-0.75]0.415(n=1147) [0.75-1.00]0.366(n=437)
+2026-04-21 18:25:08,676 - INFO - [validation] saved: output/jit_JiT-B_8_full_improved/dit_validation/epoch_001_step_0009000_class064.png (class=64, sampler=heun, steps=100)
+2026-04-21 18:26:12,346 - INFO - Step    9200 | Epoch   1 | MSE: 0.4666 | Steps/sec: 2.78 | LR: 2.00e-04 | GradNorm: 0.0376 | MSE/t: [0.00-0.25]0.587(n=445) [0.25-0.50]0.482(n=1115) [0.50-0.75]0.433(n=1162) [0.75-1.00]0.401(n=478)
+2026-04-21 18:27:14,665 - INFO - Step    9400 | Epoch   1 | MSE: 0.4641 | Steps/sec: 3.21 | LR: 2.00e-04 | GradNorm: 0.0377 | MSE/t: [0.00-0.25]0.567(n=425) [0.25-0.50]0.502(n=1173) [0.50-0.75]0.422(n=1158) [0.75-1.00]0.375(n=444)
+2026-04-21 18:28:17,426 - INFO - Step    9600 | Epoch   1 | MSE: 0.4677 | Steps/sec: 3.19 | LR: 2.00e-04 | GradNorm: 0.0500 | MSE/t: [0.00-0.25]0.584(n=433) [0.25-0.50]0.510(n=1204) [0.50-0.75]0.416(n=1120) [0.75-1.00]0.370(n=443)
+2026-04-21 18:29:20,905 - INFO - Step    9800 | Epoch   1 | MSE: 0.4643 | Steps/sec: 3.15 | LR: 2.00e-04 | GradNorm: 0.0435 | MSE/t: [0.00-0.25]0.583(n=468) [0.25-0.50]0.507(n=1139) [0.50-0.75]0.407(n=1178) [0.75-1.00]0.373(n=415)
+2026-04-21 18:30:24,291 - INFO - Step   10000 | Epoch   1 | MSE: 0.4761 | Steps/sec: 3.16 | LR: 2.00e-04 | GradNorm: 0.0458 | MSE/t: [0.00-0.25]0.614(n=440) [0.25-0.50]0.507(n=1177) [0.50-0.75]0.411(n=1140) [0.75-1.00]0.426(n=443)
+2026-04-21 18:30:32,485 - INFO - [validation] saved: output/jit_JiT-B_8_full_improved/dit_validation/epoch_001_step_0010000_class036.png (class=36, sampler=heun, steps=100)
+2026-04-21 18:31:35,687 - INFO - Step   10200 | Epoch   1 | MSE: 0.4712 | Steps/sec: 2.80 | LR: 2.00e-04 | GradNorm: 0.0306 | MSE/t: [0.00-0.25]0.577(n=451) [0.25-0.50]0.517(n=1197) [0.50-0.75]0.414(n=1103) [0.75-1.00]0.383(n=449)
+2026-04-21 18:32:39,294 - INFO - Step   10400 | Epoch   1 | MSE: 0.4749 | Steps/sec: 3.14 | LR: 2.00e-04 | GradNorm: 0.0451 | MSE/t: [0.00-0.25]0.615(n=434) [0.25-0.50]0.488(n=1138) [0.50-0.75]0.452(n=1159) [0.75-1.00]0.369(n=469)
+2026-04-21 18:33:43,131 - INFO - Step   10600 | Epoch   1 | MSE: 0.4790 | Steps/sec: 3.13 | LR: 2.00e-04 | GradNorm: 0.0386 | MSE/t: [0.00-0.25]0.623(n=433) [0.25-0.50]0.520(n=1186) [0.50-0.75]0.426(n=1157) [0.75-1.00]0.362(n=424)
+2026-04-21 18:34:46,902 - INFO - Step   10800 | Epoch   1 | MSE: 0.4686 | Steps/sec: 3.14 | LR: 2.00e-04 | GradNorm: 0.0311 | MSE/t: [0.00-0.25]0.563(n=462) [0.25-0.50]0.509(n=1172) [0.50-0.75]0.418(n=1139) [0.75-1.00]0.390(n=427)
+2026-04-21 18:35:49,526 - INFO - Step   11000 | Epoch   1 | MSE: 0.4853 | Steps/sec: 3.19 | LR: 2.00e-04 | GradNorm: 0.0516 | MSE/t: [0.00-0.25]0.585(n=425) [0.25-0.50]0.539(n=1168) [0.50-0.75]0.441(n=1175) [0.75-1.00]0.363(n=432)
+2026-04-21 18:35:58,079 - INFO - [validation] saved: output/jit_JiT-B_8_full_improved/dit_validation/epoch_001_step_0011000_class096.png (class=96, sampler=heun, steps=100)
+2026-04-21 18:37:01,153 - INFO - Step   11200 | Epoch   1 | MSE: 0.4731 | Steps/sec: 2.79 | LR: 2.00e-04 | GradNorm: 0.0447 | MSE/t: [0.00-0.25]0.597(n=410) [0.25-0.50]0.525(n=1150) [0.50-0.75]0.419(n=1194) [0.75-1.00]0.371(n=446)
+2026-04-21 18:38:04,557 - INFO - Step   11400 | Epoch   1 | MSE: 0.4736 | Steps/sec: 3.15 | LR: 2.00e-04 | GradNorm: 0.0494 | MSE/t: [0.00-0.25]0.605(n=437) [0.25-0.50]0.511(n=1202) [0.50-0.75]0.421(n=1138) [0.75-1.00]0.371(n=423)
+2026-04-21 18:39:07,074 - INFO - Step   11600 | Epoch   1 | MSE: 0.4752 | Steps/sec: 3.20 | LR: 2.00e-04 | GradNorm: 0.0385 | MSE/t: [0.00-0.25]0.605(n=446) [0.25-0.50]0.517(n=1142) [0.50-0.75]0.417(n=1187) [0.75-1.00]0.390(n=425)
+2026-04-21 18:40:10,139 - INFO - Step   11800 | Epoch   1 | MSE: 0.4633 | Steps/sec: 3.17 | LR: 2.00e-04 | GradNorm: 0.0317 | MSE/t: [0.00-0.25]0.602(n=406) [0.25-0.50]0.513(n=1137) [0.50-0.75]0.404(n=1184) [0.75-1.00]0.374(n=473)
+2026-04-21 18:41:12,792 - INFO - Step   12000 | Epoch   1 | MSE: 0.4594 | Steps/sec: 3.19 | LR: 2.00e-04 | GradNorm: 0.0349 | MSE/t: [0.00-0.25]0.604(n=425) [0.25-0.50]0.503(n=1156) [0.50-0.75]0.403(n=1176) [0.75-1.00]0.358(n=443)
+2026-04-21 18:41:20,927 - INFO - [validation] saved: output/jit_JiT-B_8_full_improved/dit_validation/epoch_001_step_0012000_class079.png (class=79, sampler=heun, steps=100)
+2026-04-21 18:42:25,585 - INFO - Step   12200 | Epoch   1 | MSE: 0.4571 | Steps/sec: 2.75 | LR: 2.00e-04 | GradNorm: 0.0349 | MSE/t: [0.00-0.25]0.578(n=411) [0.25-0.50]0.499(n=1191) [0.50-0.75]0.402(n=1161) [0.75-1.00]0.377(n=437)
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/home/hmolin/3DGen-Playground/jit/train_gsplat.py", line 1986, in <module>
+[rank1]:     main(args)
+[rank1]:   File "/home/hmolin/3DGen-Playground/jit/train_gsplat.py", line 1203, in main
+[rank1]:     for batch in loader:
+[rank1]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/accelerate/data_loader.py", line 589, in __iter__
+[rank1]:     next_batch = next(dataloader_iter)
+[rank1]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 741, in __next__
+[rank1]:     data = self._next_data()
+[rank1]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 1548, in _next_data
+[rank1]:     return self._process_data(data, worker_id)
+[rank1]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 1586, in _process_data
+[rank1]:     data.reraise()
+[rank1]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/_utils.py", line 785, in reraise
+[rank1]:     raise exception
+[rank1]: FileNotFoundError: Caught FileNotFoundError in DataLoader worker process 3.
+[rank1]: Original Traceback (most recent call last):
+[rank1]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/utils/data/_utils/worker.py", line 358, in _worker_loop
+[rank1]:     data = fetcher.fetch(index)  # type: ignore[possibly-undefined]
+[rank1]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/utils/data/_utils/fetch.py", line 54, in fetch
+[rank1]:     data = [self.dataset[idx] for idx in possibly_batched_index]
+[rank1]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/utils/data/_utils/fetch.py", line 54, in <listcomp>
+[rank1]:     data = [self.dataset[idx] for idx in possibly_batched_index]
+[rank1]:   File "/home/hmolin/3DGen-Playground/dataloaders/class_3dgen_loader.py", line 890, in __getitem__
+[rank1]:     return self._build_sample(real_idx, label=self.valid_labels[idx])
+[rank1]:   File "/home/hmolin/3DGen-Playground/dataloaders/class_3dgen_loader.py", line 361, in _build_sample
+[rank1]:     sample = self.base_dataset[real_idx]
+[rank1]:   File "/home/hmolin/3DGen-Playground/dataloaders/standard_3dgen_loader.py", line 476, in __getitem__
+[rank1]:     point_cloud, gs2sphere = self._load_3dgs_data(directory_number, filename)
+[rank1]:   File "/home/hmolin/3DGen-Playground/dataloaders/standard_3dgen_loader.py", line 282, in _load_3dgs_data
+[rank1]:     gs2sphere = np.load(str(gs2sphere_path))
+[rank1]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/numpy/lib/_npyio_impl.py", line 451, in load
+[rank1]:     fid = stack.enter_context(open(os.fspath(file), "rb"))
+[rank1]: FileNotFoundError: [Errno 2] No such file or directory: '/home/tiangexiang/gen3d/gaussianverse/1930/9643656/gs2sphere.npy'
+
+W0421 18:43:22.317000 1105578 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1105649 closing signal SIGTERM
+E0421 18:43:22.323000 1105578 torch/distributed/elastic/multiprocessing/api.py:986] failed (exitcode: 1) local_rank: 1 (pid: 1105650) of binary: /home/hmolin/3DGen-Playground/.3dgen/bin/python3
+Traceback (most recent call last):
+  File "/home/hmolin/3DGen-Playground/.3dgen/bin/accelerate", line 8, in <module>
+    sys.exit(main())
+  File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/accelerate/commands/accelerate_cli.py", line 50, in main
+    args.func(args)
+  File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/accelerate/commands/launch.py", line 1396, in launch_command
+    multi_gpu_launcher(args)
+  File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/accelerate/commands/launch.py", line 1023, in multi_gpu_launcher
+    distrib_run.run(args)
+  File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/distributed/run.py", line 981, in run
+    elastic_launch(
+  File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 170, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 317, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+jit/train_gsplat.py FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-04-21_18:43:22
+  host      : yusu-l4.c.gcp-langmotion.internal
+  rank      : 0 (local_rank: 0)
+  exitcode  : -15 (pid: 1105649)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 1105649
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-04-21_18:43:22
+  host      : yusu-l4.c.gcp-langmotion.internal
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 1105650)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

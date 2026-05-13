@@ -1,0 +1,409 @@
+2026-04-28 22:53:07,660 - INFO - Accelerator: num_processes=4, mixed_precision=bf16, device=cuda:0
+2026-04-28 22:53:07,660 - INFO - Validation sampler: heun
+2026-04-28 22:53:08,050 - INFO - Loading class map from /home/hmolin/3DGen-Playground/object_labels/image_kmeans_k103/object_to_class.json
+2026-04-28 22:53:08,221 - INFO - Number of classes: 103
+2026-04-28 22:53:08,221 - INFO - Creating base dataset...
+2026-04-28 22:53:08,221 - INFO - Loading sphere2plane permutation from /home/tiangexiang/gen3d/gaussianverse/sphere2plane.npy
+2026-04-28 22:53:08,222 - INFO - Loading sphere2plane permutation from /home/tiangexiang/gen3d/gaussianverse/sphere2plane.npy
+2026-04-28 22:53:08,226 - INFO - Loading obj list from /home/tiangexiang/gen3d/gaussianverse/all_obj_list_filtered.json
+2026-04-28 22:53:08,226 - INFO - Loading obj list from /home/tiangexiang/gen3d/gaussianverse/all_obj_list_filtered.json
+2026-04-28 22:53:08,229 - INFO - Loading sphere2plane permutation from /home/tiangexiang/gen3d/gaussianverse/sphere2plane.npy
+2026-04-28 22:53:08,230 - INFO - Loading obj list from /home/tiangexiang/gen3d/gaussianverse/all_obj_list_filtered.json
+2026-04-28 22:53:08,230 - INFO - Loading sphere2plane permutation from /home/tiangexiang/gen3d/gaussianverse/sphere2plane.npy
+2026-04-28 22:53:08,231 - INFO - Loading obj list from /home/tiangexiang/gen3d/gaussianverse/all_obj_list_filtered.json
+2026-04-28 22:53:08,455 - INFO - Loaded 254338 entries from /home/tiangexiang/gen3d/gaussianverse/all_obj_list_filtered.json
+2026-04-28 22:53:08,455 - INFO - Loaded 254338 entries from /home/tiangexiang/gen3d/gaussianverse/all_obj_list_filtered.json
+2026-04-28 22:53:08,455 - INFO - Loaded 254338 entries from /home/tiangexiang/gen3d/gaussianverse/all_obj_list_filtered.json
+2026-04-28 22:53:08,457 - INFO - Loaded 254338 entries from /home/tiangexiang/gen3d/gaussianverse/all_obj_list_filtered.json
+2026-04-28 22:53:08,461 - INFO - Total merged entries: 254338
+2026-04-28 22:53:08,462 - INFO - Total merged entries: 254338
+2026-04-28 22:53:08,462 - INFO - Total merged entries: 254338
+2026-04-28 22:53:08,464 - INFO - Total merged entries: 254338
+2026-04-28 22:53:08,469 - INFO - Loading normalization statistics from /home/hmolin/3DGen-Playground/data/stats/all_mean.pt and /home/hmolin/3DGen-Playground/data/stats/all_std.pt
+2026-04-28 22:53:08,470 - INFO - Loading normalization statistics from /home/hmolin/3DGen-Playground/data/stats/all_mean.pt and /home/hmolin/3DGen-Playground/data/stats/all_std.pt
+2026-04-28 22:53:08,470 - INFO - Loading normalization statistics from /home/hmolin/3DGen-Playground/data/stats/all_mean.pt and /home/hmolin/3DGen-Playground/data/stats/all_std.pt
+2026-04-28 22:53:08,472 - INFO - Loading normalization statistics from /home/hmolin/3DGen-Playground/data/stats/all_mean.pt and /home/hmolin/3DGen-Playground/data/stats/all_std.pt
+2026-04-28 22:53:08,486 - INFO - Initialized dataset with 254338 samples
+2026-04-28 22:53:08,486 - INFO - Initialized dataset with 254338 samples
+2026-04-28 22:53:08,486 - INFO - Initialized dataset with 254338 samples
+2026-04-28 22:53:08,486 - INFO - Initialized dataset with 254338 samples
+2026-04-28 22:53:08,486 - INFO - sh_degree0_only: selecting 14 features from 59
+2026-04-28 22:53:08,544 - INFO - Loaded sphere2plane permutation: 16384 points
+2026-04-28 22:53:08,794 - INFO - Class3DGenDataset: 254337 valid samples, 1 skipped (class -1 or missing)
+2026-04-28 22:53:08,794 - INFO - Class3DGenDataset: 254337 valid samples, 1 skipped (class -1 or missing)
+2026-04-28 22:53:08,795 - INFO - Class3DGenDataset: 254337 valid samples, 1 skipped (class -1 or missing)
+2026-04-28 22:53:08,796 - INFO - Class3DGenDataset: 254337 valid samples, 1 skipped (class -1 or missing)
+2026-04-28 22:53:09,167 - INFO - Attached to existing lazy shared CPU cache: /home/hmolin/3dgen_cache/preload/16908fbeb8fefd88793c92aa99efbfe6
+2026-04-28 22:53:09,211 - INFO - Attached to existing lazy shared CPU cache: /home/hmolin/3dgen_cache/preload/16908fbeb8fefd88793c92aa99efbfe6
+2026-04-28 22:53:09,255 - INFO - Attached to existing lazy shared CPU cache: /home/hmolin/3dgen_cache/preload/16908fbeb8fefd88793c92aa99efbfe6
+2026-04-28 22:53:09,298 - INFO - Attached to existing lazy shared CPU cache: /home/hmolin/3dgen_cache/preload/16908fbeb8fefd88793c92aa99efbfe6
+2026-04-28 22:53:09,319 - INFO - [class-balanced] sampling with inverse-frequency weights over 103 classes (min=791, max=4760, mean=2469.3 samples/class)
+2026-04-28 22:53:09,319 - INFO - Dataset size: 254337, Per-GPU batch size: 64
+2026-04-28 22:53:09,319 - INFO - Creating model: JiT-B/8
+2026-04-28 22:53:11,004 - INFO - JiT spatial folding: disabled (factor=1)
+2026-04-28 22:53:11,005 - INFO - Model parameters: 130,721,664 (130.7M)
+2026-04-28 22:53:11,330 - INFO - [layout] converted 2 Conv2d weights to channels_last
+2026-04-28 22:53:11,331 - INFO - torch.compile: enabled (mode=default)
+2026-04-28 22:53:13,674 - INFO - Diffusion timesteps: 1000, predict=x0, schedule=squaredcos_cap_v2
+2026-04-28 22:53:13,675 - INFO - Training mode: DDPM (sampler=heun), timestep sampling: sigmoid(N(0.000, 1.000)) mapped to discrete steps [0, 999]
+2026-04-28 22:53:14,114 - INFO - LR schedule: cosine | warmup=500 opt steps | max_opt_steps=198600 | lr_min=1e-05
+2026-04-28 22:53:14,167 - INFO - [channel_loss_weights] active: 14 values, mean=1.0000, min=0.6440, max=1.7350
+2026-04-28 22:53:14,329 - INFO - Loaded 52 reference cameras from /home/hmolin/3DGen-Playground/artifacts/ref_camera.tar.gz
+/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+2026-04-28 22:53:17,617 - INFO - Starting training from epoch 0, step 0...
+2026-04-28 22:53:17,617 - INFO - [render_weight_schedule] active with 2 control points: (30000, rl1=0.000, a=0.000, lp=0.0000), (100000, rl1=0.600, a=0.300, lp=0.0400) | initial weights at step 0: rl1=0.0000, alpha=0.0000, lpips=0.0000
+2026-04-28 22:56:59,516 - INFO - Step     200 | Epoch   0 | MSE: 0.7764 | Steps/sec: 0.90 | LR: 8.00e-05 | cos(c,null): -0.0027 | GradNorm: 0.1476 | MSE/t: [0.00-0.50]0.792(n=6413) [0.50-0.85]0.761(n=5851) [0.85-0.95]0.768(n=515) [0.95-1.00]0.592(n=21)
+2026-04-28 22:59:34,559 - INFO - Step     400 | Epoch   0 | MSE: 0.5565 | Steps/sec: 1.29 | LR: 1.60e-04 | cos(c,null): -0.0018 | GradNorm: 0.1612 | MSE/t: [0.00-0.50]0.593(n=6256) [0.50-0.85]0.524(n=5980) [0.85-0.95]0.502(n=543) [0.95-1.00]0.458(n=21)
+2026-04-28 23:01:40,689 - INFO - Step     600 | Epoch   0 | MSE: 0.5366 | Steps/sec: 1.59 | LR: 2.00e-04 | cos(c,null): -0.0022 | GradNorm: 0.1213 | MSE/t: [0.00-0.50]0.578(n=6388) [0.50-0.85]0.501(n=5898) [0.85-0.95]0.430(n=500) [0.95-1.00]0.477(n=14)
+2026-04-28 23:03:28,114 - INFO - Step     800 | Epoch   0 | MSE: 0.5177 | Steps/sec: 1.86 | LR: 2.00e-04 | cos(c,null): -0.0025 | GradNorm: 0.0960 | MSE/t: [0.00-0.50]0.565(n=6360) [0.50-0.85]0.472(n=5889) [0.85-0.95]0.457(n=526) [0.95-1.00]0.493(n=25)
+2026-04-28 23:04:59,292 - INFO - Step    1000 | Epoch   1 | MSE: 0.5114 | Steps/sec: 2.19 | LR: 2.00e-04 | cos(c,null): -0.0028 | GradNorm: 0.0755 | MSE/t: [0.00-0.50]0.560(n=6377) [0.50-0.85]0.466(n=5906) [0.85-0.95]0.433(n=502) [0.95-1.00]0.440(n=15)
+2026-04-28 23:05:05,764 - INFO - [cond] cfg_signal=0.0190 (min=0.0117 max=0.0409, n=16) | class_signal=0.0207 (min=0.0102 max=0.0438, n=16) | pred_rms=0.5282
+2026-04-28 23:05:14,591 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_001_step_0001000_class049.png (class=49, sampler=heun, steps=100)
+2026-04-28 23:06:40,212 - INFO - Step    1200 | Epoch   1 | MSE: 0.4994 | Steps/sec: 2.12 | LR: 2.00e-04 | cos(c,null): -0.0031 | GradNorm: 0.0680 | MSE/t: [0.00-0.50]0.547(n=6237) [0.50-0.85]0.457(n=6014) [0.85-0.95]0.424(n=525) [0.95-1.00]0.442(n=24)
+2026-04-28 23:08:04,860 - INFO - Step    1400 | Epoch   1 | MSE: 0.4952 | Steps/sec: 2.36 | LR: 2.00e-04 | cos(c,null): -0.0033 | GradNorm: 0.0583 | MSE/t: [0.00-0.50]0.551(n=6391) [0.50-0.85]0.442(n=5860) [0.85-0.95]0.415(n=533) [0.95-1.00]0.342(n=16)
+2026-04-28 23:09:29,459 - INFO - Step    1600 | Epoch   1 | MSE: 0.4943 | Steps/sec: 2.36 | LR: 2.00e-04 | cos(c,null): -0.0036 | GradNorm: 0.0524 | MSE/t: [0.00-0.50]0.550(n=6388) [0.50-0.85]0.441(n=5817) [0.85-0.95]0.422(n=575) [0.95-1.00]0.343(n=20)
+2026-04-28 23:10:53,992 - INFO - Step    1800 | Epoch   1 | MSE: 0.4971 | Steps/sec: 2.37 | LR: 2.00e-04 | cos(c,null): -0.0038 | GradNorm: 0.0515 | MSE/t: [0.00-0.50]0.551(n=6471) [0.50-0.85]0.446(n=5779) [0.85-0.95]0.403(n=530) [0.95-1.00]0.397(n=20)
+2026-04-28 23:12:19,523 - INFO - Step    2000 | Epoch   2 | MSE: 0.4948 | Steps/sec: 2.34 | LR: 2.00e-04 | cos(c,null): -0.0040 | GradNorm: 0.0490 | MSE/t: [0.00-0.50]0.549(n=6405) [0.50-0.85]0.444(n=5881) [0.85-0.95]0.403(n=497) [0.95-1.00]0.341(n=17)
+2026-04-28 23:12:19,758 - INFO - [cond] cfg_signal=0.0376 (min=0.0194 max=0.0526, n=16) | class_signal=0.0356 (min=0.0141 max=0.0590, n=16) | pred_rms=0.5169
+2026-04-28 23:12:28,079 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_002_step_0002000_class053.png (class=53, sampler=heun, steps=100)
+2026-04-28 23:13:53,849 - INFO - Step    2200 | Epoch   2 | MSE: 0.4855 | Steps/sec: 2.13 | LR: 2.00e-04 | cos(c,null): -0.0043 | GradNorm: 0.0472 | MSE/t: [0.00-0.50]0.543(n=6375) [0.50-0.85]0.432(n=5914) [0.85-0.95]0.385(n=491) [0.95-1.00]0.420(n=20)
+2026-04-28 23:15:18,500 - INFO - Step    2400 | Epoch   2 | MSE: 0.4852 | Steps/sec: 2.36 | LR: 2.00e-04 | cos(c,null): -0.0043 | GradNorm: 0.0423 | MSE/t: [0.00-0.50]0.542(n=6373) [0.50-0.85]0.433(n=5900) [0.85-0.95]0.379(n=509) [0.95-1.00]0.416(n=18)
+2026-04-28 23:16:43,124 - INFO - Step    2600 | Epoch   2 | MSE: 0.4811 | Steps/sec: 2.36 | LR: 2.00e-04 | cos(c,null): -0.0043 | GradNorm: 0.0422 | MSE/t: [0.00-0.50]0.539(n=6425) [0.50-0.85]0.425(n=5844) [0.85-0.95]0.404(n=509) [0.95-1.00]0.383(n=22)
+2026-04-28 23:18:07,717 - INFO - Step    2800 | Epoch   2 | MSE: 0.4832 | Steps/sec: 2.36 | LR: 2.00e-04 | cos(c,null): -0.0043 | GradNorm: 0.0487 | MSE/t: [0.00-0.50]0.548(n=6458) [0.50-0.85]0.420(n=5805) [0.85-0.95]0.394(n=514) [0.95-1.00]0.442(n=23)
+2026-04-28 23:19:32,701 - INFO - Step    3000 | Epoch   3 | MSE: 0.4791 | Steps/sec: 2.35 | LR: 2.00e-04 | cos(c,null): -0.0043 | GradNorm: 0.0394 | MSE/t: [0.00-0.50]0.535(n=6343) [0.50-0.85]0.427(n=5926) [0.85-0.95]0.395(n=513) [0.95-1.00]0.351(n=18)
+2026-04-28 23:19:32,924 - INFO - [cond] cfg_signal=0.0353 (min=0.0233 max=0.0561, n=16) | class_signal=0.0350 (min=0.0190 max=0.0564, n=16) | pred_rms=0.5257
+2026-04-28 23:19:41,130 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_003_step_0003000_class033.png (class=33, sampler=heun, steps=100)
+2026-04-28 23:21:06,350 - INFO - Step    3200 | Epoch   3 | MSE: 0.4825 | Steps/sec: 2.14 | LR: 2.00e-04 | cos(c,null): -0.0041 | GradNorm: 0.0335 | MSE/t: [0.00-0.50]0.541(n=6359) [0.50-0.85]0.427(n=5899) [0.85-0.95]0.391(n=521) [0.95-1.00]0.482(n=21)
+2026-04-28 23:22:30,841 - INFO - Step    3400 | Epoch   3 | MSE: 0.4790 | Steps/sec: 2.37 | LR: 2.00e-04 | cos(c,null): -0.0041 | GradNorm: 0.0333 | MSE/t: [0.00-0.50]0.537(n=6305) [0.50-0.85]0.425(n=5941) [0.85-0.95]0.400(n=539) [0.95-1.00]0.459(n=15)
+2026-04-28 23:23:55,304 - INFO - Step    3600 | Epoch   3 | MSE: 0.4772 | Steps/sec: 2.37 | LR: 2.00e-04 | cos(c,null): -0.0039 | GradNorm: 0.0351 | MSE/t: [0.00-0.50]0.538(n=6386) [0.50-0.85]0.420(n=5889) [0.85-0.95]0.387(n=505) [0.95-1.00]0.429(n=20)
+2026-04-28 23:25:19,830 - INFO - Step    3800 | Epoch   3 | MSE: 0.4828 | Steps/sec: 2.37 | LR: 2.00e-04 | cos(c,null): -0.0039 | GradNorm: 0.0365 | MSE/t: [0.00-0.50]0.554(n=6394) [0.50-0.85]0.415(n=5860) [0.85-0.95]0.374(n=525) [0.95-1.00]0.444(n=21)
+2026-04-28 23:26:44,701 - INFO - Step    4000 | Epoch   4 | MSE: 0.4747 | Steps/sec: 2.36 | LR: 2.00e-04 | cos(c,null): -0.0038 | GradNorm: 0.0300 | MSE/t: [0.00-0.50]0.527(n=6283) [0.50-0.85]0.428(n=5967) [0.85-0.95]0.383(n=524) [0.95-1.00]0.415(n=26)
+2026-04-28 23:26:44,915 - INFO - [cond] cfg_signal=0.0388 (min=0.0242 max=0.0597, n=16) | class_signal=0.0368 (min=0.0217 max=0.0494, n=16) | pred_rms=0.5522
+2026-04-28 23:26:53,235 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_004_step_0004000_class062.png (class=62, sampler=heun, steps=100)
+2026-04-28 23:28:18,451 - INFO - Step    4200 | Epoch   4 | MSE: 0.4771 | Steps/sec: 2.14 | LR: 2.00e-04 | cos(c,null): -0.0037 | GradNorm: 0.0327 | MSE/t: [0.00-0.50]0.538(n=6413) [0.50-0.85]0.419(n=5870) [0.85-0.95]0.373(n=497) [0.95-1.00]0.379(n=20)
+2026-04-28 23:29:42,925 - INFO - Step    4400 | Epoch   4 | MSE: 0.4764 | Steps/sec: 2.37 | LR: 2.00e-04 | cos(c,null): -0.0034 | GradNorm: 0.0355 | MSE/t: [0.00-0.50]0.540(n=6438) [0.50-0.85]0.414(n=5831) [0.85-0.95]0.387(n=510) [0.95-1.00]0.331(n=21)
+2026-04-28 23:31:07,440 - INFO - Step    4600 | Epoch   4 | MSE: 0.4755 | Steps/sec: 2.37 | LR: 2.00e-04 | cos(c,null): -0.0033 | GradNorm: 0.0312 | MSE/t: [0.00-0.50]0.542(n=6262) [0.50-0.85]0.415(n=5953) [0.85-0.95]0.381(n=566) [0.95-1.00]0.335(n=19)
+2026-04-28 23:32:31,934 - INFO - Step    4800 | Epoch   4 | MSE: 0.4708 | Steps/sec: 2.37 | LR: 2.00e-04 | cos(c,null): -0.0028 | GradNorm: 0.0304 | MSE/t: [0.00-0.50]0.534(n=6321) [0.50-0.85]0.414(n=5983) [0.85-0.95]0.339(n=478) [0.95-1.00]0.399(n=18)
+2026-04-28 23:33:56,637 - INFO - Step    5000 | Epoch   5 | MSE: 0.4728 | Steps/sec: 2.36 | LR: 2.00e-04 | cos(c,null): -0.0032 | GradNorm: 0.0298 | MSE/t: [0.00-0.50]0.537(n=6413) [0.50-0.85]0.414(n=5844) [0.85-0.95]0.339(n=522) [0.95-1.00]0.382(n=21)
+2026-04-28 23:33:56,850 - INFO - [cond] cfg_signal=0.0447 (min=0.0316 max=0.0610, n=16) | class_signal=0.0434 (min=0.0225 max=0.0700, n=16) | pred_rms=0.6105
+2026-04-28 23:34:04,943 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_005_step_0005000_class100.png (class=100, sampler=heun, steps=100)
+2026-04-28 23:35:30,096 - INFO - Step    5200 | Epoch   5 | MSE: 0.4755 | Steps/sec: 2.14 | LR: 2.00e-04 | cos(c,null): -0.0031 | GradNorm: 0.0265 | MSE/t: [0.00-0.50]0.538(n=6425) [0.50-0.85]0.416(n=5869) [0.85-0.95]0.381(n=481) [0.95-1.00]0.388(n=25)
+2026-04-28 23:36:54,569 - INFO - Step    5400 | Epoch   5 | MSE: 0.4698 | Steps/sec: 2.37 | LR: 2.00e-04 | cos(c,null): -0.0031 | GradNorm: 0.0267 | MSE/t: [0.00-0.50]0.530(n=6365) [0.50-0.85]0.413(n=5910) [0.85-0.95]0.380(n=500) [0.95-1.00]0.385(n=25)
+2026-04-28 23:38:19,042 - INFO - Step    5600 | Epoch   5 | MSE: 0.4647 | Steps/sec: 2.37 | LR: 2.00e-04 | cos(c,null): -0.0031 | GradNorm: 0.0256 | MSE/t: [0.00-0.50]0.525(n=6301) [0.50-0.85]0.410(n=6006) [0.85-0.95]0.363(n=474) [0.95-1.00]0.320(n=19)
+2026-04-28 23:39:43,436 - INFO - Step    5800 | Epoch   5 | MSE: 0.4691 | Steps/sec: 2.37 | LR: 2.00e-04 | cos(c,null): -0.0027 | GradNorm: 0.0279 | MSE/t: [0.00-0.50]0.532(n=6376) [0.50-0.85]0.409(n=5892) [0.85-0.95]0.383(n=522) [0.95-1.00]0.387(n=10)
+2026-04-28 23:41:08,169 - INFO - Step    6000 | Epoch   6 | MSE: 0.4732 | Steps/sec: 2.36 | LR: 2.00e-04 | cos(c,null): -0.0022 | GradNorm: 0.0266 | MSE/t: [0.00-0.50]0.539(n=6392) [0.50-0.85]0.407(n=5906) [0.85-0.95]0.425(n=482) [0.95-1.00]0.306(n=20)
+2026-04-28 23:41:08,384 - INFO - [cond] cfg_signal=0.0468 (min=0.0343 max=0.0668, n=16) | class_signal=0.0491 (min=0.0244 max=0.0755, n=16) | pred_rms=0.6459
+2026-04-28 23:41:16,343 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_006_step_0006000_class061.png (class=61, sampler=heun, steps=100)
+2026-04-28 23:42:41,489 - INFO - Step    6200 | Epoch   6 | MSE: 0.4712 | Steps/sec: 2.15 | LR: 2.00e-04 | cos(c,null): -0.0020 | GradNorm: 0.0259 | MSE/t: [0.00-0.50]0.539(n=6334) [0.50-0.85]0.408(n=5941) [0.85-0.95]0.372(n=504) [0.95-1.00]0.351(n=21)
+2026-04-28 23:44:05,881 - INFO - Step    6400 | Epoch   6 | MSE: 0.4706 | Steps/sec: 2.37 | LR: 2.00e-04 | cos(c,null): -0.0021 | GradNorm: 0.0247 | MSE/t: [0.00-0.50]0.536(n=6393) [0.50-0.85]0.408(n=5885) [0.85-0.95]0.375(n=499) [0.95-1.00]0.404(n=23)
+2026-04-28 23:45:30,326 - INFO - Step    6600 | Epoch   6 | MSE: 0.4741 | Steps/sec: 2.37 | LR: 2.00e-04 | cos(c,null): -0.0018 | GradNorm: 0.0260 | MSE/t: [0.00-0.50]0.542(n=6405) [0.50-0.85]0.409(n=5888) [0.85-0.95]0.380(n=492) [0.95-1.00]0.380(n=15)
+2026-04-28 23:46:54,734 - INFO - Step    6800 | Epoch   6 | MSE: 0.4710 | Steps/sec: 2.37 | LR: 2.00e-04 | cos(c,null): -0.0014 | GradNorm: 0.0245 | MSE/t: [0.00-0.50]0.531(n=6314) [0.50-0.85]0.415(n=5935) [0.85-0.95]0.384(n=532) [0.95-1.00]0.335(n=19)
+2026-04-28 23:48:19,379 - INFO - Step    7000 | Epoch   7 | MSE: 0.4713 | Steps/sec: 2.36 | LR: 1.99e-04 | cos(c,null): -0.0011 | GradNorm: 0.0253 | MSE/t: [0.00-0.50]0.536(n=6397) [0.50-0.85]0.411(n=5839) [0.85-0.95]0.355(n=548) [0.95-1.00]0.362(n=16)
+2026-04-28 23:48:19,593 - INFO - [cond] cfg_signal=0.0483 (min=0.0358 max=0.0708, n=16) | class_signal=0.0502 (min=0.0247 max=0.0707, n=16) | pred_rms=0.5948
+2026-04-28 23:48:27,688 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_007_step_0007000_class074.png (class=74, sampler=heun, steps=100)
+2026-04-28 23:49:52,893 - INFO - Step    7200 | Epoch   7 | MSE: 0.4681 | Steps/sec: 2.14 | LR: 1.99e-04 | cos(c,null): -0.0010 | GradNorm: 0.0236 | MSE/t: [0.00-0.50]0.534(n=6386) [0.50-0.85]0.406(n=5877) [0.85-0.95]0.366(n=527) [0.95-1.00]0.344(n=10)
+2026-04-28 23:51:17,338 - INFO - Step    7400 | Epoch   7 | MSE: 0.4654 | Steps/sec: 2.37 | LR: 1.99e-04 | cos(c,null): -0.0011 | GradNorm: 0.0246 | MSE/t: [0.00-0.50]0.529(n=6322) [0.50-0.85]0.407(n=5951) [0.85-0.95]0.367(n=511) [0.95-1.00]0.371(n=16)
+2026-04-28 23:52:41,763 - INFO - Step    7600 | Epoch   7 | MSE: 0.4663 | Steps/sec: 2.37 | LR: 1.99e-04 | cos(c,null): -0.0005 | GradNorm: 0.0227 | MSE/t: [0.00-0.50]0.532(n=6448) [0.50-0.85]0.404(n=5814) [0.85-0.95]0.351(n=516) [0.95-1.00]0.288(n=22)
+2026-04-28 23:54:06,210 - INFO - Step    7800 | Epoch   7 | MSE: 0.4653 | Steps/sec: 2.37 | LR: 1.99e-04 | cos(c,null): -0.0003 | GradNorm: 0.0232 | MSE/t: [0.00-0.50]0.529(n=6350) [0.50-0.85]0.407(n=5924) [0.85-0.95]0.346(n=498) [0.95-1.00]0.436(n=28)
+2026-04-28 23:55:30,996 - INFO - Step    8000 | Epoch   8 | MSE: 0.4650 | Steps/sec: 2.36 | LR: 1.99e-04 | cos(c,null): +0.0006 | GradNorm: 0.0262 | MSE/t: [0.00-0.50]0.529(n=6329) [0.50-0.85]0.409(n=5900) [0.85-0.95]0.341(n=553) [0.95-1.00]0.367(n=18)
+2026-04-28 23:55:31,211 - INFO - [cond] cfg_signal=0.0534 (min=0.0383 max=0.0849, n=16) | class_signal=0.0575 (min=0.0278 max=0.0890, n=16) | pred_rms=0.6332
+2026-04-28 23:55:39,266 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_008_step_0008000_class064.png (class=64, sampler=heun, steps=100)
+2026-04-28 23:57:04,483 - INFO - Step    8200 | Epoch   8 | MSE: 0.4616 | Steps/sec: 2.14 | LR: 1.99e-04 | cos(c,null): +0.0008 | GradNorm: 0.0254 | MSE/t: [0.00-0.50]0.528(n=6464) [0.50-0.85]0.398(n=5813) [0.85-0.95]0.360(n=505) [0.95-1.00]0.338(n=18)
+2026-04-28 23:58:28,910 - INFO - Step    8400 | Epoch   8 | MSE: 0.4690 | Steps/sec: 2.37 | LR: 1.99e-04 | cos(c,null): +0.0014 | GradNorm: 0.0226 | MSE/t: [0.00-0.50]0.539(n=6359) [0.50-0.85]0.403(n=5919) [0.85-0.95]0.355(n=500) [0.95-1.00]0.435(n=22)
+2026-04-28 23:59:53,348 - INFO - Step    8600 | Epoch   8 | MSE: 0.4645 | Steps/sec: 2.37 | LR: 1.99e-04 | cos(c,null): +0.0024 | GradNorm: 0.0227 | MSE/t: [0.00-0.50]0.527(n=6399) [0.50-0.85]0.407(n=5899) [0.85-0.95]0.339(n=487) [0.95-1.00]0.335(n=15)
+2026-04-29 00:01:17,785 - INFO - Step    8800 | Epoch   8 | MSE: 0.4674 | Steps/sec: 2.37 | LR: 1.99e-04 | cos(c,null): +0.0028 | GradNorm: 0.0231 | MSE/t: [0.00-0.50]0.538(n=6387) [0.50-0.85]0.402(n=5872) [0.85-0.95]0.350(n=517) [0.95-1.00]0.355(n=24)
+2026-04-29 00:02:42,389 - INFO - Step    9000 | Epoch   9 | MSE: 0.4655 | Steps/sec: 2.36 | LR: 1.99e-04 | cos(c,null): +0.0015 | GradNorm: 0.0264 | MSE/t: [0.00-0.50]0.534(n=6456) [0.50-0.85]0.399(n=5766) [0.85-0.95]0.368(n=544) [0.95-1.00]0.327(n=34)
+2026-04-29 00:02:42,605 - INFO - [cond] cfg_signal=0.0550 (min=0.0437 max=0.0863, n=16) | class_signal=0.0605 (min=0.0314 max=0.0878, n=16) | pred_rms=0.6564
+2026-04-29 00:02:50,711 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_009_step_0009000_class036.png (class=36, sampler=heun, steps=100)
+2026-04-29 00:04:15,874 - INFO - Step    9200 | Epoch   9 | MSE: 0.4706 | Steps/sec: 2.14 | LR: 1.99e-04 | cos(c,null): +0.0002 | GradNorm: 0.0237 | MSE/t: [0.00-0.50]0.535(n=6376) [0.50-0.85]0.411(n=5894) [0.85-0.95]0.352(n=511) [0.95-1.00]0.464(n=19)
+2026-04-29 00:05:40,291 - INFO - Step    9400 | Epoch   9 | MSE: 0.4607 | Steps/sec: 2.37 | LR: 1.99e-04 | cos(c,null): -0.0013 | GradNorm: 0.0224 | MSE/t: [0.00-0.50]0.523(n=6381) [0.50-0.85]0.403(n=5893) [0.85-0.95]0.358(n=510) [0.95-1.00]0.238(n=16)
+2026-04-29 00:07:04,684 - INFO - Step    9600 | Epoch   9 | MSE: 0.4664 | Steps/sec: 2.37 | LR: 1.99e-04 | cos(c,null): -0.0010 | GradNorm: 0.0239 | MSE/t: [0.00-0.50]0.531(n=6386) [0.50-0.85]0.405(n=5880) [0.85-0.95]0.361(n=516) [0.95-1.00]0.438(n=18)
+2026-04-29 00:08:29,098 - INFO - Step    9800 | Epoch   9 | MSE: 0.4661 | Steps/sec: 2.37 | LR: 1.99e-04 | cos(c,null): -0.0006 | GradNorm: 0.0210 | MSE/t: [0.00-0.50]0.531(n=6332) [0.50-0.85]0.406(n=5947) [0.85-0.95]0.369(n=497) [0.95-1.00]0.337(n=24)
+2026-04-29 00:09:53,724 - INFO - Step   10000 | Epoch  10 | MSE: 0.4633 | Steps/sec: 2.36 | LR: 1.99e-04 | cos(c,null): -0.0000 | GradNorm: 0.0227 | MSE/t: [0.00-0.50]0.527(n=6360) [0.50-0.85]0.404(n=5898) [0.85-0.95]0.359(n=519) [0.95-1.00]0.309(n=23)
+2026-04-29 00:09:53,937 - INFO - [cond] cfg_signal=0.0587 (min=0.0395 max=0.0924, n=16) | class_signal=0.0668 (min=0.0408 max=0.0931, n=16) | pred_rms=0.6289
+2026-04-29 00:10:01,942 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_010_step_0010000_class096.png (class=96, sampler=heun, steps=100)
+2026-04-29 00:11:27,186 - INFO - Step   10200 | Epoch  10 | MSE: 0.4634 | Steps/sec: 2.14 | LR: 1.99e-04 | cos(c,null): -0.0004 | GradNorm: 0.0192 | MSE/t: [0.00-0.50]0.529(n=6465) [0.50-0.85]0.401(n=5772) [0.85-0.95]0.349(n=536) [0.95-1.00]0.317(n=27)
+2026-04-29 00:12:51,695 - INFO - Step   10400 | Epoch  10 | MSE: 0.4618 | Steps/sec: 2.37 | LR: 1.99e-04 | cos(c,null): +0.0003 | GradNorm: 0.0208 | MSE/t: [0.00-0.50]0.531(n=6345) [0.50-0.85]0.398(n=5913) [0.85-0.95]0.351(n=518) [0.95-1.00]0.372(n=24)
+2026-04-29 00:14:16,169 - INFO - Step   10600 | Epoch  10 | MSE: 0.4642 | Steps/sec: 2.37 | LR: 1.99e-04 | cos(c,null): +0.0009 | GradNorm: 0.0218 | MSE/t: [0.00-0.50]0.533(n=6305) [0.50-0.85]0.401(n=5952) [0.85-0.95]0.351(n=518) [0.95-1.00]0.327(n=25)
+2026-04-29 00:15:40,641 - INFO - Step   10800 | Epoch  10 | MSE: 0.4657 | Steps/sec: 2.37 | LR: 1.99e-04 | cos(c,null): +0.0015 | GradNorm: 0.0212 | MSE/t: [0.00-0.50]0.534(n=6461) [0.50-0.85]0.399(n=5807) [0.85-0.95]0.369(n=506) [0.95-1.00]0.317(n=26)
+2026-04-29 00:17:05,328 - INFO - Step   11000 | Epoch  11 | MSE: 0.4614 | Steps/sec: 2.36 | LR: 1.99e-04 | cos(c,null): +0.0015 | GradNorm: 0.0212 | MSE/t: [0.00-0.50]0.525(n=6529) [0.50-0.85]0.399(n=5762) [0.85-0.95]0.354(n=487) [0.95-1.00]0.338(n=22)
+2026-04-29 00:17:05,541 - INFO - [cond] cfg_signal=0.0584 (min=0.0409 max=0.0865, n=16) | class_signal=0.0684 (min=0.0332 max=0.1014, n=16) | pred_rms=0.6353
+2026-04-29 00:17:13,620 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_011_step_0011000_class079.png (class=79, sampler=heun, steps=100)
+2026-04-29 00:18:38,818 - INFO - Step   11200 | Epoch  11 | MSE: 0.4632 | Steps/sec: 2.14 | LR: 1.99e-04 | cos(c,null): +0.0017 | GradNorm: 0.0194 | MSE/t: [0.00-0.50]0.528(n=6368) [0.50-0.85]0.403(n=5876) [0.85-0.95]0.359(n=536) [0.95-1.00]0.334(n=20)
+2026-04-29 00:20:03,306 - INFO - Step   11400 | Epoch  11 | MSE: 0.4638 | Steps/sec: 2.37 | LR: 1.99e-04 | cos(c,null): +0.0026 | GradNorm: 0.0194 | MSE/t: [0.00-0.50]0.533(n=6274) [0.50-0.85]0.402(n=5967) [0.85-0.95]0.354(n=538) [0.95-1.00]0.293(n=21)
+2026-04-29 00:21:27,810 - INFO - Step   11600 | Epoch  11 | MSE: 0.4605 | Steps/sec: 2.37 | LR: 1.99e-04 | cos(c,null): +0.0021 | GradNorm: 0.0207 | MSE/t: [0.00-0.50]0.528(n=6346) [0.50-0.85]0.397(n=5924) [0.85-0.95]0.364(n=510) [0.95-1.00]0.342(n=20)
+2026-04-29 00:22:52,325 - INFO - Step   11800 | Epoch  11 | MSE: 0.4619 | Steps/sec: 2.37 | LR: 1.98e-04 | cos(c,null): +0.0025 | GradNorm: 0.0192 | MSE/t: [0.00-0.50]0.528(n=6406) [0.50-0.85]0.398(n=5825) [0.85-0.95]0.367(n=542) [0.95-1.00]0.460(n=27)
+2026-04-29 00:24:17,052 - INFO - Step   12000 | Epoch  12 | MSE: 0.4611 | Steps/sec: 2.36 | LR: 1.98e-04 | cos(c,null): +0.0036 | GradNorm: 0.0196 | MSE/t: [0.00-0.50]0.527(n=6392) [0.50-0.85]0.399(n=5868) [0.85-0.95]0.352(n=520) [0.95-1.00]0.408(n=20)
+2026-04-29 00:24:17,265 - INFO - [cond] cfg_signal=0.0583 (min=0.0437 max=0.0878, n=16) | class_signal=0.0719 (min=0.0436 max=0.0893, n=16) | pred_rms=0.6701
+2026-04-29 00:24:25,282 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_012_step_0012000_class032.png (class=32, sampler=heun, steps=100)
+2026-04-29 00:25:50,595 - INFO - Step   12200 | Epoch  12 | MSE: 0.4616 | Steps/sec: 2.14 | LR: 1.98e-04 | cos(c,null): +0.0044 | GradNorm: 0.0199 | MSE/t: [0.00-0.50]0.530(n=6346) [0.50-0.85]0.398(n=5933) [0.85-0.95]0.358(n=502) [0.95-1.00]0.326(n=19)
+2026-04-29 00:27:15,148 - INFO - Step   12400 | Epoch  12 | MSE: 0.4595 | Steps/sec: 2.37 | LR: 1.98e-04 | cos(c,null): +0.0051 | GradNorm: 0.0195 | MSE/t: [0.00-0.50]0.524(n=6411) [0.50-0.85]0.398(n=5845) [0.85-0.95]0.361(n=527) [0.95-1.00]0.508(n=17)
+2026-04-29 00:28:39,713 - INFO - Step   12600 | Epoch  12 | MSE: 0.4642 | Steps/sec: 2.37 | LR: 1.98e-04 | cos(c,null): +0.0063 | GradNorm: 0.0209 | MSE/t: [0.00-0.50]0.530(n=6448) [0.50-0.85]0.403(n=5796) [0.85-0.95]0.345(n=535) [0.95-1.00]0.288(n=21)
+2026-04-29 00:30:04,344 - INFO - Step   12800 | Epoch  12 | MSE: 0.4699 | Steps/sec: 2.36 | LR: 1.98e-04 | cos(c,null): +0.0078 | GradNorm: 0.0181 | MSE/t: [0.00-0.50]0.535(n=6380) [0.50-0.85]0.409(n=5921) [0.85-0.95]0.361(n=479) [0.95-1.00]0.339(n=20)
+2026-04-29 00:31:29,190 - INFO - Step   13000 | Epoch  13 | MSE: 0.4582 | Steps/sec: 2.36 | LR: 1.98e-04 | cos(c,null): +0.0074 | GradNorm: 0.0170 | MSE/t: [0.00-0.50]0.523(n=6299) [0.50-0.85]0.399(n=5984) [0.85-0.95]0.348(n=496) [0.95-1.00]0.299(n=21)
+2026-04-29 00:31:29,404 - INFO - [cond] cfg_signal=0.0657 (min=0.0502 max=0.1122, n=16) | class_signal=0.0808 (min=0.0391 max=0.1101, n=16) | pred_rms=0.6738
+2026-04-29 00:31:37,309 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_013_step_0013000_class090.png (class=90, sampler=heun, steps=100)
+2026-04-29 00:33:02,667 - INFO - Step   13200 | Epoch  13 | MSE: 0.4640 | Steps/sec: 2.14 | LR: 1.98e-04 | cos(c,null): +0.0083 | GradNorm: 0.0199 | MSE/t: [0.00-0.50]0.530(n=6428) [0.50-0.85]0.401(n=5818) [0.85-0.95]0.365(n=526) [0.95-1.00]0.305(n=28)
+2026-04-29 00:34:27,220 - INFO - Step   13400 | Epoch  13 | MSE: 0.4577 | Steps/sec: 2.37 | LR: 1.98e-04 | cos(c,null): +0.0078 | GradNorm: 0.0182 | MSE/t: [0.00-0.50]0.522(n=6423) [0.50-0.85]0.395(n=5823) [0.85-0.95]0.360(n=531) [0.95-1.00]0.477(n=23)
+2026-04-29 00:35:51,750 - INFO - Step   13600 | Epoch  13 | MSE: 0.4588 | Steps/sec: 2.37 | LR: 1.98e-04 | cos(c,null): +0.0084 | GradNorm: 0.0188 | MSE/t: [0.00-0.50]0.524(n=6382) [0.50-0.85]0.397(n=5885) [0.85-0.95]0.356(n=516) [0.95-1.00]0.300(n=17)
+2026-04-29 00:37:16,341 - INFO - Step   13800 | Epoch  13 | MSE: 0.4641 | Steps/sec: 2.36 | LR: 1.98e-04 | cos(c,null): +0.0102 | GradNorm: 0.0233 | MSE/t: [0.00-0.50]0.531(n=6494) [0.50-0.85]0.400(n=5731) [0.85-0.95]0.351(n=550) [0.95-1.00]0.350(n=25)
+2026-04-29 00:38:41,104 - INFO - Step   14000 | Epoch  14 | MSE: 0.4587 | Steps/sec: 2.36 | LR: 1.98e-04 | cos(c,null): +0.0121 | GradNorm: 0.0208 | MSE/t: [0.00-0.50]0.525(n=6406) [0.50-0.85]0.397(n=5867) [0.85-0.95]0.339(n=506) [0.95-1.00]0.321(n=21)
+2026-04-29 00:38:41,319 - INFO - [cond] cfg_signal=0.0674 (min=0.0489 max=0.1054, n=16) | class_signal=0.0830 (min=0.0425 max=0.1083, n=16) | pred_rms=0.6716
+2026-04-29 00:38:49,352 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_014_step_0014000_class077.png (class=77, sampler=heun, steps=100)
+2026-04-29 00:40:15,199 - INFO - Step   14200 | Epoch  14 | MSE: 0.4606 | Steps/sec: 2.13 | LR: 1.98e-04 | cos(c,null): +0.0121 | GradNorm: 0.0219 | MSE/t: [0.00-0.50]0.526(n=6438) [0.50-0.85]0.398(n=5801) [0.85-0.95]0.368(n=543) [0.95-1.00]0.338(n=18)
+2026-04-29 00:41:39,745 - INFO - Step   14400 | Epoch  14 | MSE: 0.4643 | Steps/sec: 2.37 | LR: 1.98e-04 | cos(c,null): +0.0131 | GradNorm: 0.0170 | MSE/t: [0.00-0.50]0.534(n=6410) [0.50-0.85]0.398(n=5856) [0.85-0.95]0.350(n=510) [0.95-1.00]0.351(n=24)
+2026-04-29 00:43:04,230 - INFO - Step   14600 | Epoch  14 | MSE: 0.4652 | Steps/sec: 2.37 | LR: 1.98e-04 | cos(c,null): +0.0119 | GradNorm: 0.0183 | MSE/t: [0.00-0.50]0.534(n=6425) [0.50-0.85]0.400(n=5849) [0.85-0.95]0.348(n=507) [0.95-1.00]0.383(n=19)
+2026-04-29 00:44:28,759 - INFO - Step   14800 | Epoch  14 | MSE: 0.4590 | Steps/sec: 2.37 | LR: 1.98e-04 | cos(c,null): +0.0140 | GradNorm: 0.0192 | MSE/t: [0.00-0.50]0.529(n=6390) [0.50-0.85]0.393(n=5865) [0.85-0.95]0.342(n=524) [0.95-1.00]0.382(n=21)
+2026-04-29 00:45:53,410 - INFO - Step   15000 | Epoch  15 | MSE: 0.4642 | Steps/sec: 2.36 | LR: 1.97e-04 | cos(c,null): +0.0136 | GradNorm: 0.0185 | MSE/t: [0.00-0.50]0.534(n=6335) [0.50-0.85]0.399(n=5927) [0.85-0.95]0.351(n=515) [0.95-1.00]0.370(n=23)
+2026-04-29 00:45:53,625 - INFO - [cond] cfg_signal=0.0667 (min=0.0448 max=0.1160, n=16) | class_signal=0.0826 (min=0.0409 max=0.1225, n=16) | pred_rms=0.6571
+2026-04-29 00:46:01,584 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_015_step_0015000_class039.png (class=39, sampler=heun, steps=100)
+2026-04-29 00:47:26,893 - INFO - Step   15200 | Epoch  15 | MSE: 0.4613 | Steps/sec: 2.14 | LR: 1.97e-04 | cos(c,null): +0.0135 | GradNorm: 0.0205 | MSE/t: [0.00-0.50]0.526(n=6359) [0.50-0.85]0.401(n=5917) [0.85-0.95]0.353(n=500) [0.95-1.00]0.376(n=24)
+2026-04-29 00:48:51,403 - INFO - Step   15400 | Epoch  15 | MSE: 0.4594 | Steps/sec: 2.37 | LR: 1.97e-04 | cos(c,null): +0.0120 | GradNorm: 0.0165 | MSE/t: [0.00-0.50]0.527(n=6396) [0.50-0.85]0.397(n=5883) [0.85-0.95]0.339(n=507) [0.95-1.00]0.359(n=14)
+2026-04-29 00:50:15,928 - INFO - Step   15600 | Epoch  15 | MSE: 0.4578 | Steps/sec: 2.37 | LR: 1.97e-04 | cos(c,null): +0.0134 | GradNorm: 0.0184 | MSE/t: [0.00-0.50]0.527(n=6351) [0.50-0.85]0.392(n=5905) [0.85-0.95]0.354(n=518) [0.95-1.00]0.342(n=26)
+2026-04-29 00:51:40,433 - INFO - Step   15800 | Epoch  15 | MSE: 0.4669 | Steps/sec: 2.37 | LR: 1.97e-04 | cos(c,null): +0.0134 | GradNorm: 0.0182 | MSE/t: [0.00-0.50]0.534(n=6382) [0.50-0.85]0.403(n=5885) [0.85-0.95]0.368(n=513) [0.95-1.00]0.392(n=20)
+2026-04-29 00:53:05,121 - INFO - Step   16000 | Epoch  16 | MSE: 0.4616 | Steps/sec: 2.36 | LR: 1.97e-04 | cos(c,null): +0.0093 | GradNorm: 0.0191 | MSE/t: [0.00-0.50]0.530(n=6429) [0.50-0.85]0.397(n=5838) [0.85-0.95]0.336(n=507) [0.95-1.00]0.408(n=26)
+2026-04-29 00:53:05,333 - INFO - [cond] cfg_signal=0.0661 (min=0.0424 max=0.1098, n=16) | class_signal=0.0824 (min=0.0396 max=0.1245, n=16) | pred_rms=0.6431
+2026-04-29 00:53:13,452 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_016_step_0016000_class093.png (class=93, sampler=heun, steps=100)
+2026-04-29 00:54:38,769 - INFO - Step   16200 | Epoch  16 | MSE: 0.4609 | Steps/sec: 2.14 | LR: 1.97e-04 | cos(c,null): +0.0082 | GradNorm: 0.0188 | MSE/t: [0.00-0.50]0.527(n=6477) [0.50-0.85]0.398(n=5754) [0.85-0.95]0.340(n=544) [0.95-1.00]0.379(n=25)
+2026-04-29 00:56:03,252 - INFO - Step   16400 | Epoch  16 | MSE: 0.4622 | Steps/sec: 2.37 | LR: 1.97e-04 | cos(c,null): +0.0091 | GradNorm: 0.0164 | MSE/t: [0.00-0.50]0.526(n=6453) [0.50-0.85]0.401(n=5841) [0.85-0.95]0.367(n=485) [0.95-1.00]0.272(n=21)
+2026-04-29 00:57:27,719 - INFO - Step   16600 | Epoch  16 | MSE: 0.4593 | Steps/sec: 2.37 | LR: 1.97e-04 | cos(c,null): +0.0090 | GradNorm: 0.0185 | MSE/t: [0.00-0.50]0.526(n=6348) [0.50-0.85]0.398(n=5927) [0.85-0.95]0.350(n=506) [0.95-1.00]0.314(n=19)
+2026-04-29 00:58:52,228 - INFO - Step   16800 | Epoch  16 | MSE: 0.4592 | Steps/sec: 2.37 | LR: 1.97e-04 | cos(c,null): +0.0088 | GradNorm: 0.0188 | MSE/t: [0.00-0.50]0.526(n=6375) [0.50-0.85]0.398(n=5910) [0.85-0.95]0.333(n=499) [0.95-1.00]0.420(n=16)
+2026-04-29 01:00:16,890 - INFO - Step   17000 | Epoch  17 | MSE: 0.4632 | Steps/sec: 2.36 | LR: 1.97e-04 | cos(c,null): +0.0105 | GradNorm: 0.0188 | MSE/t: [0.00-0.50]0.535(n=6326) [0.50-0.85]0.396(n=5927) [0.85-0.95]0.357(n=527) [0.95-1.00]0.417(n=20)
+2026-04-29 01:00:17,103 - INFO - [cond] cfg_signal=0.0649 (min=0.0421 max=0.1022, n=16) | class_signal=0.0832 (min=0.0420 max=0.1183, n=16) | pred_rms=0.6519
+2026-04-29 01:00:25,172 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_017_step_0017000_class087.png (class=87, sampler=heun, steps=100)
+2026-04-29 01:01:50,353 - INFO - Step   17200 | Epoch  17 | MSE: 0.4589 | Steps/sec: 2.14 | LR: 1.97e-04 | cos(c,null): +0.0126 | GradNorm: 0.0170 | MSE/t: [0.00-0.50]0.522(n=6508) [0.50-0.85]0.399(n=5781) [0.85-0.95]0.342(n=488) [0.95-1.00]0.370(n=23)
+2026-04-29 01:03:14,807 - INFO - Step   17400 | Epoch  17 | MSE: 0.4613 | Steps/sec: 2.37 | LR: 1.97e-04 | cos(c,null): +0.0139 | GradNorm: 0.0171 | MSE/t: [0.00-0.50]0.532(n=6419) [0.50-0.85]0.393(n=5843) [0.85-0.95]0.364(n=517) [0.95-1.00]0.327(n=21)
+2026-04-29 01:04:39,277 - INFO - Step   17600 | Epoch  17 | MSE: 0.4563 | Steps/sec: 2.37 | LR: 1.97e-04 | cos(c,null): +0.0139 | GradNorm: 0.0181 | MSE/t: [0.00-0.50]0.519(n=6406) [0.50-0.85]0.399(n=5866) [0.85-0.95]0.341(n=506) [0.95-1.00]0.370(n=22)
+2026-04-29 01:06:03,666 - INFO - Step   17800 | Epoch  17 | MSE: 0.4569 | Steps/sec: 2.37 | LR: 1.96e-04 | cos(c,null): +0.0156 | GradNorm: 0.0159 | MSE/t: [0.00-0.50]0.521(n=6499) [0.50-0.85]0.394(n=5799) [0.85-0.95]0.352(n=479) [0.95-1.00]0.381(n=23)
+2026-04-29 01:07:28,275 - INFO - Step   18000 | Epoch  18 | MSE: 0.4538 | Steps/sec: 2.36 | LR: 1.96e-04 | cos(c,null): +0.0168 | GradNorm: 0.0162 | MSE/t: [0.00-0.50]0.521(n=6376) [0.50-0.85]0.392(n=5896) [0.85-0.95]0.345(n=508) [0.95-1.00]0.288(n=20)
+2026-04-29 01:07:28,489 - INFO - [cond] cfg_signal=0.0676 (min=0.0446 max=0.1055, n=16) | class_signal=0.0837 (min=0.0398 max=0.1119, n=16) | pred_rms=0.6817
+2026-04-29 01:07:36,513 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_018_step_0018000_class060.png (class=60, sampler=heun, steps=100)
+2026-04-29 01:09:01,615 - INFO - Step   18200 | Epoch  18 | MSE: 0.4558 | Steps/sec: 2.15 | LR: 1.96e-04 | cos(c,null): +0.0163 | GradNorm: 0.0197 | MSE/t: [0.00-0.50]0.523(n=6303) [0.50-0.85]0.395(n=5955) [0.85-0.95]0.346(n=524) [0.95-1.00]0.291(n=18)
+2026-04-29 01:10:25,971 - INFO - Step   18400 | Epoch  18 | MSE: 0.4589 | Steps/sec: 2.37 | LR: 1.96e-04 | cos(c,null): +0.0156 | GradNorm: 0.0176 | MSE/t: [0.00-0.50]0.525(n=6474) [0.50-0.85]0.395(n=5813) [0.85-0.95]0.348(n=491) [0.95-1.00]0.325(n=22)
+2026-04-29 01:11:50,301 - INFO - Step   18600 | Epoch  18 | MSE: 0.4566 | Steps/sec: 2.37 | LR: 1.96e-04 | cos(c,null): +0.0178 | GradNorm: 0.0184 | MSE/t: [0.00-0.50]0.523(n=6378) [0.50-0.85]0.395(n=5906) [0.85-0.95]0.342(n=494) [0.95-1.00]0.274(n=22)
+2026-04-29 01:13:14,672 - INFO - Step   18800 | Epoch  18 | MSE: 0.4632 | Steps/sec: 2.37 | LR: 1.96e-04 | cos(c,null): +0.0213 | GradNorm: 0.0181 | MSE/t: [0.00-0.50]0.531(n=6432) [0.50-0.85]0.398(n=5857) [0.85-0.95]0.351(n=489) [0.95-1.00]0.398(n=22)
+2026-04-29 01:14:39,192 - INFO - Step   19000 | Epoch  19 | MSE: 0.4599 | Steps/sec: 2.37 | LR: 1.96e-04 | cos(c,null): +0.0247 | GradNorm: 0.0200 | MSE/t: [0.00-0.50]0.526(n=6428) [0.50-0.85]0.396(n=5861) [0.85-0.95]0.359(n=485) [0.95-1.00]0.403(n=26)
+2026-04-29 01:14:39,405 - INFO - [cond] cfg_signal=0.0675 (min=0.0478 max=0.1077, n=16) | class_signal=0.0864 (min=0.0418 max=0.1284, n=16) | pred_rms=0.6669
+2026-04-29 01:14:47,562 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_019_step_0019000_class012.png (class=12, sampler=heun, steps=100)
+2026-04-29 01:16:12,621 - INFO - Step   19200 | Epoch  19 | MSE: 0.4598 | Steps/sec: 2.15 | LR: 1.96e-04 | cos(c,null): +0.0287 | GradNorm: 0.0188 | MSE/t: [0.00-0.50]0.528(n=6428) [0.50-0.85]0.395(n=5849) [0.85-0.95]0.348(n=506) [0.95-1.00]0.380(n=17)
+2026-04-29 01:17:36,970 - INFO - Step   19400 | Epoch  19 | MSE: 0.4648 | Steps/sec: 2.37 | LR: 1.96e-04 | cos(c,null): +0.0304 | GradNorm: 0.0167 | MSE/t: [0.00-0.50]0.533(n=6407) [0.50-0.85]0.400(n=5894) [0.85-0.95]0.354(n=484) [0.95-1.00]0.276(n=15)
+2026-04-29 01:19:01,216 - INFO - Step   19600 | Epoch  19 | MSE: 0.4651 | Steps/sec: 2.37 | LR: 1.96e-04 | cos(c,null): +0.0334 | GradNorm: 0.0166 | MSE/t: [0.00-0.50]0.538(n=6431) [0.50-0.85]0.396(n=5814) [0.85-0.95]0.346(n=537) [0.95-1.00]0.266(n=18)
+2026-04-29 01:20:25,577 - INFO - Step   19800 | Epoch  19 | MSE: 0.4631 | Steps/sec: 2.37 | LR: 1.96e-04 | cos(c,null): +0.0356 | GradNorm: 0.0170 | MSE/t: [0.00-0.50]0.535(n=6382) [0.50-0.85]0.395(n=5848) [0.85-0.95]0.364(n=543) [0.95-1.00]0.350(n=27)
+2026-04-29 01:21:50,031 - INFO - Step   20000 | Epoch  20 | MSE: 0.4589 | Steps/sec: 2.37 | LR: 1.95e-04 | cos(c,null): +0.0370 | GradNorm: 0.0171 | MSE/t: [0.00-0.50]0.530(n=6337) [0.50-0.85]0.394(n=5959) [0.85-0.95]0.331(n=480) [0.95-1.00]0.484(n=24)
+2026-04-29 01:21:50,245 - INFO - [cond] cfg_signal=0.0785 (min=0.0517 max=0.1409, n=16) | class_signal=0.1014 (min=0.0457 max=0.1530, n=16) | pred_rms=0.6907
+2026-04-29 01:21:53,407 - INFO - Saved checkpoint to output/jit_B8_profile_20260428_225254/0020000.pt
+2026-04-29 01:21:53,615 - INFO - [cond] cfg_signal=0.0785 (min=0.0517 max=0.1409, n=16) | class_signal=0.1014 (min=0.0457 max=0.1530, n=16) | pred_rms=0.6907
+2026-04-29 01:22:01,686 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_020_step_0020000_class055.png (class=55, sampler=heun, steps=100)
+2026-04-29 01:23:26,759 - INFO - Step   20200 | Epoch  20 | MSE: 0.4638 | Steps/sec: 2.07 | LR: 1.95e-04 | cos(c,null): +0.0356 | GradNorm: 0.0178 | MSE/t: [0.00-0.50]0.529(n=6463) [0.50-0.85]0.401(n=5797) [0.85-0.95]0.357(n=522) [0.95-1.00]0.365(n=18)
+2026-04-29 01:24:50,994 - INFO - Step   20400 | Epoch  20 | MSE: 0.4604 | Steps/sec: 2.37 | LR: 1.95e-04 | cos(c,null): +0.0239 | GradNorm: 0.0183 | MSE/t: [0.00-0.50]0.527(n=6412) [0.50-0.85]0.397(n=5833) [0.85-0.95]0.359(n=530) [0.95-1.00]0.323(n=25)
+2026-04-29 01:26:15,287 - INFO - Step   20600 | Epoch  20 | MSE: 0.4595 | Steps/sec: 2.37 | LR: 1.95e-04 | cos(c,null): +0.0272 | GradNorm: 0.0185 | MSE/t: [0.00-0.50]0.529(n=6286) [0.50-0.85]0.397(n=5966) [0.85-0.95]0.346(n=529) [0.95-1.00]0.352(n=19)
+2026-04-29 01:27:39,539 - INFO - Step   20800 | Epoch  20 | MSE: 0.4633 | Steps/sec: 2.37 | LR: 1.95e-04 | cos(c,null): +0.0327 | GradNorm: 0.0208 | MSE/t: [0.00-0.50]0.534(n=6443) [0.50-0.85]0.395(n=5796) [0.85-0.95]0.351(n=530) [0.95-1.00]0.341(n=31)
+2026-04-29 01:29:03,869 - INFO - Step   21000 | Epoch  21 | MSE: 0.4616 | Steps/sec: 2.37 | LR: 1.95e-04 | cos(c,null): +0.0364 | GradNorm: 0.0159 | MSE/t: [0.00-0.50]0.532(n=6382) [0.50-0.85]0.397(n=5905) [0.85-0.95]0.335(n=498) [0.95-1.00]0.387(n=15)
+2026-04-29 01:29:04,085 - INFO - [cond] cfg_signal=0.0667 (min=0.0436 max=0.1178, n=16) | class_signal=0.0853 (min=0.0421 max=0.1228, n=16) | pred_rms=0.6669
+2026-04-29 01:29:12,151 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_021_step_0021000_class078.png (class=78, sampler=heun, steps=100)
+2026-04-29 01:30:36,981 - INFO - Step   21200 | Epoch  21 | MSE: 0.4558 | Steps/sec: 2.15 | LR: 1.95e-04 | cos(c,null): +0.0376 | GradNorm: 0.0148 | MSE/t: [0.00-0.50]0.525(n=6330) [0.50-0.85]0.392(n=5934) [0.85-0.95]0.348(n=515) [0.95-1.00]0.325(n=21)
+2026-04-29 01:32:01,076 - INFO - Step   21400 | Epoch  21 | MSE: 0.4590 | Steps/sec: 2.38 | LR: 1.95e-04 | cos(c,null): +0.0406 | GradNorm: 0.0154 | MSE/t: [0.00-0.50]0.524(n=6428) [0.50-0.85]0.398(n=5796) [0.85-0.95]0.345(n=555) [0.95-1.00]0.317(n=21)
+2026-04-29 01:33:25,109 - INFO - Step   21600 | Epoch  21 | MSE: 0.4571 | Steps/sec: 2.38 | LR: 1.95e-04 | cos(c,null): +0.0414 | GradNorm: 0.0182 | MSE/t: [0.00-0.50]0.526(n=6416) [0.50-0.85]0.391(n=5870) [0.85-0.95]0.349(n=495) [0.95-1.00]0.307(n=19)
+2026-04-29 01:34:49,163 - INFO - Step   21800 | Epoch  21 | MSE: 0.4585 | Steps/sec: 2.38 | LR: 1.95e-04 | cos(c,null): +0.0408 | GradNorm: 0.0171 | MSE/t: [0.00-0.50]0.526(n=6386) [0.50-0.85]0.395(n=5832) [0.85-0.95]0.347(n=558) [0.95-1.00]0.424(n=24)
+2026-04-29 01:36:13,415 - INFO - Step   22000 | Epoch  22 | MSE: 0.4607 | Steps/sec: 2.37 | LR: 1.95e-04 | cos(c,null): +0.0339 | GradNorm: 0.0159 | MSE/t: [0.00-0.50]0.527(n=6468) [0.50-0.85]0.397(n=5840) [0.85-0.95]0.352(n=474) [0.95-1.00]0.363(n=18)
+2026-04-29 01:36:13,630 - INFO - [cond] cfg_signal=0.0746 (min=0.0387 max=0.1396, n=16) | class_signal=0.0956 (min=0.0474 max=0.1505, n=16) | pred_rms=0.6601
+2026-04-29 01:36:21,609 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_022_step_0022000_class026.png (class=26, sampler=heun, steps=100)
+2026-04-29 01:37:46,425 - INFO - Step   22200 | Epoch  22 | MSE: 0.4605 | Steps/sec: 2.16 | LR: 1.94e-04 | cos(c,null): +0.0290 | GradNorm: 0.0162 | MSE/t: [0.00-0.50]0.533(n=6325) [0.50-0.85]0.395(n=5940) [0.85-0.95]0.337(n=517) [0.95-1.00]0.302(n=18)
+2026-04-29 01:39:10,481 - INFO - Step   22400 | Epoch  22 | MSE: 0.4623 | Steps/sec: 2.38 | LR: 1.94e-04 | cos(c,null): +0.0260 | GradNorm: 0.0163 | MSE/t: [0.00-0.50]0.534(n=6375) [0.50-0.85]0.394(n=5870) [0.85-0.95]0.358(n=543) [0.95-1.00]0.358(n=12)
+2026-04-29 01:40:34,513 - INFO - Step   22600 | Epoch  22 | MSE: 0.4628 | Steps/sec: 2.38 | LR: 1.94e-04 | cos(c,null): +0.0264 | GradNorm: 0.0181 | MSE/t: [0.00-0.50]0.536(n=6288) [0.50-0.85]0.397(n=5964) [0.85-0.95]0.335(n=524) [0.95-1.00]0.413(n=24)
+2026-04-29 01:41:58,505 - INFO - Step   22800 | Epoch  22 | MSE: 0.4569 | Steps/sec: 2.38 | LR: 1.94e-04 | cos(c,null): +0.0295 | GradNorm: 0.0149 | MSE/t: [0.00-0.50]0.529(n=6392) [0.50-0.85]0.389(n=5865) [0.85-0.95]0.342(n=517) [0.95-1.00]0.272(n=26)
+2026-04-29 01:43:22,800 - INFO - Step   23000 | Epoch  23 | MSE: 0.4585 | Steps/sec: 2.37 | LR: 1.94e-04 | cos(c,null): +0.0322 | GradNorm: 0.0165 | MSE/t: [0.00-0.50]0.530(n=6452) [0.50-0.85]0.391(n=5835) [0.85-0.95]0.334(n=497) [0.95-1.00]0.342(n=16)
+2026-04-29 01:43:23,014 - INFO - [cond] cfg_signal=0.0779 (min=0.0461 max=0.1372, n=16) | class_signal=0.0966 (min=0.0466 max=0.1439, n=16) | pred_rms=0.7207
+2026-04-29 01:43:31,027 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_023_step_0023000_class061.png (class=61, sampler=heun, steps=100)
+2026-04-29 01:44:55,788 - INFO - Step   23200 | Epoch  23 | MSE: 0.4620 | Steps/sec: 2.16 | LR: 1.94e-04 | cos(c,null): +0.0354 | GradNorm: 0.0152 | MSE/t: [0.00-0.50]0.533(n=6502) [0.50-0.85]0.392(n=5766) [0.85-0.95]0.352(n=505) [0.95-1.00]0.305(n=27)
+2026-04-29 01:46:19,801 - INFO - Step   23400 | Epoch  23 | MSE: 0.4581 | Steps/sec: 2.38 | LR: 1.94e-04 | cos(c,null): +0.0390 | GradNorm: 0.0160 | MSE/t: [0.00-0.50]0.527(n=6318) [0.50-0.85]0.395(n=5929) [0.85-0.95]0.354(n=530) [0.95-1.00]0.355(n=23)
+2026-04-29 01:47:43,816 - INFO - Step   23600 | Epoch  23 | MSE: 0.4632 | Steps/sec: 2.38 | LR: 1.94e-04 | cos(c,null): +0.0411 | GradNorm: 0.0158 | MSE/t: [0.00-0.50]0.532(n=6368) [0.50-0.85]0.400(n=5909) [0.85-0.95]0.350(n=501) [0.95-1.00]0.286(n=22)
+2026-04-29 01:49:07,849 - INFO - Step   23800 | Epoch  23 | MSE: 0.4577 | Steps/sec: 2.38 | LR: 1.94e-04 | cos(c,null): +0.0465 | GradNorm: 0.0192 | MSE/t: [0.00-0.50]0.528(n=6412) [0.50-0.85]0.392(n=5863) [0.85-0.95]0.330(n=511) [0.95-1.00]0.301(n=14)
+2026-04-29 01:50:32,060 - INFO - Step   24000 | Epoch  24 | MSE: 0.4578 | Steps/sec: 2.38 | LR: 1.93e-04 | cos(c,null): +0.0434 | GradNorm: 0.0169 | MSE/t: [0.00-0.50]0.532(n=6353) [0.50-0.85]0.388(n=5884) [0.85-0.95]0.346(n=547) [0.95-1.00]0.355(n=16)
+2026-04-29 01:50:32,275 - INFO - [cond] cfg_signal=0.0702 (min=0.0415 max=0.1253, n=16) | class_signal=0.0848 (min=0.0449 max=0.1336, n=16) | pred_rms=0.6559
+2026-04-29 01:50:40,397 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_024_step_0024000_class066.png (class=66, sampler=heun, steps=100)
+2026-04-29 01:52:05,172 - INFO - Step   24200 | Epoch  24 | MSE: 0.4588 | Steps/sec: 2.15 | LR: 1.93e-04 | cos(c,null): +0.0348 | GradNorm: 0.0159 | MSE/t: [0.00-0.50]0.527(n=6454) [0.50-0.85]0.394(n=5811) [0.85-0.95]0.332(n=519) [0.95-1.00]0.352(n=16)
+2026-04-29 01:53:29,184 - INFO - Step   24400 | Epoch  24 | MSE: 0.4631 | Steps/sec: 2.38 | LR: 1.93e-04 | cos(c,null): +0.0380 | GradNorm: 0.0197 | MSE/t: [0.00-0.50]0.527(n=6359) [0.50-0.85]0.404(n=5929) [0.85-0.95]0.356(n=493) [0.95-1.00]0.341(n=19)
+2026-04-29 01:54:53,179 - INFO - Step   24600 | Epoch  24 | MSE: 0.4625 | Steps/sec: 2.38 | LR: 1.93e-04 | cos(c,null): +0.0396 | GradNorm: 0.0178 | MSE/t: [0.00-0.50]0.529(n=6418) [0.50-0.85]0.400(n=5847) [0.85-0.95]0.350(n=519) [0.95-1.00]0.407(n=16)
+2026-04-29 01:56:17,173 - INFO - Step   24800 | Epoch  24 | MSE: 0.4605 | Steps/sec: 2.38 | LR: 1.93e-04 | cos(c,null): +0.0347 | GradNorm: 0.0158 | MSE/t: [0.00-0.50]0.529(n=6393) [0.50-0.85]0.397(n=5877) [0.85-0.95]0.347(n=519) [0.95-1.00]0.283(n=11)
+2026-04-29 01:57:41,423 - INFO - Step   25000 | Epoch  25 | MSE: 0.4549 | Steps/sec: 2.37 | LR: 1.93e-04 | cos(c,null): +0.0374 | GradNorm: 0.0149 | MSE/t: [0.00-0.50]0.521(n=6431) [0.50-0.85]0.391(n=5848) [0.85-0.95]0.358(n=502) [0.95-1.00]0.388(n=19)
+2026-04-29 01:57:41,637 - INFO - [cond] cfg_signal=0.0706 (min=0.0476 max=0.1125, n=16) | class_signal=0.0868 (min=0.0440 max=0.1452, n=16) | pred_rms=0.7006
+2026-04-29 01:57:49,707 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_025_step_0025000_class007.png (class=7, sampler=heun, steps=100)
+2026-04-29 01:59:14,517 - INFO - Step   25200 | Epoch  25 | MSE: 0.4619 | Steps/sec: 2.15 | LR: 1.93e-04 | cos(c,null): +0.0412 | GradNorm: 0.0158 | MSE/t: [0.00-0.50]0.534(n=6357) [0.50-0.85]0.394(n=5912) [0.85-0.95]0.347(n=506) [0.95-1.00]0.309(n=25)
+2026-04-29 02:00:38,568 - INFO - Step   25400 | Epoch  25 | MSE: 0.4612 | Steps/sec: 2.38 | LR: 1.93e-04 | cos(c,null): +0.0451 | GradNorm: 0.0159 | MSE/t: [0.00-0.50]0.534(n=6384) [0.50-0.85]0.393(n=5888) [0.85-0.95]0.343(n=506) [0.95-1.00]0.415(n=22)
+2026-04-29 02:02:02,639 - INFO - Step   25600 | Epoch  25 | MSE: 0.4605 | Steps/sec: 2.38 | LR: 1.93e-04 | cos(c,null): +0.0442 | GradNorm: 0.0164 | MSE/t: [0.00-0.50]0.533(n=6393) [0.50-0.85]0.393(n=5917) [0.85-0.95]0.341(n=466) [0.95-1.00]0.296(n=24)
+2026-04-29 02:03:26,675 - INFO - Step   25800 | Epoch  25 | MSE: 0.4572 | Steps/sec: 2.38 | LR: 1.92e-04 | cos(c,null): +0.0494 | GradNorm: 0.0182 | MSE/t: [0.00-0.50]0.528(n=6430) [0.50-0.85]0.391(n=5793) [0.85-0.95]0.334(n=550) [0.95-1.00]0.396(n=27)
+2026-04-29 02:04:50,867 - INFO - Step   26000 | Epoch  26 | MSE: 0.4608 | Steps/sec: 2.38 | LR: 1.92e-04 | cos(c,null): +0.0429 | GradNorm: 0.0172 | MSE/t: [0.00-0.50]0.528(n=6455) [0.50-0.85]0.397(n=5804) [0.85-0.95]0.348(n=521) [0.95-1.00]0.399(n=20)
+2026-04-29 02:04:51,082 - INFO - [cond] cfg_signal=0.0718 (min=0.0390 max=0.1237, n=16) | class_signal=0.0907 (min=0.0455 max=0.1397, n=16) | pred_rms=0.7036
+2026-04-29 02:04:59,080 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_026_step_0026000_class070.png (class=70, sampler=heun, steps=100)
+2026-04-29 02:06:23,977 - INFO - Step   26200 | Epoch  26 | MSE: 0.4582 | Steps/sec: 2.15 | LR: 1.92e-04 | cos(c,null): +0.0470 | GradNorm: 0.0174 | MSE/t: [0.00-0.50]0.524(n=6342) [0.50-0.85]0.399(n=5907) [0.85-0.95]0.334(n=524) [0.95-1.00]0.388(n=27)
+2026-04-29 02:07:48,013 - INFO - Step   26400 | Epoch  26 | MSE: 0.4537 | Steps/sec: 2.38 | LR: 1.92e-04 | cos(c,null): +0.0413 | GradNorm: 0.0157 | MSE/t: [0.00-0.50]0.524(n=6435) [0.50-0.85]0.386(n=5834) [0.85-0.95]0.351(n=513) [0.95-1.00]0.292(n=18)
+2026-04-29 02:09:12,087 - INFO - Step   26600 | Epoch  26 | MSE: 0.4645 | Steps/sec: 2.38 | LR: 1.92e-04 | cos(c,null): +0.0443 | GradNorm: 0.0143 | MSE/t: [0.00-0.50]0.532(n=6333) [0.50-0.85]0.404(n=5947) [0.85-0.95]0.340(n=501) [0.95-1.00]0.351(n=19)
+2026-04-29 02:10:36,606 - INFO - Step   26800 | Epoch  26 | MSE: 0.4632 | Steps/sec: 2.37 | LR: 1.92e-04 | cos(c,null): +0.0439 | GradNorm: 0.0151 | MSE/t: [0.00-0.50]0.534(n=6429) [0.50-0.85]0.395(n=5832) [0.85-0.95]0.352(n=507) [0.95-1.00]0.311(n=32)
+2026-04-29 02:12:00,970 - INFO - Step   27000 | Epoch  27 | MSE: 0.4571 | Steps/sec: 2.37 | LR: 1.92e-04 | cos(c,null): +0.0481 | GradNorm: 0.0169 | MSE/t: [0.00-0.50]0.527(n=6419) [0.50-0.85]0.392(n=5882) [0.85-0.95]0.336(n=488) [0.95-1.00]0.312(n=11)
+2026-04-29 02:12:01,186 - INFO - [cond] cfg_signal=0.0757 (min=0.0456 max=0.1222, n=16) | class_signal=0.0909 (min=0.0456 max=0.1353, n=16) | pred_rms=0.7053
+2026-04-29 02:12:09,210 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_027_step_0027000_class011.png (class=11, sampler=heun, steps=100)
+2026-04-29 02:13:34,223 - INFO - Step   27200 | Epoch  27 | MSE: 0.4562 | Steps/sec: 2.15 | LR: 1.92e-04 | cos(c,null): +0.0535 | GradNorm: 0.0151 | MSE/t: [0.00-0.50]0.519(n=6542) [0.50-0.85]0.396(n=5769) [0.85-0.95]0.326(n=470) [0.95-1.00]0.279(n=19)
+2026-04-29 02:14:58,381 - INFO - Step   27400 | Epoch  27 | MSE: 0.4593 | Steps/sec: 2.38 | LR: 1.91e-04 | cos(c,null): +0.0579 | GradNorm: 0.0159 | MSE/t: [0.00-0.50]0.530(n=6412) [0.50-0.85]0.391(n=5857) [0.85-0.95]0.357(n=510) [0.95-1.00]0.285(n=21)
+2026-04-29 02:16:22,567 - INFO - Step   27600 | Epoch  27 | MSE: 0.4573 | Steps/sec: 2.38 | LR: 1.91e-04 | cos(c,null): +0.0636 | GradNorm: 0.0170 | MSE/t: [0.00-0.50]0.528(n=6396) [0.50-0.85]0.390(n=5896) [0.85-0.95]0.351(n=481) [0.95-1.00]0.350(n=27)
+2026-04-29 02:17:46,720 - INFO - Step   27800 | Epoch  27 | MSE: 0.4604 | Steps/sec: 2.38 | LR: 1.91e-04 | cos(c,null): +0.0694 | GradNorm: 0.0170 | MSE/t: [0.00-0.50]0.532(n=6397) [0.50-0.85]0.393(n=5869) [0.85-0.95]0.349(n=513) [0.95-1.00]0.341(n=21)
+2026-04-29 02:19:11,035 - INFO - Step   28000 | Epoch  28 | MSE: 0.4562 | Steps/sec: 2.37 | LR: 1.91e-04 | cos(c,null): +0.0756 | GradNorm: 0.0156 | MSE/t: [0.00-0.50]0.528(n=6345) [0.50-0.85]0.390(n=5888) [0.85-0.95]0.344(n=541) [0.95-1.00]0.333(n=26)
+2026-04-29 02:19:11,252 - INFO - [cond] cfg_signal=0.0765 (min=0.0486 max=0.1375, n=16) | class_signal=0.0953 (min=0.0439 max=0.1480, n=16) | pred_rms=0.6816
+2026-04-29 02:19:19,333 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_028_step_0028000_class051.png (class=51, sampler=heun, steps=100)
+2026-04-29 02:20:44,323 - INFO - Step   28200 | Epoch  28 | MSE: 0.4617 | Steps/sec: 2.15 | LR: 1.91e-04 | cos(c,null): +0.0802 | GradNorm: 0.0142 | MSE/t: [0.00-0.50]0.532(n=6424) [0.50-0.85]0.396(n=5847) [0.85-0.95]0.338(n=506) [0.95-1.00]0.300(n=23)
+2026-04-29 02:22:08,541 - INFO - Step   28400 | Epoch  28 | MSE: 0.4604 | Steps/sec: 2.37 | LR: 1.91e-04 | cos(c,null): +0.0755 | GradNorm: 0.0167 | MSE/t: [0.00-0.50]0.524(n=6302) [0.50-0.85]0.401(n=6007) [0.85-0.95]0.371(n=476) [0.95-1.00]0.381(n=15)
+2026-04-29 02:23:32,793 - INFO - Step   28600 | Epoch  28 | MSE: 0.4587 | Steps/sec: 2.37 | LR: 1.91e-04 | cos(c,null): +0.0678 | GradNorm: 0.0159 | MSE/t: [0.00-0.50]0.530(n=6448) [0.50-0.85]0.390(n=5827) [0.85-0.95]0.353(n=503) [0.95-1.00]0.295(n=22)
+2026-04-29 02:24:57,214 - INFO - Step   28800 | Epoch  29 | MSE: 0.4602 | Steps/sec: 2.37 | LR: 1.91e-04 | cos(c,null): +0.0688 | GradNorm: 0.0147 | MSE/t: [0.00-0.50]0.534(n=6273) [0.50-0.85]0.393(n=6005) [0.85-0.95]0.352(n=497) [0.95-1.00]0.336(n=25)
+2026-04-29 02:26:21,458 - INFO - Step   29000 | Epoch  29 | MSE: 0.4580 | Steps/sec: 2.37 | LR: 1.90e-04 | cos(c,null): +0.0705 | GradNorm: 0.0161 | MSE/t: [0.00-0.50]0.530(n=6413) [0.50-0.85]0.391(n=5831) [0.85-0.95]0.334(n=535) [0.95-1.00]0.269(n=21)
+2026-04-29 02:26:21,672 - INFO - [cond] cfg_signal=0.0729 (min=0.0460 max=0.1270, n=16) | class_signal=0.0897 (min=0.0492 max=0.1431, n=16) | pred_rms=0.6606
+2026-04-29 02:26:29,686 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_029_step_0029000_class100.png (class=100, sampler=heun, steps=100)
+2026-04-29 02:27:54,751 - INFO - Step   29200 | Epoch  29 | MSE: 0.4596 | Steps/sec: 2.15 | LR: 1.90e-04 | cos(c,null): +0.0741 | GradNorm: 0.0151 | MSE/t: [0.00-0.50]0.533(n=6353) [0.50-0.85]0.391(n=5948) [0.85-0.95]0.347(n=477) [0.95-1.00]0.399(n=22)
+2026-04-29 02:29:18,982 - INFO - Step   29400 | Epoch  29 | MSE: 0.4572 | Steps/sec: 2.37 | LR: 1.90e-04 | cos(c,null): +0.0750 | GradNorm: 0.0148 | MSE/t: [0.00-0.50]0.522(n=6544) [0.50-0.85]0.395(n=5755) [0.85-0.95]0.332(n=480) [0.95-1.00]0.319(n=21)
+2026-04-29 02:30:43,313 - INFO - Step   29600 | Epoch  29 | MSE: 0.4598 | Steps/sec: 2.37 | LR: 1.90e-04 | cos(c,null): +0.0625 | GradNorm: 0.0175 | MSE/t: [0.00-0.50]0.535(n=6367) [0.50-0.85]0.389(n=5917) [0.85-0.95]0.347(n=496) [0.95-1.00]0.263(n=20)
+2026-04-29 02:32:07,746 - INFO - Step   29800 | Epoch  30 | MSE: 0.4607 | Steps/sec: 2.37 | LR: 1.90e-04 | cos(c,null): +0.0536 | GradNorm: 0.0194 | MSE/t: [0.00-0.50]0.531(n=6372) [0.50-0.85]0.396(n=5893) [0.85-0.95]0.342(n=511) [0.95-1.00]0.371(n=24)
+2026-04-29 02:33:32,058 - INFO - Step   30000 | Epoch  30 | MSE: 0.4598 | Steps/sec: 2.37 | LR: 1.90e-04 | cos(c,null): +0.0571 | GradNorm: 0.0167 | MSE/t: [0.00-0.50]0.526(n=6424) [0.50-0.85]0.396(n=5826) [0.85-0.95]0.354(n=530) [0.95-1.00]0.339(n=20)
+2026-04-29 02:33:32,274 - INFO - [cond] cfg_signal=0.0789 (min=0.0521 max=0.1418, n=16) | class_signal=0.0967 (min=0.0410 max=0.1593, n=16) | pred_rms=0.6830
+2026-04-29 02:33:40,349 - INFO - [validation] saved: output/jit_B8_profile_20260428_225254/dit_validation/epoch_030_step_0030000_class080.png (class=80, sampler=heun, steps=100)
+2026-04-29 02:33:41,125 - INFO - [overrides] applied from jit/configs/overrides.yaml: lr_scale=1.0 max_grad_norm=5.0 null_repel_weight=0.0 P_mean=0.0
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/home/hmolin/3DGen-Playground/jit/train_gsplat.py", line 2306, in <module>
+[rank0]:     main(args)
+[rank0]:   File "/home/hmolin/3DGen-Playground/jit/train_gsplat.py", line 1554, in main
+[rank0]:     render_l1_loss, render_alpha_l1_loss, render_lpips_loss = _compute_render_loss_for_batch(
+[rank0]:   File "/home/hmolin/3DGen-Playground/utils/gsplat_render_util.py", line 385, in _compute_render_loss_for_batch
+[rank0]:     lpips_per_sample = lpips_fn(pred_n, target_n).flatten().view(
+[rank0]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/lpips/lpips.py", line 123, in forward
+[rank0]:     feats0[kk], feats1[kk] = lpips.normalize_tensor(outs0[kk]), lpips.normalize_tensor(outs1[kk])
+[rank0]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/lpips/__init__.py", line 14, in normalize_tensor
+[rank0]:     norm_factor = torch.sqrt(torch.sum(in_feat**2,dim=1,keepdim=True))
+[rank0]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/_tensor.py", line 47, in wrapped
+[rank0]:     return f(self, *args, **kwargs)
+[rank0]: torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 512.00 MiB. GPU 0 has a total capacity of 22.04 GiB of which 121.00 MiB is free. Including non-PyTorch memory, this process has 21.91 GiB memory in use. Of the allocated memory 21.44 GiB is allocated by PyTorch, and 106.25 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+[rank3]: Traceback (most recent call last):
+[rank3]:   File "/home/hmolin/3DGen-Playground/jit/train_gsplat.py", line 2306, in <module>
+[rank3]:     main(args)
+[rank3]:   File "/home/hmolin/3DGen-Playground/jit/train_gsplat.py", line 1554, in main
+[rank3]:     render_l1_loss, render_alpha_l1_loss, render_lpips_loss = _compute_render_loss_for_batch(
+[rank3]:   File "/home/hmolin/3DGen-Playground/utils/gsplat_render_util.py", line 385, in _compute_render_loss_for_batch
+[rank3]:     lpips_per_sample = lpips_fn(pred_n, target_n).flatten().view(
+[rank3]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank3]:     return self._call_impl(*args, **kwargs)
+[rank3]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+[rank3]:     return forward_call(*args, **kwargs)
+[rank3]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/lpips/lpips.py", line 123, in forward
+[rank3]:     feats0[kk], feats1[kk] = lpips.normalize_tensor(outs0[kk]), lpips.normalize_tensor(outs1[kk])
+[rank3]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/lpips/__init__.py", line 14, in normalize_tensor
+[rank3]:     norm_factor = torch.sqrt(torch.sum(in_feat**2,dim=1,keepdim=True))
+[rank3]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/_tensor.py", line 47, in wrapped
+[rank3]:     return f(self, *args, **kwargs)
+[rank3]: torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 512.00 MiB. GPU 3 has a total capacity of 22.04 GiB of which 135.00 MiB is free. Including non-PyTorch memory, this process has 21.90 GiB memory in use. Of the allocated memory 21.43 GiB is allocated by PyTorch, and 106.85 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+[rank2]: Traceback (most recent call last):
+[rank2]:   File "/home/hmolin/3DGen-Playground/jit/train_gsplat.py", line 2306, in <module>
+[rank2]:     main(args)
+[rank2]:   File "/home/hmolin/3DGen-Playground/jit/train_gsplat.py", line 1554, in main
+[rank2]:     render_l1_loss, render_alpha_l1_loss, render_lpips_loss = _compute_render_loss_for_batch(
+[rank2]:   File "/home/hmolin/3DGen-Playground/utils/gsplat_render_util.py", line 385, in _compute_render_loss_for_batch
+[rank2]:     lpips_per_sample = lpips_fn(pred_n, target_n).flatten().view(
+[rank2]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank2]:     return self._call_impl(*args, **kwargs)
+[rank2]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+[rank2]:     return forward_call(*args, **kwargs)
+[rank2]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/lpips/lpips.py", line 123, in forward
+[rank2]:     feats0[kk], feats1[kk] = lpips.normalize_tensor(outs0[kk]), lpips.normalize_tensor(outs1[kk])
+[rank2]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/lpips/__init__.py", line 14, in normalize_tensor
+[rank2]:     norm_factor = torch.sqrt(torch.sum(in_feat**2,dim=1,keepdim=True))
+[rank2]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/_tensor.py", line 47, in wrapped
+[rank2]:     return f(self, *args, **kwargs)
+[rank2]: torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 512.00 MiB. GPU 2 has a total capacity of 22.04 GiB of which 135.00 MiB is free. Including non-PyTorch memory, this process has 21.90 GiB memory in use. Of the allocated memory 21.43 GiB is allocated by PyTorch, and 106.86 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/home/hmolin/3DGen-Playground/jit/train_gsplat.py", line 2306, in <module>
+[rank1]:     main(args)
+[rank1]:   File "/home/hmolin/3DGen-Playground/jit/train_gsplat.py", line 1554, in main
+[rank1]:     render_l1_loss, render_alpha_l1_loss, render_lpips_loss = _compute_render_loss_for_batch(
+[rank1]:   File "/home/hmolin/3DGen-Playground/utils/gsplat_render_util.py", line 385, in _compute_render_loss_for_batch
+[rank1]:     lpips_per_sample = lpips_fn(pred_n, target_n).flatten().view(
+[rank1]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+[rank1]:     return forward_call(*args, **kwargs)
+[rank1]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/lpips/lpips.py", line 123, in forward
+[rank1]:     feats0[kk], feats1[kk] = lpips.normalize_tensor(outs0[kk]), lpips.normalize_tensor(outs1[kk])
+[rank1]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/lpips/__init__.py", line 14, in normalize_tensor
+[rank1]:     norm_factor = torch.sqrt(torch.sum(in_feat**2,dim=1,keepdim=True))
+[rank1]:   File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/_tensor.py", line 47, in wrapped
+[rank1]:     return f(self, *args, **kwargs)
+[rank1]: torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 512.00 MiB. GPU 1 has a total capacity of 22.04 GiB of which 155.00 MiB is free. Including non-PyTorch memory, this process has 21.88 GiB memory in use. Of the allocated memory 21.43 GiB is allocated by PyTorch, and 86.68 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+[rank0]:[W429 02:34:06.501042777 ProcessGroupNCCL.cpp:1575] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+W0429 02:34:08.662000 45752 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 45908 closing signal SIGTERM
+W0429 02:34:08.663000 45752 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 45909 closing signal SIGTERM
+E0429 02:34:08.828000 45752 torch/distributed/elastic/multiprocessing/api.py:986] failed (exitcode: 1) local_rank: 2 (pid: 45910) of binary: /home/hmolin/3DGen-Playground/.3dgen/bin/python3
+Traceback (most recent call last):
+  File "/home/hmolin/3DGen-Playground/.3dgen/bin/accelerate", line 8, in <module>
+    sys.exit(main())
+  File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/accelerate/commands/accelerate_cli.py", line 50, in main
+    args.func(args)
+  File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/accelerate/commands/launch.py", line 1396, in launch_command
+    multi_gpu_launcher(args)
+  File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/accelerate/commands/launch.py", line 1023, in multi_gpu_launcher
+    distrib_run.run(args)
+  File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/distributed/run.py", line 981, in run
+    elastic_launch(
+  File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 170, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 317, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+jit/train_gsplat.py FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-04-29_02:34:08
+  host      : yusu-l4.c.gcp-langmotion.internal
+  rank      : 3 (local_rank: 3)
+  exitcode  : 1 (pid: 45911)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+[2]:
+  time      : 2026-04-29_02:34:08
+  host      : yusu-l4.c.gcp-langmotion.internal
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 45908)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+[3]:
+  time      : 2026-04-29_02:34:08
+  host      : yusu-l4.c.gcp-langmotion.internal
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 45909)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-04-29_02:34:08
+  host      : yusu-l4.c.gcp-langmotion.internal
+  rank      : 2 (local_rank: 2)
+  exitcode  : 1 (pid: 45910)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

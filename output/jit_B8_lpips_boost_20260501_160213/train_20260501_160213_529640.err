@@ -1,0 +1,252 @@
+2026-05-01 16:02:24,103 - INFO - Accelerator: num_processes=4, mixed_precision=bf16, device=cuda:0
+2026-05-01 16:02:24,103 - INFO - Validation sampler: heun
+2026-05-01 16:02:24,412 - INFO - Loading class map from /home/hmolin/3DGen-Playground/object_labels/image_kmeans_k103/object_to_class.json
+2026-05-01 16:02:24,581 - INFO - Loading sphere2plane permutation from /home/tiangexiang/gen3d/gaussianverse/sphere2plane.npy
+2026-05-01 16:02:24,581 - INFO - Number of classes: 103
+2026-05-01 16:02:24,581 - INFO - Creating base dataset...
+2026-05-01 16:02:24,581 - INFO - Loading sphere2plane permutation from /home/tiangexiang/gen3d/gaussianverse/sphere2plane.npy
+2026-05-01 16:02:24,581 - INFO - Loading sphere2plane permutation from /home/tiangexiang/gen3d/gaussianverse/sphere2plane.npy
+2026-05-01 16:02:24,581 - INFO - Loading sphere2plane permutation from /home/tiangexiang/gen3d/gaussianverse/sphere2plane.npy
+2026-05-01 16:02:24,589 - INFO - Loading obj list from /home/tiangexiang/gen3d/gaussianverse/all_obj_list_filtered.json
+2026-05-01 16:02:24,589 - INFO - Loading obj list from /home/tiangexiang/gen3d/gaussianverse/all_obj_list_filtered.json
+2026-05-01 16:02:24,589 - INFO - Loading obj list from /home/tiangexiang/gen3d/gaussianverse/all_obj_list_filtered.json
+2026-05-01 16:02:24,589 - INFO - Loading obj list from /home/tiangexiang/gen3d/gaussianverse/all_obj_list_filtered.json
+2026-05-01 16:02:24,833 - INFO - Loaded 254338 entries from /home/tiangexiang/gen3d/gaussianverse/all_obj_list_filtered.json
+2026-05-01 16:02:24,833 - INFO - Loaded 254338 entries from /home/tiangexiang/gen3d/gaussianverse/all_obj_list_filtered.json
+2026-05-01 16:02:24,833 - INFO - Loaded 254338 entries from /home/tiangexiang/gen3d/gaussianverse/all_obj_list_filtered.json
+2026-05-01 16:02:24,833 - INFO - Loaded 254338 entries from /home/tiangexiang/gen3d/gaussianverse/all_obj_list_filtered.json
+2026-05-01 16:02:24,839 - INFO - Total merged entries: 254338
+2026-05-01 16:02:24,840 - INFO - Total merged entries: 254338
+2026-05-01 16:02:24,840 - INFO - Total merged entries: 254338
+2026-05-01 16:02:24,840 - INFO - Total merged entries: 254338
+2026-05-01 16:02:24,848 - INFO - Loading normalization statistics from /home/tiangexiang/gen3d/3DGen-Playground/data/stats/all_mean.pt and /home/tiangexiang/gen3d/3DGen-Playground/data/stats/all_std.pt
+2026-05-01 16:02:24,848 - INFO - Loading normalization statistics from /home/tiangexiang/gen3d/3DGen-Playground/data/stats/all_mean.pt and /home/tiangexiang/gen3d/3DGen-Playground/data/stats/all_std.pt
+2026-05-01 16:02:24,848 - INFO - Loading normalization statistics from /home/tiangexiang/gen3d/3DGen-Playground/data/stats/all_mean.pt and /home/tiangexiang/gen3d/3DGen-Playground/data/stats/all_std.pt
+2026-05-01 16:02:24,848 - INFO - Loading normalization statistics from /home/tiangexiang/gen3d/3DGen-Playground/data/stats/all_mean.pt and /home/tiangexiang/gen3d/3DGen-Playground/data/stats/all_std.pt
+2026-05-01 16:02:24,859 - INFO - Initialized dataset with 254338 samples
+2026-05-01 16:02:24,859 - INFO - Initialized dataset with 254338 samples
+2026-05-01 16:02:24,859 - INFO - Initialized dataset with 254338 samples
+2026-05-01 16:02:24,859 - INFO - Initialized dataset with 254338 samples
+2026-05-01 16:02:24,859 - INFO - sh_degree0_only: selecting 14 features from 59
+2026-05-01 16:02:24,931 - INFO - Loaded sphere2plane permutation: 16384 points
+2026-05-01 16:02:25,174 - INFO - Class3DGenDataset: 254337 valid samples, 1 skipped (class -1 or missing)
+2026-05-01 16:02:25,181 - INFO - Class3DGenDataset: 254337 valid samples, 1 skipped (class -1 or missing)
+2026-05-01 16:02:25,181 - INFO - Class3DGenDataset: 254337 valid samples, 1 skipped (class -1 or missing)
+2026-05-01 16:02:25,184 - INFO - Class3DGenDataset: 254337 valid samples, 1 skipped (class -1 or missing)
+2026-05-01 16:02:25,544 - INFO - Attached to existing lazy shared CPU cache: /home/hmolin/3dgen_cache/preload/16908fbeb8fefd88793c92aa99efbfe6
+2026-05-01 16:02:25,588 - INFO - Attached to existing lazy shared CPU cache: /home/hmolin/3dgen_cache/preload/16908fbeb8fefd88793c92aa99efbfe6
+2026-05-01 16:02:25,631 - INFO - Attached to existing lazy shared CPU cache: /home/hmolin/3dgen_cache/preload/16908fbeb8fefd88793c92aa99efbfe6
+2026-05-01 16:02:25,652 - INFO - [class-balanced] sampling with inverse-frequency weights over 103 classes (min=791, max=4760, mean=2469.3 samples/class)
+2026-05-01 16:02:25,652 - INFO - Dataset size: 254337, Per-GPU batch size: 64
+2026-05-01 16:02:25,652 - INFO - Creating model: JiT-B/8
+2026-05-01 16:02:25,675 - INFO - Attached to existing lazy shared CPU cache: /home/hmolin/3dgen_cache/preload/16908fbeb8fefd88793c92aa99efbfe6
+2026-05-01 16:02:27,326 - INFO - [patch-embed] single-conv (in_chans→embed_dim, no rank reduction below embed_dim)
+2026-05-01 16:02:27,327 - INFO - JiT spatial folding: disabled (factor=1)
+2026-05-01 16:02:27,327 - INFO - Model parameters: 131,196,800 (131.2M)
+2026-05-01 16:02:27,674 - INFO - [layout] converted 1 Conv2d weights to channels_last
+2026-05-01 16:02:27,674 - INFO - torch.compile: enabled (mode=default)
+2026-05-01 16:02:30,015 - INFO - Diffusion timesteps: 1000, predict=x0, schedule=squaredcos_cap_v2
+2026-05-01 16:02:30,015 - INFO - Training mode: DDPM (sampler=heun), timestep sampling: sigmoid(N(0.000, 1.000)) mapped to discrete steps [0, 999]
+2026-05-01 16:02:30,430 - INFO - LR schedule: cosine | warmup=500 opt steps | max_opt_steps=198600 | lr_min=1e-05
+2026-05-01 16:02:30,474 - INFO - [channel_loss_weights] active: 14 values, mean=1.0000, min=0.6440, max=1.7350
+2026-05-01 16:02:30,650 - INFO - Loaded 52 reference cameras from /home/hmolin/3DGen-Playground/artifacts/ref_camera.tar.gz
+/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+2026-05-01 16:02:34,186 - INFO - Resuming from checkpoint: output/jit_B8_no_bottleneck_20260430_194526/0020000.pt
+2026-05-01 16:02:35,846 - INFO - Resumed at step 20000
+2026-05-01 16:02:35,846 - INFO - Resumed LR opt_step=20000
+2026-05-01 16:02:35,848 - INFO - Starting training from epoch 20, step 20000...
+2026-05-01 16:02:35,848 - INFO - [render_weight_schedule] active with 2 control points: (20000, rl1=0.000, a=0.000, lp=0.0000), (60000, rl1=0.600, a=0.300, lp=0.1000) | initial weights at step 20000: rl1=0.0000, alpha=0.0000, lpips=0.0000
+2026-05-01 16:02:36,322 - INFO - [overrides] applied from jit/configs/overrides.yaml: lr_scale=1.0 max_grad_norm=5.0 null_repel_weight=0.0 P_mean=0.0
+2026-05-01 16:05:19,123 - INFO - Step   20200 | Epoch  20 | MSE: 0.2687 | Steps/sec: 1.22 | LR: 1.95e-04 | Render_L1: 0.0363 | Alpha_L1: 0.0550 | Render_LPIPS: 0.2484 | cos(c,null): +0.0428 | GradNorm: 0.0205 | MSE/t: [0.00-0.50]0.416(n=6413) [0.50-0.85]0.130(n=5851) [0.85-0.95]0.026(n=515) [0.95-1.00]0.011(n=21)
+2026-05-01 16:05:19,226 - INFO - [render-loss] step=20200 kept 32/64 samples (t_value >= 0.50)
+2026-05-01 16:07:13,710 - INFO - Step   20400 | Epoch  20 | MSE: 0.2628 | Steps/sec: 1.75 | LR: 1.95e-04 | Render_L1: 0.0352 | Alpha_L1: 0.0528 | Render_LPIPS: 0.2454 | cos(c,null): +0.0417 | GradNorm: 0.0194 | MSE/t: [0.00-0.50]0.413(n=6256) [0.50-0.85]0.129(n=5980) [0.85-0.95]0.023(n=543) [0.95-1.00]0.013(n=21)
+2026-05-01 16:07:13,813 - INFO - [render-loss] step=20400 kept 36/64 samples (t_value >= 0.50)
+2026-05-01 16:09:07,506 - INFO - Step   20600 | Epoch  20 | MSE: 0.2665 | Steps/sec: 1.76 | LR: 1.95e-04 | Render_L1: 0.0350 | Alpha_L1: 0.0513 | Render_LPIPS: 0.2438 | cos(c,null): +0.0391 | GradNorm: 0.0219 | MSE/t: [0.00-0.50]0.414(n=6388) [0.50-0.85]0.128(n=5898) [0.85-0.95]0.023(n=500) [0.95-1.00]0.013(n=14)
+2026-05-01 16:09:07,609 - INFO - [render-loss] step=20600 kept 31/64 samples (t_value >= 0.50)
+2026-05-01 16:11:01,380 - INFO - Step   20800 | Epoch  20 | MSE: 0.2661 | Steps/sec: 1.76 | LR: 1.95e-04 | Render_L1: 0.0338 | Alpha_L1: 0.0495 | Render_LPIPS: 0.2414 | cos(c,null): +0.0401 | GradNorm: 0.0234 | MSE/t: [0.00-0.50]0.414(n=6360) [0.50-0.85]0.129(n=5889) [0.85-0.95]0.024(n=526) [0.95-1.00]0.016(n=25)
+2026-05-01 16:11:01,482 - INFO - [render-loss] step=20800 kept 28/64 samples (t_value >= 0.50)
+2026-05-01 16:12:55,479 - INFO - Step   21000 | Epoch  21 | MSE: 0.2673 | Steps/sec: 1.75 | LR: 1.95e-04 | Render_L1: 0.0334 | Alpha_L1: 0.0482 | Render_LPIPS: 0.2390 | cos(c,null): +0.0409 | GradNorm: 0.0225 | MSE/t: [0.00-0.50]0.414(n=6377) [0.50-0.85]0.131(n=5906) [0.85-0.95]0.024(n=502) [0.95-1.00]0.013(n=15)
+2026-05-01 16:13:00,447 - INFO - [cond] cfg_signal=0.0522 (min=0.0325 max=0.0740, n=16) | class_signal=0.0658 (min=0.0298 max=0.1123, n=16) | pred_rms=1.2053
+2026-05-01 16:13:08,383 - INFO - [validation] saved: output/jit_B8_lpips_boost_20260501_160213/dit_validation/epoch_021_step_0021000_class053.png (class=53, sampler=heun, steps=100)
+2026-05-01 16:13:09,714 - INFO - [overrides] applied from jit/configs/overrides.yaml: lr_scale=1.0 max_grad_norm=5.0 null_repel_weight=0.0 P_mean=0.0
+2026-05-01 16:13:09,812 - INFO - [render-loss] step=21000 kept 33/64 samples (t_value >= 0.50)
+2026-05-01 16:15:05,668 - INFO - Step   21200 | Epoch  21 | MSE: 0.2635 | Steps/sec: 1.60 | LR: 1.95e-04 | Render_L1: 0.0333 | Alpha_L1: 0.0481 | Render_LPIPS: 0.2385 | cos(c,null): +0.0393 | GradNorm: 0.0225 | MSE/t: [0.00-0.50]0.414(n=6237) [0.50-0.85]0.129(n=6014) [0.85-0.95]0.024(n=525) [0.95-1.00]0.012(n=24)
+2026-05-01 16:15:05,770 - INFO - [render-loss] step=21200 kept 37/64 samples (t_value >= 0.50)
+2026-05-01 16:17:01,354 - INFO - Step   21400 | Epoch  21 | MSE: 0.2652 | Steps/sec: 1.73 | LR: 1.95e-04 | Render_L1: 0.0321 | Alpha_L1: 0.0457 | Render_LPIPS: 0.2344 | cos(c,null): +0.0467 | GradNorm: 0.0200 | MSE/t: [0.00-0.50]0.412(n=6391) [0.50-0.85]0.127(n=5860) [0.85-0.95]0.026(n=533) [0.95-1.00]0.013(n=16)
+2026-05-01 16:17:01,456 - INFO - [render-loss] step=21400 kept 32/64 samples (t_value >= 0.50)
+2026-05-01 16:18:56,953 - INFO - Step   21600 | Epoch  21 | MSE: 0.2663 | Steps/sec: 1.73 | LR: 1.95e-04 | Render_L1: 0.0317 | Alpha_L1: 0.0455 | Render_LPIPS: 0.2336 | cos(c,null): +0.0524 | GradNorm: 0.0215 | MSE/t: [0.00-0.50]0.414(n=6388) [0.50-0.85]0.129(n=5817) [0.85-0.95]0.024(n=575) [0.95-1.00]0.015(n=20)
+2026-05-01 16:18:57,056 - INFO - [render-loss] step=21600 kept 31/64 samples (t_value >= 0.50)
+2026-05-01 16:20:52,069 - INFO - Step   21800 | Epoch  21 | MSE: 0.2705 | Steps/sec: 1.74 | LR: 1.95e-04 | Render_L1: 0.0319 | Alpha_L1: 0.0458 | Render_LPIPS: 0.2349 | cos(c,null): +0.0585 | GradNorm: 0.0286 | MSE/t: [0.00-0.50]0.416(n=6471) [0.50-0.85]0.131(n=5779) [0.85-0.95]0.026(n=530) [0.95-1.00]0.018(n=20)
+2026-05-01 16:20:52,174 - INFO - [render-loss] step=21800 kept 28/64 samples (t_value >= 0.50)
+2026-05-01 16:22:47,441 - INFO - Step   22000 | Epoch  22 | MSE: 0.2685 | Steps/sec: 1.73 | LR: 1.95e-04 | Render_L1: 0.0315 | Alpha_L1: 0.0444 | Render_LPIPS: 0.2321 | cos(c,null): +0.0585 | GradNorm: 0.0195 | MSE/t: [0.00-0.50]0.416(n=6405) [0.50-0.85]0.129(n=5881) [0.85-0.95]0.024(n=497) [0.95-1.00]0.012(n=17)
+2026-05-01 16:22:47,653 - INFO - [cond] cfg_signal=0.0484 (min=0.0275 max=0.0725, n=16) | class_signal=0.0634 (min=0.0312 max=0.1028, n=16) | pred_rms=1.1467
+2026-05-01 16:22:55,744 - INFO - [validation] saved: output/jit_B8_lpips_boost_20260501_160213/dit_validation/epoch_022_step_0022000_class089.png (class=89, sampler=heun, steps=100)
+2026-05-01 16:22:57,010 - INFO - [overrides] applied from jit/configs/overrides.yaml: lr_scale=1.0 max_grad_norm=5.0 null_repel_weight=0.0 P_mean=0.0
+2026-05-01 16:22:57,107 - INFO - [render-loss] step=22000 kept 27/64 samples (t_value >= 0.50)
+2026-05-01 16:24:52,084 - INFO - Step   22200 | Epoch  22 | MSE: 0.2657 | Steps/sec: 1.61 | LR: 1.94e-04 | Render_L1: 0.0310 | Alpha_L1: 0.0437 | Render_LPIPS: 0.2284 | cos(c,null): +0.0610 | GradNorm: 0.0219 | MSE/t: [0.00-0.50]0.411(n=6375) [0.50-0.85]0.130(n=5914) [0.85-0.95]0.024(n=491) [0.95-1.00]0.011(n=20)
+2026-05-01 16:24:52,186 - INFO - [render-loss] step=22200 kept 26/64 samples (t_value >= 0.50)
+2026-05-01 16:26:47,980 - INFO - Step   22400 | Epoch  22 | MSE: 0.2676 | Steps/sec: 1.73 | LR: 1.94e-04 | Render_L1: 0.0310 | Alpha_L1: 0.0436 | Render_LPIPS: 0.2290 | cos(c,null): +0.0654 | GradNorm: 0.0223 | MSE/t: [0.00-0.50]0.414(n=6373) [0.50-0.85]0.131(n=5900) [0.85-0.95]0.024(n=509) [0.95-1.00]0.015(n=18)
+2026-05-01 16:26:48,082 - INFO - [render-loss] step=22400 kept 23/64 samples (t_value >= 0.50)
+2026-05-01 16:28:43,502 - INFO - Step   22600 | Epoch  22 | MSE: 0.2681 | Steps/sec: 1.73 | LR: 1.94e-04 | Render_L1: 0.0307 | Alpha_L1: 0.0429 | Render_LPIPS: 0.2285 | cos(c,null): +0.0681 | GradNorm: 0.0218 | MSE/t: [0.00-0.50]0.414(n=6425) [0.50-0.85]0.130(n=5844) [0.85-0.95]0.025(n=509) [0.95-1.00]0.014(n=22)
+2026-05-01 16:28:43,604 - INFO - [render-loss] step=22600 kept 25/64 samples (t_value >= 0.50)
+2026-05-01 16:30:38,845 - INFO - Step   22800 | Epoch  22 | MSE: 0.2706 | Steps/sec: 1.73 | LR: 1.94e-04 | Render_L1: 0.0306 | Alpha_L1: 0.0426 | Render_LPIPS: 0.2267 | cos(c,null): +0.0752 | GradNorm: 0.0275 | MSE/t: [0.00-0.50]0.419(n=6458) [0.50-0.85]0.128(n=5805) [0.85-0.95]0.025(n=514) [0.95-1.00]0.014(n=23)
+2026-05-01 16:30:38,948 - INFO - [render-loss] step=22800 kept 29/64 samples (t_value >= 0.50)
+2026-05-01 16:32:34,812 - INFO - Step   23000 | Epoch  23 | MSE: 0.2628 | Steps/sec: 1.72 | LR: 1.94e-04 | Render_L1: 0.0306 | Alpha_L1: 0.0426 | Render_LPIPS: 0.2276 | cos(c,null): +0.0781 | GradNorm: 0.0237 | MSE/t: [0.00-0.50]0.409(n=6343) [0.50-0.85]0.128(n=5926) [0.85-0.95]0.025(n=513) [0.95-1.00]0.017(n=18)
+2026-05-01 16:32:35,022 - INFO - [cond] cfg_signal=0.0492 (min=0.0253 max=0.0747, n=16) | class_signal=0.0649 (min=0.0265 max=0.1198, n=16) | pred_rms=1.2884
+2026-05-01 16:32:43,091 - INFO - [validation] saved: output/jit_B8_lpips_boost_20260501_160213/dit_validation/epoch_023_step_0023000_class001.png (class=1, sampler=heun, steps=100)
+2026-05-01 16:32:44,272 - INFO - [overrides] applied from jit/configs/overrides.yaml: lr_scale=1.0 max_grad_norm=5.0 null_repel_weight=0.0 P_mean=0.0
+2026-05-01 16:32:44,370 - INFO - [render-loss] step=23000 kept 35/64 samples (t_value >= 0.50)
+2026-05-01 16:34:39,945 - INFO - Step   23200 | Epoch  23 | MSE: 0.2652 | Steps/sec: 1.60 | LR: 1.94e-04 | Render_L1: 0.0302 | Alpha_L1: 0.0418 | Render_LPIPS: 0.2260 | cos(c,null): +0.0811 | GradNorm: 0.0218 | MSE/t: [0.00-0.50]0.413(n=6359) [0.50-0.85]0.128(n=5899) [0.85-0.95]0.024(n=521) [0.95-1.00]0.013(n=21)
+2026-05-01 16:34:40,048 - INFO - [render-loss] step=23200 kept 27/64 samples (t_value >= 0.50)
+2026-05-01 16:36:35,037 - INFO - Step   23400 | Epoch  23 | MSE: 0.2651 | Steps/sec: 1.74 | LR: 1.94e-04 | Render_L1: 0.0304 | Alpha_L1: 0.0416 | Render_LPIPS: 0.2254 | cos(c,null): +0.0830 | GradNorm: 0.0250 | MSE/t: [0.00-0.50]0.414(n=6305) [0.50-0.85]0.129(n=5941) [0.85-0.95]0.025(n=539) [0.95-1.00]0.016(n=15)
+2026-05-01 16:36:35,140 - INFO - [render-loss] step=23400 kept 33/64 samples (t_value >= 0.50)
+2026-05-01 16:38:30,493 - INFO - Step   23600 | Epoch  23 | MSE: 0.2648 | Steps/sec: 1.73 | LR: 1.94e-04 | Render_L1: 0.0301 | Alpha_L1: 0.0412 | Render_LPIPS: 0.2250 | cos(c,null): +0.0867 | GradNorm: 0.0233 | MSE/t: [0.00-0.50]0.411(n=6386) [0.50-0.85]0.128(n=5889) [0.85-0.95]0.025(n=505) [0.95-1.00]0.015(n=20)
+2026-05-01 16:38:30,595 - INFO - [render-loss] step=23600 kept 36/64 samples (t_value >= 0.50)
+2026-05-01 16:40:25,521 - INFO - Step   23800 | Epoch  23 | MSE: 0.2679 | Steps/sec: 1.74 | LR: 1.94e-04 | Render_L1: 0.0300 | Alpha_L1: 0.0413 | Render_LPIPS: 0.2234 | cos(c,null): +0.0886 | GradNorm: 0.0257 | MSE/t: [0.00-0.50]0.418(n=6394) [0.50-0.85]0.127(n=5860) [0.85-0.95]0.025(n=525) [0.95-1.00]0.015(n=21)
+2026-05-01 16:40:25,625 - INFO - [render-loss] step=23800 kept 33/64 samples (t_value >= 0.50)
+2026-05-01 16:42:21,543 - INFO - Step   24000 | Epoch  24 | MSE: 0.2612 | Steps/sec: 1.72 | LR: 1.93e-04 | Render_L1: 0.0304 | Alpha_L1: 0.0416 | Render_LPIPS: 0.2259 | cos(c,null): +0.0810 | GradNorm: 0.0219 | MSE/t: [0.00-0.50]0.406(n=6283) [0.50-0.85]0.130(n=5967) [0.85-0.95]0.024(n=524) [0.95-1.00]0.015(n=26)
+2026-05-01 16:42:21,755 - INFO - [cond] cfg_signal=0.0480 (min=0.0252 max=0.0720, n=16) | class_signal=0.0604 (min=0.0218 max=0.1024, n=16) | pred_rms=1.2662
+2026-05-01 16:42:29,849 - INFO - [validation] saved: output/jit_B8_lpips_boost_20260501_160213/dit_validation/epoch_024_step_0024000_class003.png (class=3, sampler=heun, steps=100)
+2026-05-01 16:42:31,092 - INFO - [overrides] applied from jit/configs/overrides.yaml: lr_scale=1.0 max_grad_norm=5.0 null_repel_weight=0.0 P_mean=0.0
+2026-05-01 16:42:31,190 - INFO - [render-loss] step=24000 kept 38/64 samples (t_value >= 0.50)
+2026-05-01 16:44:26,430 - INFO - Step   24200 | Epoch  24 | MSE: 0.2674 | Steps/sec: 1.60 | LR: 1.93e-04 | Render_L1: 0.0301 | Alpha_L1: 0.0409 | Render_LPIPS: 0.2253 | cos(c,null): +0.0829 | GradNorm: 0.0243 | MSE/t: [0.00-0.50]0.414(n=6413) [0.50-0.85]0.128(n=5870) [0.85-0.95]0.025(n=497) [0.95-1.00]0.017(n=20)
+2026-05-01 16:44:26,533 - INFO - [render-loss] step=24200 kept 34/64 samples (t_value >= 0.50)
+2026-05-01 16:46:21,743 - INFO - Step   24400 | Epoch  24 | MSE: 0.2674 | Steps/sec: 1.73 | LR: 1.93e-04 | Render_L1: 0.0294 | Alpha_L1: 0.0402 | Render_LPIPS: 0.2226 | cos(c,null): +0.0840 | GradNorm: 0.0238 | MSE/t: [0.00-0.50]0.414(n=6438) [0.50-0.85]0.128(n=5831) [0.85-0.95]0.024(n=510) [0.95-1.00]0.011(n=21)
+2026-05-01 16:46:21,846 - INFO - [render-loss] step=24400 kept 29/64 samples (t_value >= 0.50)
+2026-05-01 16:48:17,769 - INFO - Step   24600 | Epoch  24 | MSE: 0.2636 | Steps/sec: 1.72 | LR: 1.93e-04 | Render_L1: 0.0293 | Alpha_L1: 0.0398 | Render_LPIPS: 0.2214 | cos(c,null): +0.0818 | GradNorm: 0.0261 | MSE/t: [0.00-0.50]0.415(n=6262) [0.50-0.85]0.128(n=5953) [0.85-0.95]0.024(n=566) [0.95-1.00]0.011(n=19)
+2026-05-01 16:48:17,871 - INFO - [render-loss] step=24600 kept 31/64 samples (t_value >= 0.50)
+2026-05-01 16:50:12,802 - INFO - Step   24800 | Epoch  24 | MSE: 0.2670 | Steps/sec: 1.74 | LR: 1.93e-04 | Render_L1: 0.0295 | Alpha_L1: 0.0402 | Render_LPIPS: 0.2227 | cos(c,null): +0.0836 | GradNorm: 0.0248 | MSE/t: [0.00-0.50]0.416(n=6321) [0.50-0.85]0.130(n=5983) [0.85-0.95]0.024(n=478) [0.95-1.00]0.015(n=18)
+2026-05-01 16:50:12,904 - INFO - [render-loss] step=24800 kept 38/64 samples (t_value >= 0.50)
+2026-05-01 16:52:08,255 - INFO - Step   25000 | Epoch  25 | MSE: 0.2672 | Steps/sec: 1.73 | LR: 1.93e-04 | Render_L1: 0.0292 | Alpha_L1: 0.0396 | Render_LPIPS: 0.2195 | cos(c,null): +0.0884 | GradNorm: 0.0248 | MSE/t: [0.00-0.50]0.414(n=6413) [0.50-0.85]0.129(n=5844) [0.85-0.95]0.025(n=522) [0.95-1.00]0.012(n=21)
+2026-05-01 16:52:08,470 - INFO - [cond] cfg_signal=0.0514 (min=0.0298 max=0.0771, n=16) | class_signal=0.0625 (min=0.0236 max=0.1076, n=16) | pred_rms=1.2784
+2026-05-01 16:52:16,556 - INFO - [validation] saved: output/jit_B8_lpips_boost_20260501_160213/dit_validation/epoch_025_step_0025000_class041.png (class=41, sampler=heun, steps=100)
+2026-05-01 16:52:17,758 - INFO - [overrides] applied from jit/configs/overrides.yaml: lr_scale=1.0 max_grad_norm=5.0 null_repel_weight=0.0 P_mean=0.0
+2026-05-01 16:52:17,855 - INFO - [render-loss] step=25000 kept 29/64 samples (t_value >= 0.50)
+2026-05-01 16:54:12,661 - INFO - Step   25200 | Epoch  25 | MSE: 0.2675 | Steps/sec: 1.61 | LR: 1.93e-04 | Render_L1: 0.0294 | Alpha_L1: 0.0399 | Render_LPIPS: 0.2224 | cos(c,null): +0.0944 | GradNorm: 0.0241 | MSE/t: [0.00-0.50]0.413(n=6425) [0.50-0.85]0.129(n=5869) [0.85-0.95]0.025(n=481) [0.95-1.00]0.014(n=25)
+2026-05-01 16:54:12,764 - INFO - [render-loss] step=25200 kept 27/64 samples (t_value >= 0.50)
+2026-05-01 16:56:07,700 - INFO - Step   25400 | Epoch  25 | MSE: 0.2648 | Steps/sec: 1.74 | LR: 1.93e-04 | Render_L1: 0.0293 | Alpha_L1: 0.0396 | Render_LPIPS: 0.2206 | cos(c,null): +0.0998 | GradNorm: 0.0243 | MSE/t: [0.00-0.50]0.411(n=6365) [0.50-0.85]0.128(n=5910) [0.85-0.95]0.026(n=500) [0.95-1.00]0.023(n=25)
+2026-05-01 16:56:07,802 - INFO - [render-loss] step=25400 kept 29/64 samples (t_value >= 0.50)
+2026-05-01 16:58:03,455 - INFO - Step   25600 | Epoch  25 | MSE: 0.2623 | Steps/sec: 1.73 | LR: 1.93e-04 | Render_L1: 0.0292 | Alpha_L1: 0.0397 | Render_LPIPS: 0.2203 | cos(c,null): +0.0962 | GradNorm: 0.0245 | MSE/t: [0.00-0.50]0.408(n=6301) [0.50-0.85]0.129(n=6006) [0.85-0.95]0.024(n=474) [0.95-1.00]0.012(n=19)
+2026-05-01 16:58:03,557 - INFO - [render-loss] step=25600 kept 27/64 samples (t_value >= 0.50)
+2026-05-01 16:59:58,685 - INFO - Step   25800 | Epoch  25 | MSE: 0.2646 | Steps/sec: 1.74 | LR: 1.92e-04 | Render_L1: 0.0293 | Alpha_L1: 0.0396 | Render_LPIPS: 0.2211 | cos(c,null): +0.0950 | GradNorm: 0.0258 | MSE/t: [0.00-0.50]0.410(n=6376) [0.50-0.85]0.129(n=5892) [0.85-0.95]0.025(n=522) [0.95-1.00]0.030(n=10)
+2026-05-01 16:59:58,788 - INFO - [render-loss] step=25800 kept 30/64 samples (t_value >= 0.50)
+2026-05-01 17:01:54,083 - INFO - Step   26000 | Epoch  26 | MSE: 0.2694 | Steps/sec: 1.73 | LR: 1.92e-04 | Render_L1: 0.0289 | Alpha_L1: 0.0398 | Render_LPIPS: 0.2194 | cos(c,null): +0.1027 | GradNorm: 0.0282 | MSE/t: [0.00-0.50]0.415(n=6392) [0.50-0.85]0.130(n=5906) [0.85-0.95]0.062(n=482) [0.95-1.00]0.017(n=20)
+2026-05-01 17:01:54,293 - INFO - [cond] cfg_signal=0.0417 (min=0.0243 max=0.0573, n=16) | class_signal=0.0509 (min=0.0224 max=0.0827, n=16) | pred_rms=1.1525
+2026-05-01 17:02:02,360 - INFO - [validation] saved: output/jit_B8_lpips_boost_20260501_160213/dit_validation/epoch_026_step_0026000_class080.png (class=80, sampler=heun, steps=100)
+2026-05-01 17:02:03,566 - INFO - [overrides] applied from jit/configs/overrides.yaml: lr_scale=1.0 max_grad_norm=5.0 null_repel_weight=0.0 P_mean=0.0
+2026-05-01 17:02:03,664 - INFO - [render-loss] step=26000 kept 30/64 samples (t_value >= 0.50)
+2026-05-01 17:03:59,344 - INFO - Step   26200 | Epoch  26 | MSE: 0.2661 | Steps/sec: 1.60 | LR: 1.92e-04 | Render_L1: 0.0287 | Alpha_L1: 0.0390 | Render_LPIPS: 0.2185 | cos(c,null): +0.1075 | GradNorm: 0.0267 | MSE/t: [0.00-0.50]0.415(n=6334) [0.50-0.85]0.129(n=5941) [0.85-0.95]0.024(n=504) [0.95-1.00]0.015(n=21)
+2026-05-01 17:03:59,447 - INFO - [render-loss] step=26200 kept 33/64 samples (t_value >= 0.50)
+2026-05-01 17:05:54,941 - INFO - Step   26400 | Epoch  26 | MSE: 0.2665 | Steps/sec: 1.73 | LR: 1.92e-04 | Render_L1: 0.0287 | Alpha_L1: 0.0390 | Render_LPIPS: 0.2182 | cos(c,null): +0.1039 | GradNorm: 0.0276 | MSE/t: [0.00-0.50]0.413(n=6393) [0.50-0.85]0.128(n=5885) [0.85-0.95]0.026(n=499) [0.95-1.00]0.015(n=23)
+2026-05-01 17:05:55,043 - INFO - [render-loss] step=26400 kept 32/64 samples (t_value >= 0.50)
+2026-05-01 17:07:50,619 - INFO - Step   26600 | Epoch  26 | MSE: 0.2692 | Steps/sec: 1.73 | LR: 1.92e-04 | Render_L1: 0.0291 | Alpha_L1: 0.0386 | Render_LPIPS: 0.2180 | cos(c,null): +0.1065 | GradNorm: 0.0290 | MSE/t: [0.00-0.50]0.419(n=6405) [0.50-0.85]0.128(n=5888) [0.85-0.95]0.025(n=492) [0.95-1.00]0.013(n=15)
+2026-05-01 17:07:50,722 - INFO - [render-loss] step=26600 kept 26/64 samples (t_value >= 0.50)
+2026-05-01 17:09:46,531 - INFO - Step   26800 | Epoch  26 | MSE: 0.2656 | Steps/sec: 1.73 | LR: 1.92e-04 | Render_L1: 0.0292 | Alpha_L1: 0.0390 | Render_LPIPS: 0.2205 | cos(c,null): +0.1110 | GradNorm: 0.0289 | MSE/t: [0.00-0.50]0.414(n=6314) [0.50-0.85]0.130(n=5935) [0.85-0.95]0.025(n=532) [0.95-1.00]0.015(n=19)
+2026-05-01 17:09:46,634 - INFO - [render-loss] step=26800 kept 28/64 samples (t_value >= 0.50)
+2026-05-01 17:11:41,970 - INFO - Step   27000 | Epoch  27 | MSE: 0.2687 | Steps/sec: 1.73 | LR: 1.92e-04 | Render_L1: 0.0296 | Alpha_L1: 0.0392 | Render_LPIPS: 0.2198 | cos(c,null): +0.1088 | GradNorm: 0.0292 | MSE/t: [0.00-0.50]0.418(n=6397) [0.50-0.85]0.128(n=5839) [0.85-0.95]0.025(n=548) [0.95-1.00]0.021(n=16)
+2026-05-01 17:11:42,183 - INFO - [cond] cfg_signal=0.0475 (min=0.0247 max=0.0764, n=16) | class_signal=0.0625 (min=0.0224 max=0.1151, n=16) | pred_rms=1.3734
+2026-05-01 17:11:50,173 - INFO - [validation] saved: output/jit_B8_lpips_boost_20260501_160213/dit_validation/epoch_027_step_0027000_class084.png (class=84, sampler=heun, steps=100)
+2026-05-01 17:11:51,414 - INFO - [overrides] applied from jit/configs/overrides.yaml: lr_scale=1.0 max_grad_norm=5.0 null_repel_weight=0.0 P_mean=0.0
+2026-05-01 17:11:51,511 - INFO - [render-loss] step=27000 kept 38/64 samples (t_value >= 0.50)
+2026-05-01 17:13:46,848 - INFO - Step   27200 | Epoch  27 | MSE: 0.2675 | Steps/sec: 1.60 | LR: 1.92e-04 | Render_L1: 0.0286 | Alpha_L1: 0.0383 | Render_LPIPS: 0.2177 | cos(c,null): +0.1127 | GradNorm: 0.0299 | MSE/t: [0.00-0.50]0.415(n=6386) [0.50-0.85]0.129(n=5877) [0.85-0.95]0.026(n=527) [0.95-1.00]0.015(n=10)
+2026-05-01 17:13:46,951 - INFO - [render-loss] step=27200 kept 24/64 samples (t_value >= 0.50)
+2026-05-01 17:15:42,210 - INFO - Step   27400 | Epoch  27 | MSE: 0.2646 | Steps/sec: 1.73 | LR: 1.91e-04 | Render_L1: 0.0284 | Alpha_L1: 0.0381 | Render_LPIPS: 0.2172 | cos(c,null): +0.1189 | GradNorm: 0.0308 | MSE/t: [0.00-0.50]0.410(n=6322) [0.50-0.85]0.131(n=5951) [0.85-0.95]0.026(n=511) [0.95-1.00]0.015(n=16)
+2026-05-01 17:15:42,313 - INFO - [render-loss] step=27400 kept 31/64 samples (t_value >= 0.50)
+2026-05-01 17:17:37,360 - INFO - Step   27600 | Epoch  27 | MSE: 0.2678 | Steps/sec: 1.74 | LR: 1.91e-04 | Render_L1: 0.0287 | Alpha_L1: 0.0383 | Render_LPIPS: 0.2176 | cos(c,null): +0.1207 | GradNorm: 0.0307 | MSE/t: [0.00-0.50]0.413(n=6448) [0.50-0.85]0.129(n=5814) [0.85-0.95]0.025(n=516) [0.95-1.00]0.016(n=22)
+2026-05-01 17:17:37,462 - INFO - [render-loss] step=27600 kept 27/64 samples (t_value >= 0.50)
+2026-05-01 17:19:32,991 - INFO - Step   27800 | Epoch  27 | MSE: 0.2641 | Steps/sec: 1.73 | LR: 1.91e-04 | Render_L1: 0.0289 | Alpha_L1: 0.0383 | Render_LPIPS: 0.2185 | cos(c,null): +0.1135 | GradNorm: 0.0302 | MSE/t: [0.00-0.50]0.410(n=6350) [0.50-0.85]0.129(n=5924) [0.85-0.95]0.025(n=498) [0.95-1.00]0.015(n=28)
+2026-05-01 17:19:33,095 - INFO - [render-loss] step=27800 kept 34/64 samples (t_value >= 0.50)
+2026-05-01 17:21:28,642 - INFO - Step   28000 | Epoch  28 | MSE: 0.2649 | Steps/sec: 1.73 | LR: 1.91e-04 | Render_L1: 0.0286 | Alpha_L1: 0.0383 | Render_LPIPS: 0.2163 | cos(c,null): +0.1140 | GradNorm: 0.0300 | MSE/t: [0.00-0.50]0.411(n=6329) [0.50-0.85]0.132(n=5900) [0.85-0.95]0.025(n=553) [0.95-1.00]0.015(n=18)
+2026-05-01 17:21:28,852 - INFO - [cond] cfg_signal=0.0463 (min=0.0262 max=0.0748, n=16) | class_signal=0.0584 (min=0.0215 max=0.1046, n=16) | pred_rms=1.2941
+2026-05-01 17:21:36,968 - INFO - [validation] saved: output/jit_B8_lpips_boost_20260501_160213/dit_validation/epoch_028_step_0028000_class043.png (class=43, sampler=heun, steps=100)
+2026-05-01 17:21:38,290 - INFO - [overrides] applied from jit/configs/overrides.yaml: lr_scale=1.0 max_grad_norm=5.0 null_repel_weight=0.0 P_mean=0.0
+2026-05-01 17:21:38,387 - INFO - [render-loss] step=28000 kept 30/64 samples (t_value >= 0.50)
+2026-05-01 17:23:33,556 - INFO - Step   28200 | Epoch  28 | MSE: 0.2652 | Steps/sec: 1.60 | LR: 1.91e-04 | Render_L1: 0.0283 | Alpha_L1: 0.0375 | Render_LPIPS: 0.2154 | cos(c,null): +0.1149 | GradNorm: 0.0296 | MSE/t: [0.00-0.50]0.408(n=6464) [0.50-0.85]0.128(n=5813) [0.85-0.95]0.026(n=505) [0.95-1.00]0.012(n=18)
+2026-05-01 17:23:33,658 - INFO - [render-loss] step=28200 kept 33/64 samples (t_value >= 0.50)
+2026-05-01 17:25:28,903 - INFO - Step   28400 | Epoch  28 | MSE: 0.2679 | Steps/sec: 1.73 | LR: 1.91e-04 | Render_L1: 0.0284 | Alpha_L1: 0.0378 | Render_LPIPS: 0.2158 | cos(c,null): +0.1206 | GradNorm: 0.0324 | MSE/t: [0.00-0.50]0.418(n=6359) [0.50-0.85]0.128(n=5919) [0.85-0.95]0.026(n=500) [0.95-1.00]0.015(n=22)
+2026-05-01 17:25:29,006 - INFO - [render-loss] step=28400 kept 31/64 samples (t_value >= 0.50)
+2026-05-01 17:27:24,082 - INFO - Step   28600 | Epoch  28 | MSE: 0.2667 | Steps/sec: 1.74 | LR: 1.91e-04 | Render_L1: 0.0287 | Alpha_L1: 0.0381 | Render_LPIPS: 0.2166 | cos(c,null): +0.1252 | GradNorm: 0.0326 | MSE/t: [0.00-0.50]0.412(n=6399) [0.50-0.85]0.130(n=5899) [0.85-0.95]0.026(n=487) [0.95-1.00]0.014(n=15)
+2026-05-01 17:27:24,185 - INFO - [render-loss] step=28600 kept 32/64 samples (t_value >= 0.50)
+2026-05-01 17:29:19,804 - INFO - Step   28800 | Epoch  28 | MSE: 0.2708 | Steps/sec: 1.73 | LR: 1.91e-04 | Render_L1: 0.0284 | Alpha_L1: 0.0383 | Render_LPIPS: 0.2159 | cos(c,null): +0.1297 | GradNorm: 0.0404 | MSE/t: [0.00-0.50]0.420(n=6387) [0.50-0.85]0.131(n=5872) [0.85-0.95]0.026(n=517) [0.95-1.00]0.012(n=24)
+2026-05-01 17:29:19,907 - INFO - [render-loss] step=28800 kept 31/64 samples (t_value >= 0.50)
+2026-05-01 17:31:15,499 - INFO - Step   29000 | Epoch  29 | MSE: 0.2714 | Steps/sec: 1.73 | LR: 1.90e-04 | Render_L1: 0.0283 | Alpha_L1: 0.0378 | Render_LPIPS: 0.2148 | cos(c,null): +0.1231 | GradNorm: 0.0493 | MSE/t: [0.00-0.50]0.418(n=6456) [0.50-0.85]0.130(n=5766) [0.85-0.95]0.047(n=544) [0.95-1.00]0.015(n=34)
+2026-05-01 17:31:15,710 - INFO - [cond] cfg_signal=0.0458 (min=0.0289 max=0.0611, n=16) | class_signal=0.0562 (min=0.0243 max=0.0939, n=16) | pred_rms=1.2618
+2026-05-01 17:31:23,740 - INFO - [validation] saved: output/jit_B8_lpips_boost_20260501_160213/dit_validation/epoch_029_step_0029000_class100.png (class=100, sampler=heun, steps=100)
+2026-05-01 17:31:24,896 - INFO - [overrides] applied from jit/configs/overrides.yaml: lr_scale=1.0 max_grad_norm=5.0 null_repel_weight=0.0 P_mean=0.0
+2026-05-01 17:31:24,994 - INFO - [render-loss] step=29000 kept 33/64 samples (t_value >= 0.50)
+2026-05-01 17:33:21,078 - INFO - Step   29200 | Epoch  29 | MSE: 0.2689 | Steps/sec: 1.60 | LR: 1.90e-04 | Render_L1: 0.0283 | Alpha_L1: 0.0378 | Render_LPIPS: 0.2160 | cos(c,null): +0.1155 | GradNorm: 0.0342 | MSE/t: [0.00-0.50]0.416(n=6376) [0.50-0.85]0.132(n=5894) [0.85-0.95]0.026(n=511) [0.95-1.00]0.016(n=19)
+2026-05-01 17:33:21,180 - INFO - [render-loss] step=29200 kept 17/64 samples (t_value >= 0.50)
+2026-05-01 17:35:16,427 - INFO - Step   29400 | Epoch  29 | MSE: 0.2629 | Steps/sec: 1.73 | LR: 1.90e-04 | Render_L1: 0.0282 | Alpha_L1: 0.0373 | Render_LPIPS: 0.2155 | cos(c,null): +0.1070 | GradNorm: 0.0314 | MSE/t: [0.00-0.50]0.407(n=6381) [0.50-0.85]0.128(n=5893) [0.85-0.95]0.025(n=510) [0.95-1.00]0.015(n=16)
+2026-05-01 17:35:16,530 - INFO - [render-loss] step=29400 kept 33/64 samples (t_value >= 0.50)
+2026-05-01 17:37:12,018 - INFO - Step   29600 | Epoch  29 | MSE: 0.2682 | Steps/sec: 1.73 | LR: 1.90e-04 | Render_L1: 0.0283 | Alpha_L1: 0.0376 | Render_LPIPS: 0.2154 | cos(c,null): +0.1068 | GradNorm: 0.0329 | MSE/t: [0.00-0.50]0.414(n=6386) [0.50-0.85]0.132(n=5880) [0.85-0.95]0.025(n=516) [0.95-1.00]0.020(n=18)
+2026-05-01 17:37:12,120 - INFO - [render-loss] step=29600 kept 28/64 samples (t_value >= 0.50)
+W0501 17:38:27.156000 529647 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 529831 closing signal SIGTERM
+W0501 17:38:27.157000 529647 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 529832 closing signal SIGTERM
+W0501 17:38:27.157000 529647 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 529833 closing signal SIGTERM
+E0501 17:38:27.158000 529647 torch/distributed/elastic/multiprocessing/api.py:986] failed (exitcode: -15) local_rank: 0 (pid: 529830) of binary: /home/hmolin/3DGen-Playground/.3dgen/bin/python3
+Traceback (most recent call last):
+  File "/home/hmolin/3DGen-Playground/.3dgen/bin/accelerate", line 8, in <module>
+    sys.exit(main())
+  File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/accelerate/commands/accelerate_cli.py", line 50, in main
+    args.func(args)
+  File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/accelerate/commands/launch.py", line 1396, in launch_command
+    multi_gpu_launcher(args)
+  File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/accelerate/commands/launch.py", line 1023, in multi_gpu_launcher
+    distrib_run.run(args)
+  File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/distributed/run.py", line 981, in run
+    elastic_launch(
+  File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 170, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/home/hmolin/3DGen-Playground/.3dgen/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 317, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+========================================================
+jit/train_gsplat.py FAILED
+--------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-05-01_17:38:27
+  host      : yusu-l4.c.gcp-langmotion.internal
+  rank      : 1 (local_rank: 1)
+  exitcode  : -15 (pid: 529831)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 529831
+[2]:
+  time      : 2026-05-01_17:38:27
+  host      : yusu-l4.c.gcp-langmotion.internal
+  rank      : 2 (local_rank: 2)
+  exitcode  : -15 (pid: 529832)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 529832
+[3]:
+  time      : 2026-05-01_17:38:27
+  host      : yusu-l4.c.gcp-langmotion.internal
+  rank      : 3 (local_rank: 3)
+  exitcode  : -15 (pid: 529833)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 529833
+--------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-05-01_17:38:27
+  host      : yusu-l4.c.gcp-langmotion.internal
+  rank      : 0 (local_rank: 0)
+  exitcode  : -15 (pid: 529830)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 529830
+========================================================
