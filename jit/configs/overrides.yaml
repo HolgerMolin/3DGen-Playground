@@ -5,18 +5,10 @@
 # lr_scale: multiply the LR schedule output (warmup/cosine/none) by this factor; must be > 0.
 # max_grad_norm: gradient clipping threshold (0 = disable clipping).
 # Render loss weights: same semantics as CLI / main config.
-# aux_classifier_weight: weight on auxiliary cross-entropy head. Only has effect
-#   if the run was started with --aux_classifier / aux_classifier: true — the
-#   head is instantiated at model construction, not toggleable at runtime.
-# null_repel_weight: λ on class-from-null cosine repulsion regularizer. Pushes
-#   class embeddings away from the CFG null token. 0.0 = disabled.
-#   The margin (default 0.5) is static — set at start via --null_repel_marg1in
-#   or jit_train_gsplat.yaml; not hot-reloadable.
 # P_mean: bias for JiT logit-normal timestep sampling before sigmoid (pairs with P_std in main config).
 #         Ignored when `P_mean_schedule` is set in the main config — the curriculum wins.
 # grad_norm_log_every_n_prints: log per-loss grad norms every N print intervals (1 = every print, 0 = disable).
 
 lr_scale: 1.0
-max_grad_norm: 5.0
-null_repel_weight: 0.0
-P_mean: 0.0
+max_grad_norm: 1
+P_mean: 0

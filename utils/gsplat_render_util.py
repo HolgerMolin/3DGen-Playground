@@ -584,7 +584,7 @@ def _save_training_render_preview(
     epoch: int,
     step: int,
     timesteps: torch.Tensor,
-    labels: torch.Tensor,
+    labels: Optional[torch.Tensor],
     device: torch.device,
     num_cam: int,
     dc_only: bool = False,
@@ -660,19 +660,17 @@ def _save_training_render_preview(
 
     preview_dir = os.path.join(output_dir, "dit_train_renders")
     os.makedirs(preview_dir, exist_ok=True)
-    y_label = int(labels[sample_idx].item())
     timestep = int(timesteps[sample_idx].item())
     out_path = os.path.join(
         preview_dir,
-        f"epoch_{epoch:03d}_step_{step:07d}_class{y_label:03d}_t{timestep:04d}.png",
+        f"epoch_{epoch:03d}_step_{step:07d}_t{timestep:04d}.png",
     )
     latest_path = os.path.join(preview_dir, "latest.png")
     Image.fromarray(preview).save(out_path)
     Image.fromarray(preview).save(latest_path)
     logger.info(
-        "[train-render] saved: %s (left=gt, right=pred, class=%d, t=%d)",
+        "[train-render] saved: %s (left=gt, right=pred, t=%d)",
         out_path,
-        y_label,
         timestep,
     )
 

@@ -6,9 +6,9 @@ source .env
 #
 # Environment variables:
 #   Path inputs:
-#     OBJ_LIST, GS_DATA_PATH, MEAN_FILE, STD_FILE, CLASS_MAP_PATH,
+#     OBJ_LIST, GS_DATA_PATH, MEAN_FILE, STD_FILE, TEXT_EMBED_PATH,
 #     SPHERE2PLANE_PATH, REF_CAMERA_TAR, RESULTS_DIR, RESUME,
-#     RANK_TRANSFORM_FILE (optional; overrides YAML's rank_transform_file)
+#     RANK_TRANSFORM_FILE (optional), VAL_PROMPTS_FILE (optional)
 #   Launch overrides:
 #     NUM_GPUS, NUM_MACHINES, MIXED_PRECISION, DYNAMO_BACKEND
 #   Hyperparameters:
@@ -35,10 +35,13 @@ OBJ_LIST=${OBJ_LIST:-${DIT_GSPLAT_OBJ_LIST:-}}
 GS_DATA_PATH=${GS_DATA_PATH:-${DIT_GSPLAT_GS_PATH:-}}
 MEAN_FILE=${MEAN_FILE:-${DIT_GSPLAT_MEAN_FILE:-}}
 STD_FILE=${STD_FILE:-${DIT_GSPLAT_STD_FILE:-}}
-CLASS_MAP_PATH=${CLASS_MAP_PATH:-${DIT_GSPLAT_CLASS_MAP:-}}
+TEXT_EMBED_PATH=${TEXT_EMBED_PATH:-object_classification/text_tokens}
+NULL_TEXT_TOKEN_PATH=${NULL_TEXT_TOKEN_PATH:-object_classification/null_text_token.npz}
 SPHERE2PLANE_PATH=${SPHERE2PLANE_PATH:-${DIT_GSPLAT_SPHERE2PLANE_PATH:-}}
 REF_CAMERA_TAR=${REF_CAMERA_TAR:-${DIT_GSPLAT_REF_CAMERA_TAR:-}}
 RANK_TRANSFORM_FILE=${RANK_TRANSFORM_FILE:-}
+CLIP_THRESHOLDS_FILE=${CLIP_THRESHOLDS_FILE:-}
+VAL_PROMPTS_FILE=${VAL_PROMPTS_FILE:-}
 RESUME=${RESUME:-}
 
 # If RESUME not set via env, check the YAML config for a resume path
@@ -55,7 +58,7 @@ if v and str(v).lower() not in ('null', 'none', '~', ''):
     fi
 fi
 
-for path_var in OBJ_LIST GS_DATA_PATH MEAN_FILE STD_FILE CLASS_MAP_PATH SPHERE2PLANE_PATH REF_CAMERA_TAR; do
+for path_var in OBJ_LIST GS_DATA_PATH MEAN_FILE STD_FILE TEXT_EMBED_PATH NULL_TEXT_TOKEN_PATH SPHERE2PLANE_PATH REF_CAMERA_TAR; do
     path_value=${!path_var}
     if [ -z "$path_value" ]; then
         echo "Missing required path variable: $path_var" >&2
@@ -77,6 +80,11 @@ if [ -n "$RANK_TRANSFORM_FILE" ] && [ ! -e "$RANK_TRANSFORM_FILE" ]; then
     exit 1
 fi
 
+if [ -n "$CLIP_THRESHOLDS_FILE" ] && [ ! -e "$CLIP_THRESHOLDS_FILE" ]; then
+    echo "Configured CLIP_THRESHOLDS_FILE does not exist: $CLIP_THRESHOLDS_FILE" >&2
+    exit 1
+fi
+
 # Resolve the effective model for RESULTS_DIR: CLI positional > YAML > fallback.
 # (The actual model argument to Python is handled below — this is display only.)
 if [ -n "$MODEL_OVERRIDE" ]; then
@@ -91,9 +99,12 @@ if v: print(v)
     EFFECTIVE_MODEL="${YAML_MODEL:-JiT-XL/8}"
 fi
 
-RESULTS_DIR="${RESULTS_DIR:-output/jit_${EFFECTIVE_MODEL}_results_gsplat}"
 RUN_TS=$(date +%Y%m%d_%H%M%S)
 RUN_STEM="train_${RUN_TS}_$$"
+
+# Default dir gets a timestamp suffix so each launch is isolated. Set RESULTS_DIR
+# explicitly (e.g. to resume into an existing run dir) to override.
+RESULTS_DIR="${RESULTS_DIR:-output/jit_${EFFECTIVE_MODEL}_${RUN_TS}}"
 
 LOG_DIR="${RESULTS_DIR}"
 mkdir -p "$LOG_DIR"
@@ -131,7 +142,8 @@ PY_ARGS+=(
     --gs_path "$GS_DATA_PATH"
     --mean_file "$MEAN_FILE"
     --std_file "$STD_FILE"
-    --class_map "$CLASS_MAP_PATH"
+    --text_embed_path "$TEXT_EMBED_PATH"
+    --null_text_token_path "$NULL_TEXT_TOKEN_PATH"
     --sphere2plane_path "$SPHERE2PLANE_PATH"
     --ref_camera_tar "$REF_CAMERA_TAR"
     --mixed_precision "$MIXED_PRECISION"
@@ -139,6 +151,9 @@ PY_ARGS+=(
 )
 if [ -n "$EXCLUDE_KEYS_FILE" ]; then
     PY_ARGS+=(--exclude_keys_file "$EXCLUDE_KEYS_FILE")
+fi
+if [ -n "$VAL_PROMPTS_FILE" ]; then
+    PY_ARGS+=(--val_prompts_file "$VAL_PROMPTS_FILE")
 fi
 
 OVERFIT=${OVERFIT:-0}
@@ -149,6 +164,10 @@ fi
 
 if [ -n "$RANK_TRANSFORM_FILE" ]; then
     PY_ARGS+=(--rank_transform_file "$RANK_TRANSFORM_FILE")
+fi
+
+if [ -n "$CLIP_THRESHOLDS_FILE" ]; then
+    PY_ARGS+=(--clip_thresholds_file "$CLIP_THRESHOLDS_FILE")
 fi
 
 if [ "$OVERFIT" -gt 0 ] 2>/dev/null; then

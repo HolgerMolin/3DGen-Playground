@@ -1,22 +1,18 @@
 """Offline class-conditioning probe for JiT checkpoints.
 
-Loads a saved checkpoint, reconstructs the JiT model from the embedded ``args``,
-and runs ``_measure_conditioning_signal`` over many classes / pairs to give a
-distribution-aware view of how class-aware the model is at a given step.
-
-Typical use is via ``jit/run_diagnostics.sh`` which orchestrates this together
-with ``jit/inspect_weights.py`` and ``jit/diagnose_class_diversity.py``. Direct
-invocation:
-
-    source .3dgen/bin/activate
-    python jit/probe_conditioning.py \\
-        --checkpoint output/<run>/0260000.pt \\
-        --per_class_dump_dir output/diagnostics/<run_id>/probe
-
-Per-class JSONs land at ``cond_probe_t{NNN}_per_class.json`` for each t value.
+DISABLED on the text_embeddings branch: this probe is class-categorical and
+has no clean analog under frozen-text-embed conditioning. Rework to retrieval@k
+over held-out captions before re-enabling.
 """
 
-import argparse
+raise NotImplementedError(
+    "jit/probe_conditioning.py is class-only and not ported to the "
+    "text_embeddings branch. Use the [cond] block in train_gsplat.py "
+    "(which now probes against the validation prompt pool) or rework this "
+    "into a caption-retrieval probe."
+)
+
+import argparse  # noqa: E402  -- kept so future re-enablement diff is small
 import json
 import os
 import sys

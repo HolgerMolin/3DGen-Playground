@@ -141,12 +141,34 @@ def build_ddpm_diffusion(
     )
 
 
+def _cond_forward(
+    model: torch.nn.Module,
+    sample_input: torch.Tensor,
+    t_batch: torch.Tensor,
+    cond_embeds: torch.Tensor,
+    *,
+    drop_to_null: bool,
+) -> torch.Tensor:
+    """Single model forward; when ``drop_to_null`` is True every row is
+    replaced with the cached null pooled CLIP vector (AdaLN unconditional
+    branch). ``cond_embeds`` is the ``(B, text_dim)`` pooled vector produced
+    by the encoder pipeline.
+    """
+    if drop_to_null:
+        force_drop = torch.ones(
+            sample_input.shape[0], device=sample_input.device, dtype=torch.long
+        )
+    else:
+        force_drop = None
+    return model(sample_input, t_batch, cond_embeds, force_drop_ids=force_drop)
+
+
 def _jit_velocity_from_xstart(
     *,
     model: torch.nn.Module,
     sample: torch.Tensor,
     t_value: torch.Tensor,
-    class_labels: torch.Tensor,
+    cond_embeds: torch.Tensor,  # (N, text_dim) pooled CLIP vectors
     cfg_scale: float,
     cfg_interval: tuple[float, float],
     t_eps: float,
@@ -163,17 +185,12 @@ def _jit_velocity_from_xstart(
     t_discrete = (t_value * (diffusion_steps - 1)).round().clamp(0, diffusion_steps - 1).long()
     t_batch = t_discrete.expand(sample.shape[0]).to(device=sample.device)
     sample_input = sample.to(dtype=model_dtype)
-    x_cond = model(sample_input, t_batch, class_labels).float()
+    x_cond = _cond_forward(model, sample_input, t_batch, cond_embeds, drop_to_null=False).float()
     denom = (1.0 - t_value).clamp_min(t_eps).to(dtype=sample.dtype)
     v_cond = (x_cond - sample) / denom
 
     if cfg_scale == 1.0:
         return v_cond
-
-    y_embedder = getattr(model, "y_embedder", None)
-    num_classes = getattr(y_embedder, "num_classes", None)
-    if num_classes is None:
-        raise ValueError("JiT Euler/Heun CFG requires model.y_embedder.num_classes to be available")
 
     low, high = cfg_interval
     t_scalar = float(t_value.item())
@@ -181,8 +198,7 @@ def _jit_velocity_from_xstart(
     if cfg_scale_interval == 1.0:
         return v_cond
 
-    null_labels = torch.full_like(class_labels, int(num_classes))
-    x_uncond = model(sample_input, t_batch, null_labels).float()
+    x_uncond = _cond_forward(model, sample_input, t_batch, cond_embeds, drop_to_null=True).float()
     v_uncond = (x_uncond - sample) / denom
     return v_uncond + cfg_scale_interval * (v_cond - v_uncond)
 
@@ -193,7 +209,7 @@ def _jit_euler_step(
     sample: torch.Tensor,
     t_value: torch.Tensor,
     t_next: torch.Tensor,
-    class_labels: torch.Tensor,
+    cond_embeds: torch.Tensor,  # (N, text_dim) pooled CLIP vectors
     cfg_scale: float,
     cfg_interval: tuple[float, float],
     t_eps: float,
@@ -203,7 +219,7 @@ def _jit_euler_step(
         model=model,
         sample=sample,
         t_value=t_value,
-        class_labels=class_labels,
+        cond_embeds=cond_embeds,
         cfg_scale=cfg_scale,
         cfg_interval=cfg_interval,
         t_eps=t_eps,
@@ -219,7 +235,7 @@ def _jit_heun_step(
     sample: torch.Tensor,
     t_value: torch.Tensor,
     t_next: torch.Tensor,
-    class_labels: torch.Tensor,
+    cond_embeds: torch.Tensor,  # (N, text_dim) pooled CLIP vectors
     cfg_scale: float,
     cfg_interval: tuple[float, float],
     t_eps: float,
@@ -229,7 +245,7 @@ def _jit_heun_step(
         model=model,
         sample=sample,
         t_value=t_value,
-        class_labels=class_labels,
+        cond_embeds=cond_embeds,
         cfg_scale=cfg_scale,
         cfg_interval=cfg_interval,
         t_eps=t_eps,
@@ -241,7 +257,7 @@ def _jit_heun_step(
         model=model,
         sample=sample_euler,
         t_value=t_next,
-        class_labels=class_labels,
+        cond_embeds=cond_embeds,
         cfg_scale=cfg_scale,
         cfg_interval=cfg_interval,
         t_eps=t_eps,
@@ -256,7 +272,7 @@ def sample_with_jit_ode(
     method: str,
     model: torch.nn.Module,
     shape: tuple[int, ...],
-    class_labels: torch.Tensor,
+    cond_embeds: torch.Tensor,  # (N, text_dim) pooled CLIP vectors
     num_inference_steps: int,
     device: torch.device,
     predict_xstart: bool,
@@ -269,6 +285,7 @@ def sample_with_jit_ode(
     P_mean: float = 0.0,
     P_std: float = 1.0,
     generator: Optional[torch.Generator] = None,
+    initial_noise: Optional[torch.Tensor] = None,
 ) -> torch.Tensor:
     if not predict_xstart:
         raise ValueError(
@@ -284,7 +301,14 @@ def sample_with_jit_ode(
         raise ValueError(f"t_eps must be > 0, got {t_eps}")
 
     shape = _validate_sampling_shape(model, shape)
-    sample = noise_scale * torch.randn(shape, device=device, dtype=torch.float32, generator=generator)
+    if initial_noise is not None:
+        if tuple(initial_noise.shape) != tuple(shape):
+            raise ValueError(
+                f"initial_noise shape {tuple(initial_noise.shape)} does not match sampling shape {tuple(shape)}"
+            )
+        sample = noise_scale * initial_noise.to(device=device, dtype=torch.float32)
+    else:
+        sample = noise_scale * torch.randn(shape, device=device, dtype=torch.float32, generator=generator)
     timesteps = _build_inference_timesteps(
         num_inference_steps=num_inference_steps,
         schedule=timestep_schedule,
@@ -308,7 +332,7 @@ def sample_with_jit_ode(
             sample=sample,
             t_value=timesteps[step_idx],
             t_next=timesteps[step_idx + 1],
-            class_labels=class_labels,
+            cond_embeds=cond_embeds,
             cfg_scale=cfg_scale,
             cfg_interval=cfg_interval,
             t_eps=t_eps,
@@ -320,7 +344,7 @@ def sample_with_jit_ode(
         sample=sample,
         t_value=timesteps[-2],
         t_next=timesteps[-1],
-        class_labels=class_labels,
+        cond_embeds=cond_embeds,
         cfg_scale=cfg_scale,
         cfg_interval=cfg_interval,
         t_eps=t_eps,
@@ -337,7 +361,7 @@ def sample_with_dpm(
     *,
     model: torch.nn.Module,
     shape: tuple[int, ...],
-    class_labels: torch.Tensor,
+    cond_embeds: torch.Tensor,  # (N, text_dim) pooled CLIP vectors
     num_inference_steps: int,
     device: torch.device,
     predict_xstart: bool,
@@ -377,7 +401,9 @@ def sample_with_dpm(
             dtype=torch.long,
         )
         model_input = scheduler.scale_model_input(sample, timestep)
-        model_output = model(model_input, timestep_batch, class_labels)
+        model_output = _cond_forward(
+            model, model_input, timestep_batch, cond_embeds, drop_to_null=False
+        )
         sample = scheduler.step(
             model_output,
             timestep,
@@ -396,7 +422,7 @@ def sample_with_ddim(
     *,
     model: torch.nn.Module,
     shape: tuple[int, ...],
-    class_labels: torch.Tensor,
+    cond_embeds: torch.Tensor,  # (N, text_dim) pooled CLIP vectors
     num_inference_steps: int,
     device: torch.device,
     predict_xstart: bool,
@@ -420,29 +446,26 @@ def sample_with_ddim(
 
     was_training = model.training
     model.eval()
-    model_kwargs = {"y": class_labels}
+    model_kwargs = {"y_pooled": cond_embeds}
 
     if cfg_scale != 1.0:
-        y_embedder = getattr(model, "y_embedder", None)
-        num_classes = getattr(y_embedder, "num_classes", None)
-        if num_classes is None:
-            raise ValueError("DDIM CFG requires model.y_embedder.num_classes to be available")
-        null_labels = torch.full_like(class_labels, num_classes)
         low, high = cfg_interval
 
-        def model_fn(x: torch.Tensor, t: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-            # t here is the remapped original timestep (in [0, diffusion_steps-1])
+        def model_fn(x, t, y_pooled):
             t_frac = float(t[0].item()) / max(1, diffusion_steps - 1)
-            # Match the CFG interval logic used in _jit_velocity_from_xstart
             apply_cfg = t_frac < high and (low == 0.0 or t_frac > low)
+            xi = x.to(dtype=sample_dtype)
             if not apply_cfg:
-                return model(x.to(dtype=sample_dtype), t, y)
-            out_cond = model(x.to(dtype=sample_dtype), t, y)
-            out_uncond = model(x.to(dtype=sample_dtype), t, null_labels)
+                return _cond_forward(model, xi, t, y_pooled, drop_to_null=False)
+            out_cond = _cond_forward(model, xi, t, y_pooled, drop_to_null=False)
+            out_uncond = _cond_forward(model, xi, t, y_pooled, drop_to_null=True)
             return out_uncond + cfg_scale * (out_cond - out_uncond)
     else:
-        def model_fn(x: torch.Tensor, t: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-            return model(x.to(dtype=sample_dtype), t, y)
+        def model_fn(x, t, y_pooled):
+            return _cond_forward(
+                model, x.to(dtype=sample_dtype), t,
+                y_pooled, drop_to_null=False,
+            )
 
     sample = diffusion.ddim_sample_loop(
         model_fn,
@@ -464,7 +487,7 @@ def sample_with_ddpm(
     *,
     model: torch.nn.Module,
     shape: tuple[int, ...],
-    class_labels: torch.Tensor,
+    cond_embeds: torch.Tensor,  # (N, text_dim) pooled CLIP vectors
     num_inference_steps: int,
     device: torch.device,
     predict_xstart: bool,
@@ -485,10 +508,13 @@ def sample_with_ddpm(
 
     was_training = model.training
     model.eval()
-    model_kwargs = {"y": class_labels}
+    model_kwargs = {"y_pooled": cond_embeds}
 
-    def model_fn(x: torch.Tensor, t: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        return model(x.to(dtype=sample_dtype), t, y)
+    def model_fn(x, t, y_pooled):
+        return _cond_forward(
+            model, x.to(dtype=sample_dtype), t,
+            y_pooled, drop_to_null=False,
+        )
 
     for timestep in reversed(range(diffusion.num_timesteps)):
         timestep_batch = torch.full(
@@ -519,7 +545,7 @@ def sample_model(
     sampler: str,
     model: torch.nn.Module,
     shape: tuple[int, ...],
-    class_labels: torch.Tensor,
+    cond_embeds: torch.Tensor,  # (N, text_dim) pooled CLIP vectors
     num_inference_steps: int,
     device: torch.device,
     predict_xstart: bool,
@@ -539,13 +565,14 @@ def sample_model(
     P_mean: float = 0.0,
     P_std: float = 1.0,
     generator: Optional[torch.Generator] = None,
+    initial_noise: Optional[torch.Tensor] = None,
 ) -> torch.Tensor:
     if sampler in {"heun", "euler"}:
         return sample_with_jit_ode(
             method=sampler,
             model=model,
             shape=shape,
-            class_labels=class_labels,
+            cond_embeds=cond_embeds,
             num_inference_steps=num_inference_steps,
             device=device,
             predict_xstart=predict_xstart,
@@ -558,12 +585,17 @@ def sample_model(
             P_mean=P_mean,
             P_std=P_std,
             generator=generator,
+            initial_noise=initial_noise,
+        )
+    if initial_noise is not None:
+        raise ValueError(
+            f"initial_noise is only supported for sampler in {{'heun','euler'}}, got {sampler!r}"
         )
     if sampler == "dpm":
         return sample_with_dpm(
             model=model,
             shape=shape,
-            class_labels=class_labels,
+            cond_embeds=cond_embeds,
             num_inference_steps=num_inference_steps,
             device=device,
             predict_xstart=predict_xstart,
@@ -580,7 +612,7 @@ def sample_model(
         return sample_with_ddpm(
             model=model,
             shape=shape,
-            class_labels=class_labels,
+            cond_embeds=cond_embeds,
             num_inference_steps=num_inference_steps,
             device=device,
             predict_xstart=predict_xstart,
@@ -592,7 +624,7 @@ def sample_model(
         return sample_with_ddim(
             model=model,
             shape=shape,
-            class_labels=class_labels,
+            cond_embeds=cond_embeds,
             num_inference_steps=num_inference_steps,
             device=device,
             predict_xstart=predict_xstart,

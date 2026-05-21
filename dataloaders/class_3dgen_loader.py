@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 FULL_3DGS_FEATURE_DIM = 59
 DC_ONLY_FEATURE_INDICES = (0, 1, 2, 3, 4, 20, 36, 52, 53, 54, 55, 56, 57, 58)
-PRELOAD_CACHE_VERSION = 9
+PRELOAD_CACHE_VERSION = 10  # bumped: clip thresholds now part of the cache key
 LAZY_CACHE_LOCK_STRIPES = 256
 _PRELOAD_WORKER_STATE = {}
 
@@ -425,6 +425,14 @@ class Class3DGenDataset(Dataset):
             _hash_array(hasher, np.asarray(rank_channels, dtype=np.int64))
             _hash_array(hasher, np.asarray(self.base_dataset.rank_data_quantiles))
             _hash_array(hasher, np.asarray(self.base_dataset.rank_gauss_quantiles))
+        clip_channels = getattr(self.base_dataset, "clip_channels", None)
+        if clip_channels is None:
+            hasher.update(b"clip:none")
+        else:
+            hasher.update(b"clip:on")
+            _hash_array(hasher, np.asarray(clip_channels, dtype=np.int64))
+            _hash_array(hasher, np.asarray(self.base_dataset.clip_lower))
+            _hash_array(hasher, np.asarray(self.base_dataset.clip_upper))
         sphere2plane = getattr(self.base_dataset, "sphere2plane", None)
         if sphere2plane is None:
             hasher.update(b"sphere2plane:none")

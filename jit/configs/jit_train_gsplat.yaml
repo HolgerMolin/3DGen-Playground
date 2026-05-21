@@ -10,31 +10,10 @@
 
 # --- Model ---
 model: JiT-B/8
-# Patch-embed shape. true = two-stage BottleneckPatchEmbed (in_chans→bottleneck_dim→embed_dim,
-# narrowing through bottleneck_dim < embed_dim — explicit information bottleneck).
-# false = single Conv2d patch embed (in_chans→embed_dim), no rank reduction below embed_dim.
-# Checkpoints are not interchangeable across this flag (different submodule names).
 bottleneck: false
 predict_xstart: true
 noise_schedule: squaredcos_cap_v2
-# CFG dropout. 0.2 starves class signal early; keep around 0.1 until CFG
-# visibly separates conditional vs unconditional predictions.
 class_dropout_prob: 0.1
-# Optional auxiliary classification head on top of mean-pooled transformer
-# tokens (trained with cross-entropy on un-dropped labels). Gives the trunk
-# a direct class-discriminative signal alongside the flow-matching MSE;
-# useful when `class_signal` stays stuck (see runs/2026-04-19 writeups).
-aux_classifier: false
-aux_classifier_weight: 0.0
-# Class-from-null cosine repulsion: pushes class embeddings away from the
-# CFG null token so classifier-free guidance retains signal at sampling.
-# Stopgrad on null row — null only learns from normal CFG-dropout training.
-# Weight is hot-reloadable via overrides.yaml; margin is static.https://vscode-remote+ssh-002dremote-002b34-002e66-002e119-002e50.vscode-resource.vscode-cdn.net/home/hmolin/3DGen-Playground/output/jit_B8_20260429_042413/loss_plots/class_null_cos.png?version%3D1777438607152
-null_repel_weight: 0.0
-null_repel_margin: 0.5
-# LabelEmbedder embedding-table init std. 0.02 = original DiT recipe; bump
-# to ~0.1 to amplify class conditioning at init without changing architecture.
-label_embed_init_std: 0.1
 
 # --- Data (optional overrides; shell/env usually provides mean/std and paths) ---
 # mean_file: null
@@ -44,51 +23,63 @@ label_embed_init_std: 0.1
 # N(0,1) at load time and inverse-transformed before the renderer's
 # sigmoid/exp activations. Default channels: opacity + 3 scale logits.
 rank_transform_file: data/stats/rank_quantiles.pt
-class_map: object_labels/image_kmeans_k103/object_to_class.json
+# Per-channel hard-clip thresholds (built by data/build_clip_thresholds.py),
+# applied at load time BEFORE the rank transform. IMPORTANT: if a clipped channel
+# is also in the rank set, the rank_transform_file MUST be one rebuilt on the
+# clipped stream (build_rank_transform.py --clip_thresholds_file), otherwise the
+# clipped point-mass maps to a single gauss value and the output is not N(0,1).
+# clip_thresholds_file: data/stats/clip_thresholds_opacity_scales.pt
+text_embed_path: object_classification/text_tokens
+null_text_token_path: object_classification/null_text_token.npz
 sphere2plane_path: data/sphere2plane.npy
 sh_degree0_only: true
-# Inverse-frequency WeightedRandomSampler over class labels. Counters the
-# ~1000:1 class imbalance in the GaussianVerse aesthetic split.
-class_balanced_sampler: true
-# channel_loss_weights removed pending re-audit after the post-fix stats
-# recompute (rot_w std shifted 5.4×, scale_{x,y,z} 2.5×, so the old 1/spatial_std²
-# weights are stale). Re-run data/audit_norm_stats.py with the new mean/std.
+# Per-channel MSE weighting (14 DC channels): uniform — render schedule handles overall balance.
+
+# Training Setup
+epochs: 200
+batch_size: 128
+ema_decay: 0.995
+
+# Optimizer parameters
+lr: 4e-4
+betas: [0.9, 0.999]
+text_proj_lr: 4e-4
+text_proj_betas: [0.9, 0.999]
+lr_schedule: cosine
+lr_warmup_steps: 200
+lr_min: 1e-6
+lr_cosine_total_steps: 0
+
+# Diffusion parameters
+P_mean: -0.5
+P_std: 1.5
 
 # --- Render loss ---
-render_loss_weight: 0.1
-alpha_mask_loss_weight: 0.1
-lpips_loss_weight: 0.01
-lpips_net: vgg
-# Perceptual backend for the lpips_loss_weight term: lpips | dinov2.
-# dinov2 = frozen DINOv2 ViT-B/14, mean cosine distance over patch tokens at 224x224.
-# Set at launch only — not hot-reloadable.
+render_loss_weight: 8.0
+alpha_mask_loss_weight: 4.0
+lpips_loss_weight: 4.0
+lpips_net: vgg # TODO
+# lpips | dinov2.
 perceptual_backend: vgg
-render_loss_num_cam: 1
+render_loss_num_cam: 4
 train_render_size: 224
 ref_camera_tar: /home/tiangexiang/gen3d/ref_camera.tar.gz
 enable_render_loss_after: 20000
+render_weight_schedule:
+  - [20000,  0.0, 0.0,  0.0 ]
+  - [40000,  8.0, 4.0, 4.0]
 # Hard mask on FM t_value: render loss only applies when t_value >= cutoffhttps://vscode-remote+ssh-002dremote-002b34-002e66-002e119-002e50.vscode-resource.vscode-cdn.net/home/hmolin/3DGen-Playground/output/jit_B8_20260429_042413/dit_validation/epoch_023_step_0023000_class001.png?version%3D1777438679927
 # (i.e. the clean fraction is >= cutoff). 0 disables the mask. Samples
 # below the cutoff are SLICED OUT before the render+LPIPS path runs, so
 # the cutoff doubles as a memory cap (lower cutoff → bigger render batch).
-render_loss_noise_cutoff: 0.5
+render_loss_noise_cutoff: 0.8
 train_render_log_every: 0
-train_render_log_num_cam: 2
+train_render_log_num_cam: 4
 
 # --- Training ---
-epochs: 200
-batch_size: 128
-lr: 2e-4
-# none | warmup (ramp to lr then hold) | cosine (warmup then decay to lr_min)
-lr_schedule: cosine
-lr_warmup_steps: 500
-lr_min: 1e-5
-# cosine only: 0 = auto (epochs * len(loader) // gradient_accumulation_steps, after
-# accelerate.prepare — so real dataset size, num_processes, and drop_last are included).
-lr_cosine_total_steps: 0
-ema_decay: 0.995
+
 mixed_precision: bf16
-gradient_accumulation_steps: 1
+gradient_accumulation_steps: 2
 gradient_checkpointing: false
 compile: true
 # Diagnostic only: prints rolling per-phase step-time breakdown (data/h2d/fwd/
@@ -96,8 +87,8 @@ compile: true
 # phase, so totals are higher than non-profile runs — read the *ratios*. Off
 # for normal runs.
 profile_step_times: false
-max_grad_norm: 4.0
-num_workers: 4
+max_grad_norm: 1.0
+num_workers: 10
 preload_to_cpu: false
 lazy_cache_to_cpu: true
 preload_max_samples: 0
@@ -105,49 +96,47 @@ preload_workers: 0
 persistent_workers: true
 prefetch_factor: 4
 seed: 0
-# Logit-normal t ~ sigmoid(N(P_mean, P_std)). In this FM convention t=0 is
-# noise and t=1 is clean, so P_mean < 0 biases training toward noisy samples.
-P_mean: 0.0
-P_std: 1.5
-# Optional P_mean curriculum: list of [step, P_mean] control points, linearly
-# interpolated, held constant outside the endpoints. When set, this overrides
-# `P_mean` (and any P_mean in overrides.yaml).
-# P_mean_schedule:
-#   - [0,     -0.5]
-#   - [20000,  0.0]
-#   - [40000,  0.3]
-#   - [70000,  0.5]
-
-# Optional render-weight ramp: list of [step, rl1, alpha, lpips] control points,
-# linearly interpolated, held constant outside the endpoints. When set, this
-# overrides the static render_loss_weight / alpha_mask_loss_weight /
-# lpips_loss_weight (incl. values from overrides.yaml). Engagement is still gated
-# by enable_render_loss_after; the schedule only supplies weight values once engaged.
-# Target max weights (per runs/2026-04-20 grad-norm headroom): rl1=0.3, alpha=0.15,
-# lpips=0.02. Ramp starts at the engagement step (50 000) from zero and reaches the
-# max values over 30 000 opt steps; held flat thereafter.
-render_weight_schedule:
-  - [20000,  0.0, 0.0,  0.0 ]
-  - [60000,  1.0, 1.0, 1.0]
 
 # --- Logging / checkpoints / validation ---
 # Training uses JiT flow-matching noising (x_t = t*x_0 + (1-t)*eps, t=0 noise,
 # t=1 clean) via flow_matching_training_losses; heun/euler are the consistent
 # samplers. ddim/dpm/ddpm will produce garbage on FM checkpoints.
-log_every: 200
+log_every: 500
 grad_norm_log_every_n_prints: 10
 ckpt_every: 20000
-val_every: 1000
-val_sampling_steps: 100
+val_every: 5000
+val_sampling_steps: 50
 val_sampler: heun
 val_cfg_scale: 1.5
 ddim_eta: 0.0
+# Fixed-seed prompt grid: tile i uses cond_pool[i] (validation prompts encoded
+# at startup) and initial noise seeded with (val_grid_seed + i). One fixed
+# camera per tile so cross-step diffs reflect model changes only.
+# Only supported for val_sampler in {heun, euler}.
+val_grid_enabled: true
+val_grid_rows: 2
+val_grid_cols: 2
+val_grid_seed: 1234
+val_grid_camera_idx: 0
+# Optional JSON list of validation prompts. If unset, a 64-prompt default
+# (simple/multi-attribute/compositional) is used.
+# val_prompts_file: jit/configs/val_prompts.json
 dpm_solver_order: 2
 dpm_algorithm_type: "dpmsolver++"
 dpm_solver_type: midpoint
 dpm_timestep_spacing: trailing
 dpm_use_karras_sigmas: false
 results_dir: output/dit_results
+
+# Weights & Biases (rank-0 only; --no-wandb to disable)
+wandb: true
+wandb_project: 3dgen-jit
+# wandb_entity:        # team/user; falls back to WANDB_ENTITY env or default
+# wandb_run_name:      # falls back to basename(results_dir)
+wandb_mode: online     # online | offline | disabled
+wandb_tags: ""         # comma-separated, e.g. "lr-sweep,jit-b"
+# wandb_group:         # group runs in the wandb UI (e.g. sweep id)
+wandb_log_images: true
 
 # Hot-reload hyperparameters during training (optional):
 # overrides_yaml: jit/configs/overrides.yaml

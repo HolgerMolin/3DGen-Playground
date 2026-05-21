@@ -68,3 +68,20 @@ CLAUDE.md
 
 # Personal/local inference configs
 jit/configs/my_*.yaml
+
+# Generated probe / render outputs
+jit/*_out/
+data/dead_masks_smoketest/
+object_classification/cluster_inspection/
+object_classification/debug_renders/
+
+# Large embedding / token caches
+object_classification/image_embeddings*.npz
+object_classification/text_embeddings.npz
+object_classification/umap_*.npz
+object_classification/text_tokens/
+
+# Runtime artifacts
+*.pid
+.claude/settings.local.json
+.claude/*.lock

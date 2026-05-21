@@ -45,17 +45,28 @@ class VisionRotaryEmbeddingFast(nn.Module):
         freqs_w = freqs_1d[None, :, :].expand(ft_seq_len, ft_seq_len, -1)
         freqs_2d = torch.cat((freqs_h, freqs_w), dim=-1).reshape(ft_seq_len * ft_seq_len, -1)
 
-        self.register_buffer("freqs_cos", freqs_2d.cos(), persistent=False)
-        self.register_buffer("freqs_sin", freqs_2d.sin(), persistent=False)
+        # Pre-shape (1, 1, N, D) and register every dtype variant up front.
+        # The earlier `hasattr`-guarded lazy `.to()` cache forced a Dynamo
+        # recompile on first forward and produced module-attribute Tensors that
+        # got aliased across CUDA Graph replays under compile(reduce-overhead).
+        # Buffers are non-persistent (derivable from ctor args).
+        cos_4d = freqs_2d.cos().unsqueeze(0).unsqueeze(0)
+        sin_4d = freqs_2d.sin().unsqueeze(0).unsqueeze(0)
+        self.register_buffer("freqs_cos", cos_4d, persistent=False)
+        self.register_buffer("freqs_sin", sin_4d, persistent=False)
+        self.register_buffer("freqs_cos_bf16", cos_4d.bfloat16(), persistent=False)
+        self.register_buffer("freqs_sin_bf16", sin_4d.bfloat16(), persistent=False)
+        self.register_buffer("freqs_cos_fp16", cos_4d.half(), persistent=False)
+        self.register_buffer("freqs_sin_fp16", sin_4d.half(), persistent=False)
 
     def forward(self, x):
-        # Cache the dtype-converted buffers so we don't pay the .to() overhead
-        # on every forward pass during stable mixed-precision training.
-        if not hasattr(self, '_rope_cache_dtype') or self._rope_cache_dtype != x.dtype:
-            self._cos_cache = self.freqs_cos.to(dtype=x.dtype).unsqueeze(0).unsqueeze(0)
-            self._sin_cache = self.freqs_sin.to(dtype=x.dtype).unsqueeze(0).unsqueeze(0)
-            self._rope_cache_dtype = x.dtype
-        return x * self._cos_cache + rotate_half(x) * self._sin_cache
+        if x.dtype == torch.bfloat16:
+            cos, sin = self.freqs_cos_bf16, self.freqs_sin_bf16
+        elif x.dtype == torch.float16:
+            cos, sin = self.freqs_cos_fp16, self.freqs_sin_fp16
+        else:
+            cos, sin = self.freqs_cos, self.freqs_sin
+        return x * cos + rotate_half(x) * sin
 
 
 class RMSNorm(nn.Module):
@@ -266,34 +277,30 @@ class TimestepEmbedder(nn.Module):
         return t_emb
 
 
-class LabelEmbedder(nn.Module):
+class TextEmbedder(nn.Module):
+    """Projects the EOS-pooled (penultimate-normed) CLIP vector into hidden_size
+    for the AdaLN pathway. On CFG drop, the caller-supplied ``drop_ids`` bool
+    swaps the pooled vector for a cached null embedding (empty-string CLIP
+    encoding) so the geometry matches conditional inputs.
     """
-    Embeds class labels into vector representations. Also handles label dropout for classifier-free guidance.
-    """
-    def __init__(self, num_classes, hidden_size, dropout_prob):
+
+    def __init__(self, text_dim, hidden_size):
         super().__init__()
-        use_cfg_embedding = dropout_prob > 0
-        self.embedding_table = nn.Embedding(num_classes + use_cfg_embedding, hidden_size)
-        self.num_classes = num_classes
-        self.dropout_prob = dropout_prob
+        self.text_dim = text_dim
+        self.hidden_size = hidden_size
+        self.proj = nn.Sequential(
+            nn.Linear(text_dim, hidden_size),
+            nn.SiLU(),
+            nn.Linear(hidden_size, hidden_size),
+        )
+        self.register_buffer("null_emb", torch.zeros(text_dim), persistent=False)
 
-    def token_drop(self, labels, force_drop_ids=None):
-        """
-        Drops labels to enable classifier-free guidance.
-        """
-        if force_drop_ids is None:
-            drop_ids = torch.rand(labels.shape[0], device=labels.device) < self.dropout_prob
-        else:
-            drop_ids = force_drop_ids == 1
-        labels = torch.where(drop_ids, self.num_classes, labels)
-        return labels
-
-    def forward(self, labels, train, force_drop_ids=None):
-        use_dropout = self.dropout_prob > 0
-        if (train and use_dropout) or (force_drop_ids is not None):
-            labels = self.token_drop(labels, force_drop_ids)
-        embeddings = self.embedding_table(labels)
-        return embeddings
+    def forward(self, pooled, drop_ids=None):
+        """pooled: (B, text_dim); drop_ids: (B,) bool or None (no drop)."""
+        if drop_ids is not None:
+            null = self.null_emb.to(pooled.dtype).expand_as(pooled)
+            pooled = torch.where(drop_ids.unsqueeze(-1), null, pooled)
+        return self.proj(pooled)
 
 
 #################################################################################
@@ -301,7 +308,12 @@ class LabelEmbedder(nn.Module):
 #################################################################################
 
 class JiTBlock(nn.Module):
-    """A JiT block with adaLN-Zero, RMSNorm, qk-norm, RoPE, and SwiGLU."""
+    """A JiT block: self-attn -> MLP, each gated by AdaLN-Zero.
+
+    RMSNorm, qk-norm, RoPE on self-attn, SwiGLU MLP. Caption conditioning is
+    injected through the AdaLN signal ``c`` (sum of time embedding and
+    projected CLIP pool vector); there is no cross-attention pathway.
+    """
 
     def __init__(self, hidden_size, num_heads, mlp_ratio=4.0, attn_drop=0.0, proj_drop=0.0):
         super().__init__()
@@ -323,7 +335,9 @@ class JiTBlock(nn.Module):
         )
 
     def forward(self, x, c, rope=None):
-        shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = self.adaLN_modulation(c).chunk(6, dim=1)
+        shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = (
+            self.adaLN_modulation(c).chunk(6, dim=1)
+        )
         x = x + gate_msa.unsqueeze(1) * self.attn(modulate(self.norm1(x), shift_msa, scale_msa), rope=rope)
         x = x + gate_mlp.unsqueeze(1) * self.mlp(modulate(self.norm2(x), shift_mlp, scale_mlp))
         return x
@@ -361,15 +375,13 @@ class DiT(nn.Module):
         num_heads=16,
         mlp_ratio=4.0,
         class_dropout_prob=0.1,
-        num_classes=48,
+        text_dim=768,
         learn_sigma=False,
         gradient_checkpointing=True,
         bottleneck_dim=128,
         bottleneck=True,
         attn_drop=0.0,
         proj_drop=0.0,
-        aux_classifier=False,
-        label_embed_init_std=0.02,
     ):
         super().__init__()
         if input_size % patch_size != 0:
@@ -410,7 +422,8 @@ class DiT(nn.Module):
                 bias=True,
             )
         self.t_embedder = TimestepEmbedder(hidden_size)
-        self.y_embedder = LabelEmbedder(num_classes, hidden_size, class_dropout_prob)
+        self.class_dropout_prob = class_dropout_prob
+        self.y_embedder = TextEmbedder(text_dim, hidden_size)
         num_patches = self.x_embedder.num_patches
         # Will use fixed sin-cos embedding:
         self.pos_embed = nn.Parameter(torch.zeros(1, num_patches, hidden_size), requires_grad=False)
@@ -430,12 +443,6 @@ class DiT(nn.Module):
             for _ in range(depth)
         ])
         self.final_layer = FinalLayer(hidden_size, patch_size, self.out_channels)
-        self.aux_classifier = nn.Linear(hidden_size, num_classes) if aux_classifier else None
-        self._label_embed_init_std = float(label_embed_init_std)
-        # Stash the pooled aux logits during forward so the training loop can
-        # retrieve them without changing the forward() return signature (which
-        # would break flow_matching_training_losses's shape assertion).
-        self._aux_logits = None
         self.initialize_weights()
 
     def initialize_weights(self):
@@ -463,8 +470,8 @@ class DiT(nn.Module):
             nn.init.xavier_uniform_(w.view([w.shape[0], -1]))
             nn.init.constant_(self.x_embedder.proj.bias, 0)
 
-        # Initialize label embedding table:
-        nn.init.normal_(self.y_embedder.embedding_table.weight, std=self._label_embed_init_std)
+        # Initialize text-cond projection MLP (standard xavier from _basic_init
+        # already ran; null_emb stays at zero by design).
 
         # Initialize timestep embedding MLP:
         nn.init.normal_(self.t_embedder.mlp[0].weight, std=0.02)
@@ -501,44 +508,73 @@ class DiT(nn.Module):
             return module(x, c, rope=rope)
         return ckpt_forward
 
-    def forward(self, x, t, y, force_drop_ids=None):
+    def load_null_embeddings(self, null_token):
+        """Copy the cached empty-string CLIP pool vector into the null buffer.
+
+        ``null_token``: (1, text_dim) or (text_dim,) tensor — the EOS-position
+        token of the penultimate-normed empty-string CLIP encoding (i.e. the
+        contents of `null_text_token.npz['null_token']`).
         """
-        Forward pass of JiT.
-        x: (N, C, H, W) tensor of spatial inputs (3DGS features on grid)
-        t: (N,) tensor of diffusion timesteps
-        y: (N,) tensor of class labels
-        force_drop_ids: optional (N,) 0/1 tensor — when 1, replace that sample's
-            label with the unconditional slot. Lets the trainer pre-sample the
-            CFG drop mask so the aux classifier can skip dropped rows.
+        nt = null_token.detach().to(self.y_embedder.null_emb.dtype).reshape(-1)
+        if nt.numel() != self.y_embedder.null_emb.numel():
+            raise ValueError(
+                f"null_token has {nt.numel()} elements, expected {self.y_embedder.null_emb.numel()}."
+            )
+        with torch.no_grad():
+            self.y_embedder.null_emb.copy_(nt)
+
+    def _draw_drop_ids(self, batch_size, device, force_drop_ids=None):
+        """Decide which samples get the null conditioning this forward pass.
+
+        Returns a (B,) bool tensor or None (no drop).
         """
-        x = self.x_embedder(x) + self.pos_embed  # (N, T, D), where T = H * W / patch_size ** 2
-        t = self.t_embedder(t)                   # (N, D)
-        y = self.y_embedder(y, self.training, force_drop_ids=force_drop_ids)  # (N, D)
-        c = t + y                                # (N, D)
+        if force_drop_ids is not None:
+            return force_drop_ids == 1
+        if self.training and self.class_dropout_prob > 0:
+            return torch.rand(batch_size, device=device) < self.class_dropout_prob
+        return None
+
+    def forward(self, x, t, y_pooled, force_drop_ids=None):
+        """
+        x:        (N, C, H, W)        — 3DGS feature grid (noisy)
+        t:        (N,)                — diffusion timesteps
+        y_pooled: (N, text_dim)       — EOS-pooled penultimate-normed CLIP vector
+        force_drop_ids: optional (N,) 0/1 tensor; 1 = replace with null on this sample.
+        """
+        x = self.x_embedder(x) + self.pos_embed                                 # (N, T, D)
+        t_emb = self.t_embedder(t)                                              # (N, D)
+        drop_ids = self._draw_drop_ids(x.shape[0], x.device, force_drop_ids=force_drop_ids)
+        y_pool = self.y_embedder(y_pooled, drop_ids=drop_ids)                   # (N, D)
+        c = t_emb + y_pool                                                       # (N, D)
         for block in self.blocks:
             if self.gradient_checkpointing and self.training:
-                x = checkpoint(self.ckpt_wrapper(block, self.feat_rope), x, c, use_reentrant=False)
+                x = checkpoint(
+                    self.ckpt_wrapper(block, self.feat_rope),
+                    x, c,
+                    use_reentrant=False,
+                )
             else:
-                x = block(x, c, rope=self.feat_rope)                                     # (N, T, D)
-        # Aux classifier pools the transformer tokens before final_layer so
-        # gradients flow through the full trunk but not through the adaLN head.
-        if self.aux_classifier is not None:
-            self._aux_logits = self.aux_classifier(x.mean(dim=1))
-        else:
-            self._aux_logits = None
-        x = self.final_layer(x, c)                # (N, T, patch_size ** 2 * out_channels)
-        x = self.unpatchify(x)                   # (N, out_channels, H, W)
+                x = block(x, c, rope=self.feat_rope)
+        x = self.final_layer(x, c)
+        x = self.unpatchify(x)
         return x
 
-    def forward_with_cfg(self, x, t, y, cfg_scale):
+    def forward_with_cfg(self, x, t, y_pooled, cfg_scale):
+        """Batch conditional + unconditional halves for classifier-free guidance.
+
+        The unconditional half is produced by setting ``force_drop_ids = 1``,
+        which swaps the pooled CLIP vector for the cached null embedding.
+        Caller passes an already-duplicated batch.
         """
-        Forward pass of DiT, but also batches the unconditional forward pass for classifier-free guidance.
-        """
-        # https://github.com/openai/glide-text2im/blob/main/notebooks/text2im.ipynb
         half = x[: len(x) // 2]
         combined = torch.cat([half, half], dim=0)
-        model_out = self.forward(combined, t, y)
-        # Apply CFG to ALL channels (not just first 3 as in image DiT)
+        N = combined.shape[0]
+        force_drop = torch.cat(
+            [torch.zeros(N // 2, device=x.device, dtype=torch.long),
+             torch.ones(N // 2, device=x.device, dtype=torch.long)],
+            dim=0,
+        )
+        model_out = self.forward(combined, t, y_pooled, force_drop_ids=force_drop)
         eps, rest = model_out[:, :self.in_channels], model_out[:, self.in_channels:]
         cond_eps, uncond_eps = torch.split(eps, len(eps) // 2, dim=0)
         half_eps = uncond_eps + cfg_scale * (cond_eps - uncond_eps)

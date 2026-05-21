@@ -1,9 +1,16 @@
 """
-Training script for JiT-style large-patch diffusion on 3DGS data (class-conditional).
+Training script for JiT-style large-patch diffusion on 3DGS data (text-conditional).
 3DGS data (16384 points x 59 features) on 128x128 grid is the latent space directly — no VAE needed.
 
-Single-GPU:  python jit/train_gsplat.py --obj_list ... --gs_path ...
-Multi-GPU:   accelerate launch [--num_processes N] jit/train_gsplat.py --obj_list ... --gs_path ...
+Text conditioning uses the frozen CLIP-L/14 EOS-pooled vector precomputed by
+object_classification/encode_text_embeddings.py (pooled.npy in the encoder's
+output directory, or the legacy text_embeddings.npz). The pooled vector is
+projected by an MLP and summed into the AdaLN signal — no cross-attention,
+no embedding table. A sibling null_text_token.npz holds the empty-string
+encoding used as the unconditional branch for CFG dropout.
+
+Single-GPU:  python jit/train_gsplat.py --obj_list ... --gs_path ... --text_embed_path ...
+Multi-GPU:   accelerate launch [--num_processes N] jit/train_gsplat.py ...
 Optional:    --config jit/configs/jit_train_gsplat.yaml  (CLI overrides YAML)
 Optional:    --overrides_yaml path/to/overrides.yaml  (hot-reload lr_scale, max_grad_norm, render weights, P_mean, …)
 """
@@ -44,15 +51,20 @@ GS_ROOT = os.path.join(REPO_ROOT, "submodules", "gaussian-splatting")
 if GS_ROOT not in sys.path:
     sys.path.insert(0, GS_ROOT)
 
-from dataloaders.standard_3dgen_loader import Standard3DGenDataset
-from dataloaders.class_3dgen_loader import (
-    Class3DGenDataset, DC_ONLY_FEATURE_INDICES, FULL_3DGS_FEATURE_DIM,
+from dataloaders.standard_3dgen_loader import Standard3DGenDataset, load_null_text_token
+from dataloaders.text_3dgen_loader import (
+    Text3DGenDataset, DC_ONLY_FEATURE_INDICES, FULL_3DGS_FEATURE_DIM,
 )
 from jit.models import JiT_3DGS_models
 from jit.diffusion import create_diffusion
 from jit.sampling import SAMPLER_CHOICES, resolve_sampling_shape, sample_model
 from utils.plane_utils import load_sphere2plane, plane_to_point_cloud
 from utils.loss_tracker import LossTracker
+
+try:
+    import wandb
+except ImportError:
+    wandb = None
 from utils.gsplat_render_util import (
     _compute_render_loss_for_batch,
     _denormalize_point_cloud,
@@ -115,32 +127,120 @@ def _compute_lr(
     raise ValueError(f"Unknown lr_schedule: {schedule!r}")
 
 
-def _build_class_balanced_sampler(dataset, seed: int, rank: int):
-    """Build a WeightedRandomSampler with inverse class-frequency weights.
+def _default_null_path(text_embed_path: str) -> str:
+    """Derive a default null-token path next to the first text-embed shard.
 
-    Each rank gets its own generator (seed + rank) so draws are independent
-    across processes. Replacement is True so rare classes can appear in most
-    batches; `num_samples` matches dataset length to keep epoch cadence.
+    `text_embed_path` may be a comma-separated list of shards; we look in the
+    directory of the first shard. The encoder script writes
+    ``null_text_token.npz`` there by default, idempotently across shards.
     """
-    if not hasattr(dataset, "valid_labels"):
-        raise ValueError(
-            "class_balanced_sampler requires Class3DGenDataset "
-            "(needs .valid_labels); got " + type(dataset).__name__
-        )
-    labels = np.asarray(dataset.valid_labels, dtype=np.int64)
-    counts = np.bincount(labels)
-    class_weights = np.zeros_like(counts, dtype=np.float64)
-    nonzero = counts > 0
-    class_weights[nonzero] = 1.0 / counts[nonzero]
-    sample_weights = class_weights[labels]
-    g = torch.Generator()
-    g.manual_seed(int(seed) + int(rank))
-    return torch.utils.data.WeightedRandomSampler(
-        weights=torch.from_numpy(sample_weights).double(),
-        num_samples=len(sample_weights),
-        replacement=True,
-        generator=g,
-    )
+    first = text_embed_path.split(",")[0].strip()
+    return str(Path(first).parent / "null_text_token.npz")
+
+
+# Default 64-prompt validation pool. Mix of simple class words and compositional
+# prompts (multi-attribute, spatial relations) so the cond_signal probe can
+# distinguish AdaLN-level conditioning gains from cross-attn-level gains that
+# require attending to specific text positions.
+_DEFAULT_VAL_PROMPTS: list[str] = [
+    # 16 simple objects — comparable with the legacy probe
+    "a wooden chair", "a red car", "a small house", "a tree",
+    "a dog", "a teapot", "a sword", "a rocket",
+    "a guitar", "a cat", "a hammer", "a robot",
+    "a hat", "a backpack", "a sailboat", "a vase",
+    # 16 single-attribute (color OR material OR size)
+    "a blue chair", "a metallic teapot", "a tiny rocket", "a wooden sword",
+    "a golden vase", "a striped backpack", "a stone tower", "a glass bottle",
+    "a giant mushroom", "a black cat", "a polished helmet", "a tall lamp",
+    "a furry rabbit", "a marble statue", "a wooden barrel", "a ceramic mug",
+    # 16 multi-attribute (color + material, etc.)
+    "a red wooden chair", "a small blue car", "a tall green tree",
+    "a tiny golden teapot", "a polished metal sword", "a fluffy white cat",
+    "a black leather backpack", "a striped ceramic vase",
+    "a tall stone tower", "a glossy red apple", "a rusted iron axe",
+    "a glowing crystal orb", "a smooth jade frog", "a checkered wool blanket",
+    "a transparent glass bowl", "a wooden barrel filled with apples",
+    # 16 compositional / spatial / multi-object
+    "a red cube next to a blue sphere",
+    "a small chair on top of a large table",
+    "a green tree behind a wooden house",
+    "a cat sitting next to a dog",
+    "a teapot pouring into a cup",
+    "a sword resting on a stone pedestal",
+    "a robot holding a flower",
+    "a bird perched on a branch",
+    "a candle burning on a wooden table",
+    "a stack of books on a shelf",
+    "a wooden boat in a calm pond",
+    "a guitar leaning against a chair",
+    "a hat hanging on a hook",
+    "a flower growing out of a cracked pot",
+    "a small house with a red roof and white walls",
+    "a knight wearing armor and holding a shield",
+]
+
+
+def _encode_clip_penultimate(
+    prompts: list[str],
+    device: torch.device,
+) -> torch.Tensor:
+    """CLIP-L/14 EOS-pool encoder mirroring object_classification/encode_text_embeddings.py.
+
+    Returns ``pooled`` (N, 768) fp32 on ``device`` — the EOS-position token of
+    the penultimate hidden state after CLIP's final_layer_norm. Geometry MUST
+    match the offline encoder so the val pool lives in the same CLIP space as
+    training-time samples.
+    """
+    from transformers import CLIPTextModel, CLIPTokenizer
+    model_id = "openai/clip-vit-large-patch14"
+    tok = CLIPTokenizer.from_pretrained(model_id)
+    enc = CLIPTextModel.from_pretrained(model_id).to(device).eval()
+    inputs = tok(
+        prompts, padding="max_length", max_length=77,
+        truncation=True, return_tensors="pt",
+    ).to(device)
+    with torch.no_grad():
+        out = enc(**inputs, output_hidden_states=True)
+        # Penultimate + CLIP's final LayerNorm — "clip-skip 1" trick used by the
+        # offline encoder. final_layer_norm lives directly on CLIPTextModel in
+        # this transformers version (no .text_model wrapper).
+        penultimate = out.hidden_states[-2]
+        tokens = enc.final_layer_norm(penultimate)
+    eos_positions = inputs["input_ids"].to(torch.int).argmax(dim=-1)
+    batch_idx = torch.arange(inputs["input_ids"].size(0), device=device)
+    pooled = tokens[batch_idx, eos_positions].float().detach().clone()
+    del enc
+    if device.type == "cuda":
+        torch.cuda.empty_cache()
+    return pooled
+
+
+def _load_val_prompts(
+    prompts_path: Optional[str],
+    n_tiles: int,
+    device: torch.device,
+) -> torch.Tensor:
+    """Load N validation prompts and encode them with the same CLIP-L/14
+    pipeline used offline (penultimate + final_layer_norm + EOS-pool). Returns
+    a ``(N, text_dim)`` tensor on device.
+
+    ``prompts_path``: JSON list of strings, OR None to use the built-in
+    64-prompt default pool covering simple, multi-attribute, and compositional
+    cases.
+    """
+    if prompts_path is None:
+        prompts = list(_DEFAULT_VAL_PROMPTS)
+    else:
+        with open(prompts_path, "r", encoding="utf-8") as f:
+            prompts = json.load(f)
+        if not isinstance(prompts, list) or not all(isinstance(p, str) for p in prompts):
+            raise ValueError(f"{prompts_path} must contain a JSON list of strings")
+    if len(prompts) < n_tiles:
+        # Pad by repeating; better than failing on a tiny prompt file.
+        prompts = (prompts * ((n_tiles + len(prompts) - 1) // len(prompts)))[:n_tiles]
+    prompts = prompts[:n_tiles]
+    logger.info(f"Encoding {len(prompts)} validation prompts (CLIP-L/14, penultimate+LN) …")
+    return _encode_clip_penultimate(prompts, device)
 
 
 #################################################################################
@@ -153,8 +253,6 @@ _OVERRIDABLE_KEYS = frozenset({
     "render_loss_weight",
     "alpha_mask_loss_weight",
     "lpips_loss_weight",
-    "aux_classifier_weight",
-    "null_repel_weight",
     "P_mean",
     "grad_norm_log_every_n_prints",
 })
@@ -169,8 +267,6 @@ class TrainRuntimeOverrides:
     render_loss_weight: float
     alpha_mask_loss_weight: float
     lpips_loss_weight: float
-    aux_classifier_weight: float
-    null_repel_weight: float
     P_mean: float
     grad_norm_log_every_n_prints: float  # float so overrides YAML can write it; cast to int on use
 
@@ -182,8 +278,6 @@ class TrainRuntimeOverrides:
             render_loss_weight=float(args.render_loss_weight),
             alpha_mask_loss_weight=float(args.alpha_mask_loss_weight),
             lpips_loss_weight=float(args.lpips_loss_weight),
-            aux_classifier_weight=float(args.aux_classifier_weight),
-            null_repel_weight=float(args.null_repel_weight),
             P_mean=float(args.P_mean),
             grad_norm_log_every_n_prints=float(args.grad_norm_log_every_n_prints),
         )
@@ -374,38 +468,6 @@ def _load_and_apply_overrides_yaml(
 
 
 #################################################################################
-#                        Class-from-null repulsion loss                         #
-#################################################################################
-
-def _compute_null_repel_loss(
-    embedding_table: torch.Tensor,
-    num_classes: int,
-    margin: float,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Push class embeddings away from the CFG null token on the cosine sphere.
-
-    ``embedding_table`` is ``LabelEmbedder.embedding_table.weight`` — shape
-    ``(num_classes + 1, D)`` with the null embedding at row ``num_classes``.
-
-    Returns ``(repel_loss, class_null_cos_mean)``:
-
-      * ``repel_loss`` — hinge-squared on ``cos(e_c, stopgrad(e_null))`` above
-        ``margin``, averaged over classes. The null row is detached so only
-        class rows receive gradient; null continues to learn from its normal
-        CFG-dropout training signal.
-      * ``class_null_cos_mean`` — the raw (pre-hinge) mean cosine between
-        classes and null, detached for diagnostic logging. This is the
-        geometric quantity the regularizer moves; watch it drop over training.
-    """
-    null_vec = embedding_table[num_classes].detach().unsqueeze(0)  # (1, D), stopgrad
-    class_vecs = embedding_table[:num_classes]                      # (C, D)
-    cos = F.cosine_similarity(class_vecs, null_vec.expand_as(class_vecs), dim=-1)
-    hinge = (cos - margin).clamp(min=0.0)
-    repel_loss = (hinge * hinge).mean()
-    return repel_loss, cos.detach().mean()
-
-
-#################################################################################
 #                          Rendering Loss Helpers                               #
 #################################################################################
 
@@ -467,7 +529,7 @@ def _debug_nonfinite_mse(
     diffusion,
     model,
     x: torch.Tensor,
-    y: torch.Tensor,
+    y_pooled: torch.Tensor,
     x_full: Optional[torch.Tensor],
     t: torch.Tensor,
     t_value: torch.Tensor,
@@ -485,7 +547,7 @@ def _debug_nonfinite_mse(
 
     with torch.no_grad():
         x_t_debug = diffusion.flow_matching_q_sample(x, t_value, noise=noise)
-        model_out_debug = model(x_t_debug, t, y)
+        model_out_debug = model(x_t_debug, t, y_pooled)
         target_debug = x
 
     bad_param_summaries = []
@@ -510,7 +572,7 @@ def _debug_nonfinite_mse(
         per_sample_debug.append({
             "batch_pos": int(pos),
             "hash_key": hash_keys[pos],
-            "label": int(y[pos].detach().cpu().item()),
+            "y_pooled_rms": float(y_pooled[pos].detach().float().square().mean().sqrt().cpu().item()),
             "loss": float(sample_losses[pos].detach().float().cpu().item()),
             "x": _tensor_debug_summary(x[pos]),
             "x_t": _tensor_debug_summary(x_t_debug[pos]),
@@ -524,7 +586,6 @@ def _debug_nonfinite_mse(
         "predict_xstart": bool(args.predict_xstart),
         "bad_positions": bad_positions,
         "hash_keys": [hash_keys[pos] for pos in bad_positions[:16]],
-        "labels": [int(v) for v in y.detach().cpu().tolist()],
         "timesteps": [int(v) for v in t.detach().cpu().tolist()],
         "t_values": [float(v) for v in t_value.detach().cpu().tolist()],
         "sample_loss_isfinite": torch.isfinite(sample_losses).detach().cpu(),
@@ -564,39 +625,33 @@ def _debug_nonfinite_mse(
 @torch.no_grad()
 def _measure_conditioning_signal(
     model: nn.Module,
-    num_classes: int,
+    cond_pool: torch.Tensor,
     in_channels: int,
     diffusion_num_timesteps: int,
     device: torch.device,
     t_value: float = 0.3,
     batch_size: int = 8,
     seed: int = 0,
-    num_class_probes: int = 16,
-    num_class_pairs: int = 16,
-    return_per_class: bool = False,
+    num_cond_probes: int = 64,
+    num_cond_pairs: int = 64,
 ) -> dict:
-    """Probe class conditioning at a fixed t on a fixed random batch.
+    """Probe text conditioning at a fixed t on a fixed random batch.
 
-    Computes per-class, as fractions of ``‖pred(y=k)‖_RMS``:
+    ``cond_pool`` is the ``(N, text_dim)`` pooled-CLIP tensor returned by
+    ``_load_val_prompts``.
+
+    Computes, as fractions of ``‖pred(y=k)‖_RMS``:
       - ``cfg_signal_k`` = ``‖pred(x_t, y=k) − pred(x_t, null)‖_RMS``
-    and per-pair:
-      - ``class_signal_(a,b)`` = ``‖pred(x_t, y=a) − pred(x_t, y=b)‖_RMS``
-
-    Returns the **mean** over a random sample of ``num_class_probes`` classes
-    (cfg_signal) and ``num_class_pairs`` random class pairs (class_signal),
-    plus min/max for spread. The same noise sample ``x_t`` is reused across
-    all conditional/null forwards, so the differences are class-only.
+      - ``cond_signal_(a,b)`` = ``‖pred(x_t, y=a) − pred(x_t, y=b)‖_RMS``
 
     ``cfg_signal < 0.01`` → conditioning collapsed, CFG is a no-op.
-    ``class_signal ≈ 0`` with non-zero ``cfg_signal`` → model uses "some class
-    vs null" but doesn't discriminate between classes.
-
-    Uses a fixed RNG seed so the numbers are comparable across checkpoints.
+    ``cond_signal ≈ 0`` with non-zero ``cfg_signal`` → model distinguishes
+    cond-vs-null but not between prompts.
     """
+    pooled_pool = cond_pool
     model_was_training = model.training
     model.eval()
     g = torch.Generator(device=device).manual_seed(int(seed))
-    g_cpu = torch.Generator(device="cpu").manual_seed(int(seed) + 1)
 
     shape = resolve_sampling_shape(model=model, batch_size=batch_size, in_channels=in_channels)
     x_t = torch.randn(*shape, generator=g, device=device)
@@ -606,31 +661,37 @@ def _measure_conditioning_signal(
         dtype=torch.long, device=device,
     )
 
-    K = max(1, min(num_class_probes, num_classes))
-    class_pool = torch.randperm(num_classes, generator=g_cpu)[:K].tolist()
-
+    pool_size = int(pooled_pool.shape[0])
+    K = max(1, min(num_cond_probes, pool_size))
     eps = 1e-8
-    y_null = torch.full((batch_size,), num_classes, dtype=torch.long, device=device)
-    pred_null = model(x_t, t_disc, y_null).float()
 
-    cond_preds: dict[int, torch.Tensor] = {}
-    cond_norms: dict[int, float] = {}
-    cfg_signals: dict[int, float] = {}
-    for cls in class_pool:
-        y = torch.full((batch_size,), int(cls), dtype=torch.long, device=device)
-        pred_c = model(x_t, t_disc, y).float()
+    def _expand(idx: int):
+        return pooled_pool[idx:idx + 1].expand(batch_size, -1).to(device)
+
+    # Null forward: pooled vector replaced with cached null via force_drop_ids=1.
+    p0 = _expand(0)
+    force_drop = torch.ones(batch_size, device=device, dtype=torch.long)
+    pred_null = model(x_t, t_disc, p0, force_drop_ids=force_drop).float()
+
+    cond_preds: list[torch.Tensor] = []
+    cond_norms: list[float] = []
+    cfg_signals: list[float] = []
+    for k in range(K):
+        p = _expand(k)
+        pred_c = model(x_t, t_disc, p).float()
         norm_c = float(pred_c.square().mean().sqrt().item())
         cfg_c = float((pred_c - pred_null).square().mean().sqrt().item()) / (norm_c + eps)
-        cond_preds[int(cls)] = pred_c
-        cond_norms[int(cls)] = norm_c
-        cfg_signals[int(cls)] = cfg_c
+        cond_preds.append(pred_c)
+        cond_norms.append(norm_c)
+        cfg_signals.append(cfg_c)
 
-    class_signals: list[float] = []
-    if K >= 2 and num_class_pairs > 0:
-        max_pairs = min(num_class_pairs, K * (K - 1) // 2)
+    cond_signals: list[float] = []
+    if K >= 2 and num_cond_pairs > 0:
+        max_pairs = min(num_cond_pairs, K * (K - 1) // 2)
+        g_cpu = torch.Generator(device="cpu").manual_seed(int(seed) + 1)
         seen: set[tuple[int, int]] = set()
         attempts = 0
-        while len(class_signals) < max_pairs and attempts < 20 * max_pairs:
+        while len(cond_signals) < max_pairs and attempts < 20 * max_pairs:
             attempts += 1
             i = int(torch.randint(0, K, (1,), generator=g_cpu).item())
             j = int(torch.randint(0, K, (1,), generator=g_cpu).item())
@@ -640,38 +701,32 @@ def _measure_conditioning_signal(
             if key in seen:
                 continue
             seen.add(key)
-            a, b = class_pool[i], class_pool[j]
-            pa, pb = cond_preds[a], cond_preds[b]
-            denom = 0.5 * (cond_norms[a] + cond_norms[b]) + eps
-            cs = float((pa - pb).square().mean().sqrt().item()) / denom
-            class_signals.append(cs)
+            pa, pb = cond_preds[i], cond_preds[j]
+            denom = 0.5 * (cond_norms[i] + cond_norms[j]) + eps
+            cond_signals.append(float((pa - pb).square().mean().sqrt().item()) / denom)
 
-    cfg_vals = list(cfg_signals.values())
-    cfg_mean = sum(cfg_vals) / len(cfg_vals) if cfg_vals else 0.0
-    cfg_min = min(cfg_vals) if cfg_vals else 0.0
-    cfg_max = max(cfg_vals) if cfg_vals else 0.0
-    class_mean = sum(class_signals) / len(class_signals) if class_signals else 0.0
-    class_min = min(class_signals) if class_signals else 0.0
-    class_max = max(class_signals) if class_signals else 0.0
-    pred_rms_mean = sum(cond_norms.values()) / len(cond_norms) if cond_norms else 0.0
+    cfg_mean = sum(cfg_signals) / len(cfg_signals) if cfg_signals else 0.0
+    cfg_min = min(cfg_signals) if cfg_signals else 0.0
+    cfg_max = max(cfg_signals) if cfg_signals else 0.0
+    cond_mean = sum(cond_signals) / len(cond_signals) if cond_signals else 0.0
+    cond_min = min(cond_signals) if cond_signals else 0.0
+    cond_max = max(cond_signals) if cond_signals else 0.0
+    pred_rms_mean = sum(cond_norms) / len(cond_norms) if cond_norms else 0.0
 
     if model_was_training:
         model.train()
 
-    result = {
+    return {
         "cfg_signal": cfg_mean,
         "cfg_signal_min": cfg_min,
         "cfg_signal_max": cfg_max,
-        "class_signal": class_mean,
-        "class_signal_min": class_min,
-        "class_signal_max": class_max,
+        "cond_signal": cond_mean,
+        "cond_signal_min": cond_min,
+        "cond_signal_max": cond_max,
         "pred_rms": pred_rms_mean,
-        "num_class_probes": K,
-        "num_class_pairs": len(class_signals),
+        "num_cond_probes": K,
+        "num_cond_pairs": len(cond_signals),
     }
-    if return_per_class:
-        result["cfg_signal_per_class"] = cfg_signals
-    return result
 
 
 def _run_validation_render(
@@ -686,7 +741,7 @@ def _run_validation_render(
     step: int,
     device: torch.device,
     in_channels: int,
-    num_classes: int,
+    cond_pool: torch.Tensor,  # (N, text_dim) pooled CLIP vectors
     dc_only: bool = False,
     predict_xstart: bool = False,
     noise_schedule: str = "linear",
@@ -704,16 +759,19 @@ def _run_validation_render(
     P_std: float = 1.0,
     rank_transform_tables: Optional[dict] = None,
 ) -> None:
-    """Generate a validation sample, render it, and save the result."""
-    y_label = random.randrange(num_classes)
-    y = torch.tensor([y_label], dtype=torch.long, device=device)
+    """Generate a validation sample, render it, and save the result.
+
+    Picks one random pooled-CLIP vector from ``cond_pool`` to condition on.
+    """
+    pool_idx = random.randrange(int(cond_pool.shape[0]))
+    cond_embeds = cond_pool[pool_idx:pool_idx + 1].to(device)
 
     shape = resolve_sampling_shape(model=model, batch_size=1, in_channels=in_channels)
     sample = sample_model(
         sampler=val_sampler,
         model=model,
         shape=shape,
-        class_labels=y,
+        cond_embeds=cond_embeds,
         num_inference_steps=val_sampling_steps,
         device=device,
         predict_xstart=predict_xstart,
@@ -750,16 +808,287 @@ def _run_validation_render(
 
     val_dir = os.path.join(output_dir, "dit_validation")
     os.makedirs(val_dir, exist_ok=True)
-    out_path = os.path.join(val_dir, f"epoch_{epoch:03d}_step_{step:07d}_class{y_label:03d}.png")
+    out_path = os.path.join(val_dir, f"epoch_{epoch:03d}_step_{step:07d}_p{pool_idx:03d}.png")
     Image.fromarray(img_uint8).save(out_path)
     logger.info(
-        "[validation] saved: %s (class=%d, sampler=%s, steps=%d)",
+        "[validation] saved: %s (prompt_idx=%d, sampler=%s, steps=%d)",
         out_path,
-        y_label,
+        pool_idx,
         val_sampler,
         val_sampling_steps,
     )
+    return out_path
 
+
+def _run_validation_grid(
+    model: nn.Module,
+    plane_to_sphere: torch.Tensor,
+    norm_mean: Optional[torch.Tensor],
+    norm_std: Optional[torch.Tensor],
+    train_cameras: dict,
+    renderer_tuple: tuple,
+    output_dir: str,
+    epoch: int,
+    step: int,
+    device: torch.device,
+    in_channels: int,
+    cond_pool: torch.Tensor,  # (N, text_dim) pooled CLIP vectors
+    grid_seed: int,
+    camera_idx: int,
+    grid_rows: int = 4,
+    grid_cols: int = 4,
+    dc_only: bool = False,
+    predict_xstart: bool = False,
+    noise_schedule: str = "linear",
+    diffusion_steps: int = 1000,
+    val_sampling_steps: int = 50,
+    val_sampler: str = "heun",
+    dpm_solver_order: int = 2,
+    dpm_algorithm_type: str = "dpmsolver++",
+    dpm_solver_type: str = "midpoint",
+    dpm_timestep_spacing: str = "trailing",
+    dpm_use_karras_sigmas: bool = False,
+    ddim_eta: float = 0.0,
+    cfg_scale: float = 1.0,
+    P_mean: float = 0.0,
+    P_std: float = 1.0,
+    rank_transform_tables: Optional[dict] = None,
+) -> None:
+    """Render a fixed grid of `grid_rows x grid_cols` samples with deterministic
+    per-prompt seeds. Tile ``i`` uses ``cond_pool[i]`` and initial noise drawn
+    from a CPU torch.Generator seeded with ``grid_seed + i`` — so a given
+    (grid_seed, prompt_idx) pair always produces the same noise.
+
+    Only supports the heun/euler samplers (other samplers don't accept
+    injected initial noise — see jit/sampling.py).
+    """
+    if val_sampler not in {"heun", "euler"}:
+        logger.warning(
+            "[validation-grid] sampler=%s not supported (only heun/euler accept "
+            "initial_noise); skipping grid",
+            val_sampler,
+        )
+        return
+
+    n_tiles = grid_rows * grid_cols
+    if int(cond_pool.shape[0]) < n_tiles:
+        raise ValueError(
+            f"cond_pool has {int(cond_pool.shape[0])} prompts but grid expects {n_tiles}"
+        )
+
+    shape = resolve_sampling_shape(model=model, batch_size=n_tiles, in_channels=in_channels)
+    # Per-tile deterministic noise: seed depends on the tile index.
+    initial_noise = torch.empty(shape, dtype=torch.float32)
+    cpu_gen = torch.Generator(device="cpu")
+    for i in range(n_tiles):
+        cpu_gen.manual_seed(int(grid_seed) + int(i))
+        initial_noise[i] = torch.randn(shape[1:], generator=cpu_gen, dtype=torch.float32)
+    initial_noise = initial_noise.to(device)
+
+    cond_embeds = cond_pool[:n_tiles].to(device)
+
+    sample = sample_model(
+        sampler=val_sampler,
+        model=model,
+        shape=shape,
+        cond_embeds=cond_embeds,
+        num_inference_steps=val_sampling_steps,
+        device=device,
+        predict_xstart=predict_xstart,
+        diffusion_steps=diffusion_steps,
+        noise_schedule=noise_schedule,
+        solver_order=dpm_solver_order,
+        algorithm_type=dpm_algorithm_type,
+        solver_type=dpm_solver_type,
+        timestep_spacing=dpm_timestep_spacing,
+        use_karras_sigmas=dpm_use_karras_sigmas,
+        ddim_eta=ddim_eta,
+        cfg_scale=cfg_scale,
+        P_mean=P_mean,
+        P_std=P_std,
+        initial_noise=initial_noise,
+    )
+
+    pred_pc = _plane_to_point_cloud_batch(sample.float(), plane_to_sphere)
+    pred_pc_raw = _denormalize_point_cloud(pred_pc, norm_mean, norm_std)
+    pred_gaussians = _point_clouds_to_gsplat_inputs(
+        pred_pc_raw.to(device),
+        dc_only=dc_only,
+        detach_input=True,
+        rank_transform_tables=rank_transform_tables,
+    )
+
+    num_cams_avail = int(train_cameras["viewmats"].shape[0])
+    cam_idx = int(camera_idx) % max(num_cams_avail, 1)
+    with torch.no_grad():
+        # rendered shape: (B, num_cam=1, 3, H, W)
+        rendered = _render_gsplat_batch(
+            renderer_tuple, pred_gaussians, train_cameras, [cam_idx], device
+        )
+    rendered = rendered[:, 0]  # (B, 3, H, W)
+
+    tile_h = int(rendered.shape[-2])
+    tile_w = int(rendered.shape[-1])
+    grid_np = (rendered.clamp(0.0, 1.0).permute(0, 2, 3, 1).cpu().numpy() * 255.0).astype(np.uint8)
+
+    canvas = np.zeros((grid_rows * tile_h, grid_cols * tile_w, 3), dtype=np.uint8)
+    for i in range(n_tiles):
+        r = i // grid_cols
+        c = i % grid_cols
+        canvas[r * tile_h:(r + 1) * tile_h, c * tile_w:(c + 1) * tile_w] = grid_np[i]
+
+    val_dir = os.path.join(output_dir, "dit_validation")
+    os.makedirs(val_dir, exist_ok=True)
+    out_path = os.path.join(
+        val_dir, f"epoch_{epoch:03d}_step_{step:07d}_grid.png"
+    )
+    Image.fromarray(canvas).save(out_path)
+    logger.info(
+        "[validation-grid] saved: %s (%dx%d, prompts=0..%d, seed=%d, cam=%d, sampler=%s, steps=%d)",
+        out_path,
+        grid_rows,
+        grid_cols,
+        n_tiles - 1,
+        grid_seed,
+        cam_idx,
+        val_sampler,
+        val_sampling_steps,
+    )
+    return out_path
+
+
+def _save_overfit_gt_renders(
+    *,
+    dataset,
+    has_full_for_render: bool,
+    plane_to_sphere: torch.Tensor,
+    norm_mean: Optional[torch.Tensor],
+    norm_std: Optional[torch.Tensor],
+    norm_mean_full: Optional[torch.Tensor],
+    norm_std_full: Optional[torch.Tensor],
+    train_cameras: dict,
+    renderer_tuple,
+    output_dir: str,
+    device: torch.device,
+    dc_only: bool,
+    rank_transform_tables: Optional[dict],
+    num_views: int = 4,
+) -> None:
+    """For --overfit runs: render each held sample from `num_views` cameras
+    spread across the reference set and save a side-by-side strip per sample,
+    so the user has a GT baseline to compare validation renders against."""
+    out_dir = os.path.join(output_dir, "overfit_gt")
+    os.makedirs(out_dir, exist_ok=True)
+
+    n_cams = int(train_cameras["viewmats"].shape[0])
+    if n_cams <= 0:
+        return
+    k = max(1, min(int(num_views), n_cams))
+    cam_indices = (
+        [int(round(i * (n_cams - 1) / max(1, k - 1))) for i in range(k)]
+        if k > 1 else [0]
+    )
+
+    for i in range(len(dataset)):
+        item = dataset[i]
+        if has_full_for_render:
+            pc, _pooled, pc_full, hash_key = item
+        else:
+            pc, _pooled, hash_key = item
+            pc_full = None
+
+        if pc_full is not None and norm_mean_full is not None and norm_std_full is not None:
+            x = pc_full.float().unsqueeze(0).to(device)
+            pc_mean, pc_std, render_dc_only = norm_mean_full, norm_std_full, False
+        else:
+            x = pc.float().unsqueeze(0).to(device)
+            pc_mean, pc_std, render_dc_only = norm_mean, norm_std, dc_only
+
+        gt_pc = _plane_to_point_cloud_batch(x, plane_to_sphere)
+        gt_pc_raw = _denormalize_point_cloud(gt_pc, pc_mean, pc_std)
+        gt_gaussians = _point_clouds_to_gsplat_inputs(
+            gt_pc_raw.to(device),
+            dc_only=render_dc_only,
+            detach_input=True,
+            rank_transform_tables=rank_transform_tables,
+        )
+        with torch.no_grad():
+            imgs = _render_gsplat_batch(
+                renderer_tuple, gt_gaussians, train_cameras, cam_indices, device,
+            )
+        tiles = imgs[0].permute(0, 2, 3, 1).clamp(0.0, 1.0).cpu().numpy()
+        strip = np.concatenate(list(tiles), axis=1)
+        strip_u8 = (strip * 255.0).astype(np.uint8)
+
+        safe_hash = str(hash_key).replace('/', '_')
+        cam_tag = '-'.join(str(c) for c in cam_indices)
+        out_path = os.path.join(
+            out_dir,
+            f"gt_idx{i:02d}_{safe_hash}_cams{cam_tag}.png",
+        )
+        Image.fromarray(strip_u8).save(out_path)
+        logger.info(
+            "[overfit-gt] saved: %s (sample %d/%d, cams=%s, dc_only=%s)",
+            out_path, i + 1, len(dataset), cam_indices, render_dc_only,
+        )
+
+
+#################################################################################
+#                           Weights & Biases helpers                            #
+#################################################################################
+
+def _wandb_run_id_from_results_dir(results_dir: str) -> str:
+    """Deterministic 32-char wandb id so --resume continues the same run.
+
+    Why: a fresh `wandb.init` makes a new run on every resume, fragmenting curves.
+    Hashing results_dir gives a stable id without leaking absolute paths.
+    """
+    import hashlib
+    h = hashlib.sha1(os.path.abspath(results_dir).encode()).hexdigest()
+    return h[:32]
+
+
+def _init_wandb(args) -> Optional[Any]:
+    """Initialize wandb on rank-0. Returns the run handle, or None if disabled/failed."""
+    if not getattr(args, "wandb", True):
+        return None
+    if getattr(args, "wandb_mode", "online") == "disabled":
+        return None
+    if wandb is None:
+        logger.warning("[wandb] package not installed; skipping (pip install wandb)")
+        return None
+
+    run_name = args.wandb_run_name or os.path.basename(os.path.normpath(args.results_dir))
+    tags = [t.strip() for t in (args.wandb_tags or "").split(",") if t.strip()]
+    try:
+        run = wandb.init(
+            project=args.wandb_project,
+            entity=args.wandb_entity,
+            name=run_name,
+            id=_wandb_run_id_from_results_dir(args.results_dir),
+            resume="allow",
+            mode=args.wandb_mode,
+            tags=tags or None,
+            group=args.wandb_group,
+            config=vars(args),
+            dir=args.results_dir,
+        )
+        logger.info("[wandb] run=%s id=%s mode=%s project=%s",
+                    run.name, run.id, args.wandb_mode, args.wandb_project)
+        return run
+    except Exception as exc:
+        logger.warning("[wandb] init failed: %s — continuing without wandb", exc)
+        return None
+
+
+def _wandb_log(run, payload: dict, step: int) -> None:
+    """Safe wandb.log; never raises into the training loop."""
+    if run is None:
+        return
+    try:
+        run.log(payload, step=step)
+    except Exception as exc:
+        logger.warning("[wandb] log failed at step %d: %s", step, exc)
 
 
 #################################################################################
@@ -769,8 +1098,10 @@ def _run_validation_render(
 @torch.no_grad()
 def update_ema(ema_model, model, decay=0.9999):
     """Update EMA model parameters. `model` should be the unwrapped model."""
-    for ema_p, model_p in zip(ema_model.parameters(), model.parameters()):
-        ema_p.mul_(decay).add_(model_p.data, alpha=1 - decay)
+    ema_ps = list(ema_model.parameters())
+    model_ps = [p.data for p in model.parameters()]
+    torch._foreach_mul_(ema_ps, decay)
+    torch._foreach_add_(ema_ps, model_ps, alpha=1 - decay)
 
 
 def requires_grad(model, flag=True):
@@ -864,18 +1195,11 @@ def main(args):
         os.makedirs(args.results_dir, exist_ok=True)
     accelerator.wait_for_everyone()
 
-    # Load class map
-    if is_main:
-        logger.info(f"Loading class map from {args.class_map}")
-    with open(args.class_map, 'r') as f:
-        class_map = json.load(f)
-    num_classes = max(v for v in class_map.values() if v >= 0) + 1
-    if is_main:
-        logger.info(f"Number of classes: {num_classes}")
-
-    # Create base dataset
+    # Create base dataset (Standard, with text embeddings attached)
     if is_main:
         logger.info("Creating base dataset...")
+    if not args.text_embed_path:
+        raise ValueError("--text_embed_path is required for text-conditioned training")
     base_dataset = Standard3DGenDataset(
         obj_list=[args.obj_list],
         gs_path=args.gs_path,
@@ -885,7 +1209,12 @@ def main(args):
         sphere2plane_path=args.sphere2plane_path,
         exclude_keys_file=args.exclude_keys_file,
         rank_transform_file=args.rank_transform_file,
+        clip_thresholds_file=args.clip_thresholds_file,
+        text_embed_path=args.text_embed_path,
     )
+    text_dim = int(base_dataset.text_pooled.shape[1])
+    if is_main:
+        logger.info(f"Text-conditioning: pooled-AdaLN, text_dim={text_dim}")
 
     # Resolve feature indices for sh_degree0_only
     if args.sh_degree0_only:
@@ -919,9 +1248,11 @@ def main(args):
     if render_loss_requested and not use_render_loss and is_main:
         logger.info("[render-loss] disabled because enable_render_loss_after < 0")
 
-    # Wrap with class-conditional dataset
-    dataset = Class3DGenDataset(
-        base_dataset, class_map,
+    # Wrap with text-conditional dataset. PC grids are mmap-cached on first
+    # access (lazy) or up front (eager); text embeddings are not cached here
+    # because base_dataset.text_{pooled,tokens,mask} are single COW-shared arrays.
+    dataset = Text3DGenDataset(
+        base_dataset,
         feature_indices=feature_indices,
         return_full_for_render=(
             (use_render_loss or enable_train_render_log)
@@ -934,39 +1265,22 @@ def main(args):
         preload_workers=args.preload_workers,
     )
 
-    # Overfit mode: restrict dataset to first N samples
+    # Overfit modes: --overfit N takes the first N samples.
     if args.overfit > 0:
         dataset = torch.utils.data.Subset(dataset, range(min(args.overfit, len(dataset))))
-        args.log_every = 1
         if is_main:
-            logger.info(f"[overfit] Restricting to {len(dataset)} samples, log_every forced to 1")
+            logger.info(f"[overfit] Restricting to {len(dataset)} samples (log_every={args.log_every})")
 
     # DataLoader — accelerate will inject DistributedSampler automatically
     overfitting = args.overfit > 0
-    balanced_sampler = None
-    if args.class_balanced_sampler and not overfitting:
-        balanced_sampler = _build_class_balanced_sampler(
-            dataset, seed=args.seed, rank=accelerator.process_index,
-        )
-        if is_main:
-            label_counts = np.bincount(np.asarray(dataset.valid_labels, dtype=np.int64))
-            nz = int((label_counts > 0).sum())
-            logger.info(
-                "[class-balanced] sampling with inverse-frequency weights over %d classes "
-                "(min=%d, max=%d, mean=%.1f samples/class)",
-                nz, int(label_counts[label_counts > 0].min()), int(label_counts.max()),
-                float(label_counts[label_counts > 0].mean()),
-            )
     loader_kwargs = dict(
         dataset=dataset,
         batch_size=args.batch_size,
-        shuffle=(not overfitting) and balanced_sampler is None,
+        shuffle=not overfitting,
         num_workers=args.num_workers,
         pin_memory=True,
         drop_last=not overfitting,
     )
-    if balanced_sampler is not None:
-        loader_kwargs["sampler"] = balanced_sampler
     if args.num_workers > 0:
         loader_kwargs["persistent_workers"] = args.persistent_workers
         if args.prefetch_factor > 0:
@@ -981,25 +1295,27 @@ def main(args):
     model = JiT_3DGS_models[args.model](
         input_size=128,
         in_channels=in_channels,
-        num_classes=num_classes,
+        text_dim=text_dim,
         class_dropout_prob=args.class_dropout_prob,
         learn_sigma=False,
         gradient_checkpointing=args.gradient_checkpointing,
         bottleneck=args.bottleneck,
-        aux_classifier=args.aux_classifier,
-        label_embed_init_std=args.label_embed_init_std,
     )
+
+    # Populate the pooled-AdaLN null buffer from the cached empty-string CLIP
+    # encoding so the unconditional branch lives in the same geometry as
+    # conditional inputs. Default path is the encoder's sibling output next to
+    # text_embed_path's first shard.
+    null_path = args.null_text_token_path or _default_null_path(args.text_embed_path)
+    null_token_np = load_null_text_token(null_path)
+    model.load_null_embeddings(torch.from_numpy(null_token_np.astype(np.float32)))
+    if is_main:
+        logger.info(f"[null] loaded null text token from {null_path} (shape={null_token_np.shape})")
     if is_main:
         logger.info(
             "[patch-embed] %s",
             "bottleneck (proj1→bottleneck_dim→proj2)" if args.bottleneck
             else "single-conv (in_chans→embed_dim, no rank reduction below embed_dim)",
-        )
-    if is_main and args.aux_classifier:
-        logger.info(
-            "[aux-classifier] enabled: linear head → %d classes, initial weight=%.4g, "
-            "label_embed_init_std=%.3g",
-            num_classes, args.aux_classifier_weight, args.label_embed_init_std,
         )
     spatial_fold_factor = int(getattr(model, "spatial_fold_factor", 1))
     if spatial_fold_factor != 1:
@@ -1057,8 +1373,8 @@ def main(args):
     # the compiled forward is wrapped by DDP, not the other way around.
     if args.compile:
         if is_main:
-            logger.info("torch.compile: enabled (mode=default)")
-        model = torch.compile(model)
+            logger.info("torch.compile: enabled (mode=%s)", args.compile_mode)
+        model = torch.compile(model, mode=args.compile_mode)
 
     # Create diffusion
     diffusion = create_diffusion(
@@ -1080,8 +1396,50 @@ def main(args):
             diffusion.num_timesteps - 1,
         )
 
-    # Optimizer
-    opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0)
+    # Optimizer — split params so the text-projection MLP can have its own LR/betas.
+    # The projection is a small set of params at the conditioning input; a larger LR
+    # often helps the conditioning signal converge faster than the trunk.
+    main_betas = tuple(float(b) for b in args.betas)
+    if len(main_betas) != 2:
+        raise ValueError(f"--betas must be two floats; got {args.betas!r}")
+    text_proj_lr = float(args.text_proj_lr) if args.text_proj_lr is not None else float(args.lr)
+    text_proj_betas = (
+        tuple(float(b) for b in args.text_proj_betas)
+        if args.text_proj_betas is not None
+        else main_betas
+    )
+    if len(text_proj_betas) != 2:
+        raise ValueError(f"--text_proj_betas must be two floats; got {args.text_proj_betas!r}")
+    # The pooled-CLIP → AdaLN projector gets its own LR group. The null vector
+    # is a non-persistent buffer, not a Parameter, so .parameters() correctly
+    # returns only the projection MLP.
+    text_proj_params = list(model.y_embedder.parameters())
+    text_proj_ids = {id(p) for p in text_proj_params}
+    main_params = [p for p in model.parameters() if id(p) not in text_proj_ids]
+    opt = torch.optim.AdamW(
+        [
+            {
+                'name': 'main',
+                'params': main_params,
+                'lr': float(args.lr),
+                'betas': main_betas,
+            },
+            {
+                'name': 'text_proj',
+                'params': text_proj_params,
+                'lr': text_proj_lr,
+                'betas': text_proj_betas,
+            },
+        ],
+        weight_decay=0,
+        fused=True,
+    )
+    if is_main:
+        logger.info(
+            "Optimizer: AdamW | main lr=%.3g betas=(%.3g, %.3g) | text_proj lr=%.3g betas=(%.3g, %.3g)",
+            float(args.lr), main_betas[0], main_betas[1],
+            text_proj_lr, text_proj_betas[0], text_proj_betas[1],
+        )
 
     # ── Let accelerate prepare model, optimizer, dataloader ──────────────
     model, opt, loader = accelerator.prepare(model, opt, loader)
@@ -1247,6 +1605,34 @@ def main(args):
             needs_renderer = False
             enable_val = False
 
+    # Overfit GT renders: dump N-camera strips of each held sample so the user
+    # has a baseline to eyeball validation outputs against. Cheap; runs once.
+    if (
+        args.overfit > 0
+        and is_main
+        and renderer_for_train is not None
+        and train_cameras is not None
+    ):
+        _underlying_for_full = (
+            dataset.dataset if isinstance(dataset, torch.utils.data.Subset) else dataset
+        )
+        _save_overfit_gt_renders(
+            dataset=dataset,
+            has_full_for_render=bool(getattr(_underlying_for_full, 'return_full_for_render', False)),
+            plane_to_sphere=plane_to_sphere,
+            norm_mean=norm_mean,
+            norm_std=norm_std,
+            norm_mean_full=norm_mean_full,
+            norm_std_full=norm_std_full,
+            train_cameras=train_cameras,
+            renderer_tuple=renderer_for_train,
+            output_dir=args.results_dir,
+            device=device,
+            dc_only=args.sh_degree0_only,
+            rank_transform_tables=rank_transform_tables,
+            num_views=4,
+        )
+
     # Resume from checkpoint if provided.
     # `step` now means optimizer steps (post-refactor). Legacy checkpoints saved
     # `step` as micro-batch count and a separate `opt_step` as the optim count;
@@ -1259,8 +1645,9 @@ def main(args):
         if is_main:
             logger.info(f"Resuming from checkpoint: {args.resume}")
         ckpt = torch.load(args.resume, map_location='cpu', weights_only=False)
-        # strict=False so older checkpoints without aux_classifier keys still load; we log
-        # any mismatches so accidental architecture drift doesn't pass silently.
+        # strict=False so checkpoints from neighboring branches with a different
+        # conditioning surface still load; mismatches are logged so accidental
+        # architecture drift doesn't pass silently.
         missing, unexpected = accelerator.unwrap_model(model).load_state_dict(
             ckpt['model'], strict=False
         )
@@ -1316,6 +1703,9 @@ def main(args):
         resume=bool(args.resume),
     )
 
+    # wandb (rank-0 only; deterministic id so --resume continues the same run)
+    wandb_run = _init_wandb(args) if is_main else None
+
     # Training
     model.train()
     step = start_step
@@ -1325,29 +1715,26 @@ def main(args):
     log_render_l1 = torch.zeros([], device=device)
     log_render_alpha_l1 = torch.zeros([], device=device)
     log_render_lpips = torch.zeros([], device=device)
-    log_aux_loss = torch.zeros([], device=device)
-    log_repel_loss = torch.zeros([], device=device)
-    log_class_null_cos = torch.zeros([], device=device)
-    log_grad_norm = 0.0
-    log_grad_steps = 0
+    # Accumulate on-device — `.item()` once per print window instead of per
+    # optim step. Non-finite grad norms contribute 0 to the sum and 0 to the
+    # count (preserving the original "average over finite steps" semantics).
+    log_grad_norm = torch.zeros([], device=device)
+    log_grad_steps = torch.zeros([], device=device)
     log_steps = 0  # micro-batches contributing to running loss averages
     log_optim_steps = 0  # optim steps in window (used for steps_per_sec)
     log_mse_gn = 0.0
     log_rl1_gn = 0.0
     log_alpha_gn = 0.0
     log_lpips_gn = 0.0
-    log_aux_gn = 0.0
-    log_repel_gn = 0.0
     log_per_loss_gn_steps = 0
     log_t_bucket_sum = torch.zeros(num_t_buckets, device=device)
     log_t_bucket_cnt = torch.zeros(num_t_buckets, device=device)
     start_time = time.time()
     last_lr_val: Optional[float] = None
-    # Pre-allocated zero tensors used as no-op sentinels for render losses when
-    # render loss is disabled or hasn't warmed up yet.  Avoids 3 GPU allocations
-    # + kernel launches every step for the common case (render loss disabled).
+    last_text_proj_lr_val: Optional[float] = None
+    # Pre-allocated zero tensor used as a no-op sentinel for render losses when
+    # render loss is disabled or hasn't warmed up yet.
     _zero_render_loss = torch.zeros([], dtype=torch.float32, device=device)
-    _zero_aux_loss = torch.zeros([], dtype=torch.float32, device=device)
 
     if is_main:
         logger.info(f"Starting training from epoch {start_epoch}, step {start_step}...")
@@ -1419,6 +1806,21 @@ def main(args):
     _underlying = dataset.dataset if isinstance(dataset, torch.utils.data.Subset) else dataset
     has_full_for_render = getattr(_underlying, 'return_full_for_render', False)
 
+    # Validation / probe conditioning pool: encode a fixed prompt set once with
+    # the same CLIP-L/14 pipeline used offline (penultimate + final_layer_norm
+    # + EOS-pooled), so validation renders and the [cond] probe live in the
+    # same text-embedding space as training samples. Pool size includes both
+    # the val grid AND the cond probe (default 64 prompts).
+    val_grid_n_tiles = int(args.val_grid_rows) * int(args.val_grid_cols)
+    pool_size = max(val_grid_n_tiles, 64)
+    cond_pool = _load_val_prompts(args.val_prompts_file, pool_size, device)
+    if is_main:
+        logger.info(
+            "[cond-pool] %d prompts encoded, pooled_dim=%d (%s)",
+            int(cond_pool.shape[0]), int(cond_pool.shape[1]),
+            args.val_prompts_file or "default 64-prompt set",
+        )
+
     for epoch in range(start_epoch, args.epochs):
         for batch in loader:
             if _prof:
@@ -1458,17 +1860,37 @@ def main(args):
                         lr_warmup_steps=args.lr_warmup_steps,
                         max_opt_steps=max_opt_steps,
                     )
+                    # text_proj group follows the same warmup+cosine shape but
+                    # anchored to its own peak (text_proj_lr) and proportional floor.
+                    tp_lr_min = (
+                        args.lr_min * (text_proj_lr / args.lr) if args.lr > 0 else args.lr_min
+                    )
+                    lr_val_tp = _compute_lr(
+                        schedule=args.lr_schedule,
+                        opt_step=step,
+                        base_lr=text_proj_lr,
+                        lr_min=tp_lr_min,
+                        lr_warmup_steps=args.lr_warmup_steps,
+                        max_opt_steps=max_opt_steps,
+                    )
                     eff_lr = lr_val * float(runtime.lr_scale)
+                    eff_lr_tp = lr_val_tp * float(runtime.lr_scale)
                     for pg in opt.param_groups:
-                        pg['lr'] = eff_lr
+                        if pg.get('name') == 'text_proj':
+                            pg['lr'] = eff_lr_tp
+                        else:
+                            pg['lr'] = eff_lr
                     last_lr_val = eff_lr
+                    last_text_proj_lr_val = eff_lr_tp
 
             if has_full_for_render:
-                x, y, x_full, hash_keys = batch
+                x, y_pooled, x_full, hash_keys = batch
             else:
-                x, y, hash_keys = batch
+                x, y_pooled, hash_keys = batch
                 x_full = None
-            y = y.long()  # (B,)
+            # Pooled CLIP vectors are stored fp16 on disk → fp32 here so
+            # downstream arithmetic (loss/grad) stays accurate.
+            y_pooled = y_pooled.float()
             hash_keys = list(hash_keys)
 
             if _prof:
@@ -1488,22 +1910,9 @@ def main(args):
                 )
                 noise = torch.randn_like(x)
 
-                # Pre-sample the CFG drop mask ourselves so the aux classifier
-                # can skip dropped rows (their class label has been replaced by
-                # the unconditional slot). When the aux head is off we still
-                # pass force_drop_ids=None and let LabelEmbedder resample
-                # internally to preserve the original stochastic behavior.
+                # CFG drop is drawn once inside DiT.forward at the model level.
                 unwrapped_model = accelerator.unwrap_model(model)
-                use_aux_head = unwrapped_model.aux_classifier is not None
-                if use_aux_head and args.class_dropout_prob > 0.0:
-                    drop_mask = (
-                        torch.rand(x.shape[0], device=device) < args.class_dropout_prob
-                    )
-                    force_drop_ids = drop_mask.long()
-                    model_kwargs = dict(y=y, force_drop_ids=force_drop_ids)
-                else:
-                    drop_mask = None
-                    model_kwargs = dict(y=y)
+                model_kwargs = dict(y_pooled=y_pooled)
 
                 if _prof:
                     _prof_ev_fwd_start.record()
@@ -1522,29 +1931,17 @@ def main(args):
                 mse_loss = sample_losses.mean()
                 x0_pred = loss_dict.get("pred_xstart")
 
-                # Aux classification: cross-entropy over un-dropped rows only.
-                # The trunk's pooled logits were stashed on the unwrapped model
-                # during forward (see DiT.forward); reading them here avoids
-                # changing the diffusion API's forward return contract.
-                aux_loss = _zero_aux_loss
-                if use_aux_head:
-                    aux_logits = unwrapped_model._aux_logits
-                    if aux_logits is not None:
-                        if drop_mask is not None:
-                            keep = ~drop_mask
-                            n_keep = int(keep.sum().item())
-                            if n_keep > 0:
-                                aux_loss = F.cross_entropy(aux_logits[keep], y[keep])
-                        else:
-                            aux_loss = F.cross_entropy(aux_logits, y)
-
-                if not torch.isfinite(mse_loss):
+                # `torch.isfinite(mse_loss)` is a CPU↔GPU sync (Python branch on a
+                # device tensor). Gate behind log_every so we still catch non-finite
+                # losses periodically without stalling every micro-batch on the main
+                # stream (which serializes against NCCL/prefetch).
+                if step % args.log_every == 0 and not torch.isfinite(mse_loss):
                     _debug_nonfinite_mse(
                         args=args,
                         diffusion=diffusion,
                         model=model,
                         x=x,
-                        y=y,
+                        y_pooled=y_pooled,
                         x_full=x_full,
                         t=t,
                         t_value=t_value,
@@ -1578,7 +1975,7 @@ def main(args):
                 if should_compute_render and x0_pred is None:
                     noise_for_render = torch.randn_like(x)
                     x_t = diffusion.flow_matching_q_sample(x, t_value, noise=noise_for_render)
-                    model_out = model(x_t, t, y)
+                    model_out = model(x_t, t, y_pooled)
                     x0_pred = model_out.float()
 
                 if should_compute_render and x0_pred is not None:
@@ -1609,17 +2006,20 @@ def main(args):
                     noise_cutoff = float(args.render_loss_noise_cutoff)
                     if noise_cutoff > 0.0:
                         keep_mask = (t_value >= noise_cutoff)
-                        n_kept = int(keep_mask.sum().item())
-                        if n_kept < x.shape[0] and is_main and step % args.log_every == 0:
+                        # Boolean indexing already syncs once to allocate the
+                        # output. Read the count from the resulting shape rather
+                        # than calling `.item()` on a separate sum (which would
+                        # add a redundant sync per micro-batch).
+                        x0_pred_render = x0_pred[keep_mask]
+                        x_gt_render = x_gt_for_render[keep_mask]
+                        n_kept = x0_pred_render.shape[0]
+                        if n_kept == 0:
+                            should_compute_render = False
+                        elif is_main and step % args.log_every == 0 and n_kept < x.shape[0]:
                             logger.info(
                                 "[render-loss] step=%d kept %d/%d samples (t_value >= %.2f)",
                                 step, n_kept, x.shape[0], noise_cutoff,
                             )
-                        if n_kept == 0:
-                            should_compute_render = False
-                        else:
-                            x0_pred_render = x0_pred[keep_mask]
-                            x_gt_render = x_gt_for_render[keep_mask]
 
                     if should_compute_render:
                         render_l1_loss, render_alpha_l1_loss, render_lpips_loss = _compute_render_loss_for_batch(
@@ -1649,7 +2049,7 @@ def main(args):
                         preview_x_gt = x_gt_for_render[preview_slice]
                         preview_t = t[preview_slice]
                         preview_t_value = t_value[preview_slice]
-                        preview_y = y[preview_slice]
+                        preview_pooled = y_pooled[preview_slice]
 
                         if x0_pred is not None:
                             preview_x0_pred = x0_pred.detach()[preview_slice]
@@ -1660,7 +2060,9 @@ def main(args):
                                 preview_x, preview_t_value, noise=noise_for_preview
                             )
                             with torch.no_grad():
-                                model_out_preview = model(x_t_preview, preview_t, preview_y)
+                                model_out_preview = model(
+                                    x_t_preview, preview_t, preview_pooled,
+                                )
                                 preview_x0_pred = model_out_preview.float()
 
                         _save_training_render_preview(
@@ -1676,7 +2078,7 @@ def main(args):
                             epoch=epoch,
                             step=step,
                             timesteps=preview_t,
-                            labels=preview_y,
+                            labels=None,
                             device=device,
                             num_cam=args.train_render_log_num_cam,
                             dc_only=dc_only,
@@ -1686,28 +2088,11 @@ def main(args):
                         loss_tracker.flush_plots()
                     accelerator.wait_for_everyone()
 
-                # Class-from-null repulsion: cosine hinge on class vs null
-                # embedding. Pure additive scalar; stopgrad on null row inside
-                # helper. Computed every step so the diagnostic mean cosine is
-                # always logged, even when the weight is 0. No-op when CFG
-                # dropout is disabled (no null row exists).
-                if args.class_dropout_prob > 0.0:
-                    repel_loss, class_null_cos_mean = _compute_null_repel_loss(
-                        unwrapped_model.y_embedder.embedding_table.weight,
-                        num_classes,
-                        float(args.null_repel_margin),
-                    )
-                else:
-                    repel_loss = torch.zeros([], device=device)
-                    class_null_cos_mean = torch.zeros([], device=device)
-
                 total_loss = (
                     mse_loss
                     + float(runtime.render_loss_weight) * render_l1_loss
                     + float(runtime.alpha_mask_loss_weight) * render_alpha_l1_loss
                     + float(runtime.lpips_loss_weight) * render_lpips_loss
-                    + float(runtime.aux_classifier_weight) * aux_loss
-                    + float(runtime.null_repel_weight) * repel_loss
                 )
 
                 # Per-loss gradient norm measurement (single-GPU only).
@@ -1734,16 +2119,12 @@ def main(args):
                                 "render_l1": (render_l1_loss, float(runtime.render_loss_weight)),
                                 "alpha_l1": (render_alpha_l1_loss, float(runtime.alpha_mask_loss_weight)),
                                 "lpips": (render_lpips_loss, float(runtime.lpips_loss_weight)),
-                                "aux": (aux_loss, float(runtime.aux_classifier_weight)),
-                                "repel": (repel_loss, float(runtime.null_repel_weight)),
                             },
                         )
                     log_mse_gn += _per_loss_norms.get("mse", 0.0)
                     log_rl1_gn += _per_loss_norms.get("render_l1", 0.0)
                     log_alpha_gn += _per_loss_norms.get("alpha_l1", 0.0)
                     log_lpips_gn += _per_loss_norms.get("lpips", 0.0)
-                    log_aux_gn += _per_loss_norms.get("aux", 0.0)
-                    log_repel_gn += _per_loss_norms.get("repel", 0.0)
                     log_per_loss_gn_steps += 1
 
                 # Backward pass (accelerate handles scaling + sync)
@@ -1766,9 +2147,12 @@ def main(args):
                         model.parameters(),
                         clip_cap if clip_cap > 0.0 else float('inf'),
                     )
-                    if is_main and torch.isfinite(grad_norm):
-                        log_grad_norm += grad_norm.item()
-                        log_grad_steps += 1
+                    if is_main:
+                        finite = torch.isfinite(grad_norm)
+                        log_grad_norm += torch.where(
+                            finite, grad_norm, torch.zeros_like(grad_norm)
+                        )
+                        log_grad_steps += finite.to(log_grad_steps.dtype)
                 opt.step()
                 opt.zero_grad()
 
@@ -1800,9 +2184,6 @@ def main(args):
             log_render_l1 += render_l1_loss.detach()
             log_render_alpha_l1 += render_alpha_l1_loss.detach()
             log_render_lpips += render_lpips_loss.detach()
-            log_aux_loss += aux_loss.detach()
-            log_repel_loss += repel_loss.detach()
-            log_class_null_cos += class_null_cos_mean
             # Bucket per-sample MSE by continuous t_value ∈ (0,1) using the
             # custom edges defined above.
             with torch.no_grad():
@@ -1853,6 +2234,11 @@ def main(args):
                 )
                 if args.lr_schedule in ('cosine', 'warmup', 'none') and last_lr_val is not None:
                     msg += f" | LR: {last_lr_val:.2e}"
+                    if (
+                        last_text_proj_lr_val is not None
+                        and last_text_proj_lr_val != last_lr_val
+                    ):
+                        msg += f" (txt {last_text_proj_lr_val:.2e})"
                 if p_mean_schedule is not None:
                     msg += f" | P_mean: {runtime.P_mean:+.3f}"
                 if _any_render_loss_weight(runtime):
@@ -1864,25 +2250,12 @@ def main(args):
                         f" | Alpha_L1: {avg_alpha_rl1:.4f}"
                         f" | Render_LPIPS: {avg_rlpips:.4f}"
                     )
-                aux_active = use_aux_head and float(runtime.aux_classifier_weight) > 0.0
-                avg_aux = (log_aux_loss.item() / log_steps) if aux_active else None
-                if aux_active:
-                    msg += f" | Aux: {avg_aux:.4f}"
-                # Always log the class-to-null cosine diagnostic when CFG dropout
-                # is on (null exists); log repel loss only when the regularizer
-                # is active.
-                repel_active = float(runtime.null_repel_weight) > 0.0
-                null_exists = args.class_dropout_prob > 0.0
-                avg_repel = (log_repel_loss.item() / log_steps) if repel_active else None
-                avg_class_null_cos = (
-                    (log_class_null_cos.item() / log_steps) if null_exists else None
-                )
-                if repel_active:
-                    msg += f" | Repel: {avg_repel:.4f}"
-                if avg_class_null_cos is not None:
-                    msg += f" | cos(c,null): {avg_class_null_cos:+.4f}"
-                if log_grad_steps > 0:
-                    msg += f" | GradNorm: {log_grad_norm / log_grad_steps:.4f}"
+                grad_steps_int = int(log_grad_steps.item())
+                if grad_steps_int > 0:
+                    avg_grad_norm = log_grad_norm.item() / grad_steps_int
+                    msg += f" | GradNorm: {avg_grad_norm:.4f}"
+                else:
+                    avg_grad_norm = None
                 if log_per_loss_gn_steps > 0:
                     n = log_per_loss_gn_steps
                     msg += f" | GN[mse]: {log_mse_gn / n:.4f}"
@@ -1892,10 +2265,6 @@ def main(args):
                         msg += f" | GN[alpha]: {log_alpha_gn / n:.4f}"
                     if log_lpips_gn > 0.0:
                         msg += f" | GN[lpips]: {log_lpips_gn / n:.4f}"
-                    if log_aux_gn > 0.0:
-                        msg += f" | GN[aux]: {log_aux_gn / n:.4f}"
-                    if log_repel_gn > 0.0:
-                        msg += f" | GN[repel]: {log_repel_gn / n:.4f}"
                 # Per-t-bucket MSE: low-t = noisy, high-t = clean. Empty buckets
                 # print NaN rather than crash — happens only on a pathological
                 # P_mean/P_std where some bin is never sampled in the window.
@@ -1910,37 +2279,40 @@ def main(args):
                 msg += f" | MSE/t: {bucket_str}"
                 logger.info(msg)
 
-                # ──── TEMP: per-print conditioning-signal probe ─────────────
-                # Mirrors the [cond] line that normally prints at checkpoint
-                # time; moved up to give granular feedback while tuning the
-                # null-repel regularizer. Runs 17 extra forward passes per
-                # invocation; gated to every 1000 steps to keep overhead <0.5%.
-                # To remove: delete this entire block (keep markers for grep).
-                if args.class_dropout_prob > 0 and step % 1000 == 0:
+                # Conditioning-signal probe over the validation prompt pool.
+                if args.class_dropout_prob > 0:
+                    # FM convention: t_value=0 is max noise; pure-noise probe input
+                    # is then in-distribution at t_discrete=0. See CLAUDE.md
+                    # "Diffusion / timestep convention".
                     _cond_sig_print = _measure_conditioning_signal(
                         model=accelerator.unwrap_model(model),
-                        num_classes=num_classes,
+                        cond_pool=cond_pool,
                         in_channels=in_channels,
                         diffusion_num_timesteps=diffusion.num_timesteps,
                         device=device,
-                        t_value=0.3,
-                        batch_size=8,
+                        t_value=0.0,
+                        batch_size=args.batch_size,
                         seed=args.seed,
                     )
                     logger.info(
                         "[cond] cfg_signal=%.4f (min=%.4f max=%.4f, n=%d) | "
-                        "class_signal=%.4f (min=%.4f max=%.4f, n=%d) | pred_rms=%.4f",
+                        "cond_signal=%.4f (min=%.4f max=%.4f, n=%d) | pred_rms=%.4f",
                         _cond_sig_print["cfg_signal"],
                         _cond_sig_print["cfg_signal_min"],
                         _cond_sig_print["cfg_signal_max"],
-                        _cond_sig_print["num_class_probes"],
-                        _cond_sig_print["class_signal"],
-                        _cond_sig_print["class_signal_min"],
-                        _cond_sig_print["class_signal_max"],
-                        _cond_sig_print["num_class_pairs"],
+                        _cond_sig_print["num_cond_probes"],
+                        _cond_sig_print["cond_signal"],
+                        _cond_sig_print["cond_signal_min"],
+                        _cond_sig_print["cond_signal_max"],
+                        _cond_sig_print["num_cond_pairs"],
                         _cond_sig_print["pred_rms"],
                     )
-                # ──── TEMP end ───────────────────────────────────────────────
+                    _wandb_log(
+                        wandb_run,
+                        {f"cond/{k}": v for k, v in _cond_sig_print.items()
+                         if isinstance(v, (int, float))},
+                        step=step,
+                    )
 
                 # Persist this print's averages to the loss tracker. Values are
                 # already host-side floats, so this is a cheap dict append +
@@ -1954,19 +2326,19 @@ def main(args):
                         "render_l1": (log_rl1_gn / n) if log_rl1_gn > 0.0 else None,
                         "alpha_l1": (log_alpha_gn / n) if log_alpha_gn > 0.0 else None,
                         "lpips": (log_lpips_gn / n) if log_lpips_gn > 0.0 else None,
-                        "aux": (log_aux_gn / n) if log_aux_gn > 0.0 else None,
-                        "repel": (log_repel_gn / n) if log_repel_gn > 0.0 else None,
                     }
+                _render_l1 = (log_render_l1.item() / log_steps) if render_active else None
+                _alpha_l1 = (log_render_alpha_l1.item() / log_steps) if render_active else None
+                _lpips = (log_render_lpips.item() / log_steps) if render_active else None
+                _grad_norm = avg_grad_norm
+
                 loss_tracker.record(
                     step=step,
                     mse=avg_loss,
-                    render_l1=(log_render_l1.item() / log_steps) if render_active else None,
-                    alpha_l1=(log_render_alpha_l1.item() / log_steps) if render_active else None,
-                    lpips=(log_render_lpips.item() / log_steps) if render_active else None,
-                    aux=avg_aux,
-                    repel=avg_repel,
-                    class_null_cos=avg_class_null_cos,
-                    grad_norm=(log_grad_norm / log_grad_steps) if log_grad_steps > 0 else None,
+                    render_l1=_render_l1,
+                    alpha_l1=_alpha_l1,
+                    lpips=_lpips,
+                    grad_norm=_grad_norm,
                     grad_norm_per_loss=grad_norm_per_loss,
                     lr=last_lr_val,
                     p_mean=runtime.P_mean,
@@ -1975,23 +2347,42 @@ def main(args):
                     bucket_counts=[int(h) for h in bucket_hits],
                 )
 
+                if wandb_run is not None:
+                    payload = {
+                        "train/mse": avg_loss,
+                        "train/grad_norm": _grad_norm,
+                        "train/lr": last_lr_val,
+                        "train/lr_text_proj": last_text_proj_lr_val,
+                        "train/p_mean": runtime.P_mean,
+                        "train/steps_per_sec": steps_per_sec,
+                    }
+                    if render_active:
+                        payload["train/render_l1"] = _render_l1
+                        payload["train/alpha_l1"] = _alpha_l1
+                        payload["train/lpips"] = _lpips
+                    if grad_norm_per_loss is not None:
+                        for k, v in grad_norm_per_loss.items():
+                            if v is not None:
+                                payload[f"train/grad_norm_{k}"] = v
+                    if bucket_avg is not None:
+                        for i, m in enumerate(bucket_avg):
+                            payload[f"train/bucket{i}_mse"] = m
+                            payload[f"train/bucket{i}_count"] = int(bucket_hits[i])
+                    payload = {k: v for k, v in payload.items() if v is not None}
+                    _wandb_log(wandb_run, payload, step=step)
+
                 log_loss.zero_()
                 log_render_l1.zero_()
                 log_render_alpha_l1.zero_()
                 log_render_lpips.zero_()
-                log_aux_loss.zero_()
-                log_repel_loss.zero_()
-                log_class_null_cos.zero_()
-                log_grad_norm = 0.0
-                log_grad_steps = 0
+                log_grad_norm.zero_()
+                log_grad_steps.zero_()
                 log_steps = 0
                 log_optim_steps = 0
                 log_mse_gn = 0.0
                 log_rl1_gn = 0.0
                 log_alpha_gn = 0.0
                 log_lpips_gn = 0.0
-                log_aux_gn = 0.0
-                log_repel_gn = 0.0
                 log_per_loss_gn_steps = 0
                 log_t_bucket_sum.zero_()
                 log_t_bucket_cnt.zero_()
@@ -2011,23 +2402,31 @@ def main(args):
                     }, ckpt_path)
                     logger.info(f"Saved checkpoint to {ckpt_path}")
                     if args.class_dropout_prob > 0:
+                        # FM convention: t_value=0 is max noise; in-distribution
+                        # probe input. See CLAUDE.md "Diffusion / timestep convention".
                         sig = _measure_conditioning_signal(
                             model=accelerator.unwrap_model(model),
-                            num_classes=num_classes,
+                            cond_pool=cond_pool,
                             in_channels=in_channels,
                             diffusion_num_timesteps=diffusion.num_timesteps,
                             device=device,
-                            t_value=0.3,
-                            batch_size=8,
+                            t_value=0.0,
+                            batch_size=args.batch_size,
                             seed=args.seed,
                         )
                         logger.info(
                             "[cond] cfg_signal=%.4f (min=%.4f max=%.4f, n=%d) | "
-                            "class_signal=%.4f (min=%.4f max=%.4f, n=%d) | pred_rms=%.4f",
+                            "cond_signal=%.4f (min=%.4f max=%.4f, n=%d) | pred_rms=%.4f",
                             sig["cfg_signal"], sig["cfg_signal_min"], sig["cfg_signal_max"],
-                            sig["num_class_probes"],
-                            sig["class_signal"], sig["class_signal_min"], sig["class_signal_max"],
-                            sig["num_class_pairs"], sig["pred_rms"],
+                            sig["num_cond_probes"],
+                            sig["cond_signal"], sig["cond_signal_min"], sig["cond_signal_max"],
+                            sig["num_cond_pairs"], sig["pred_rms"],
+                        )
+                        _wandb_log(
+                            wandb_run,
+                            {f"cond/{k}": v for k, v in sig.items()
+                             if isinstance(v, (int, float))},
+                            step=step,
                         )
                 accelerator.wait_for_everyone()
 
@@ -2037,7 +2436,7 @@ def main(args):
             if validation_due:
                 accelerator.wait_for_everyone()
                 if is_main:
-                    _run_validation_render(
+                    val_render_path = _run_validation_render(
                         model=ema,
                         plane_to_sphere=plane_to_sphere,
                         norm_mean=norm_mean,
@@ -2049,7 +2448,7 @@ def main(args):
                         step=step,
                         device=device,
                         in_channels=in_channels,
-                        num_classes=num_classes,
+                        cond_pool=cond_pool,
                         dc_only=dc_only,
                         predict_xstart=args.predict_xstart,
                         noise_schedule=args.noise_schedule,
@@ -2067,8 +2466,59 @@ def main(args):
                         P_std=args.P_std,
                         rank_transform_tables=rank_transform_tables,
                     )
+                    val_grid_path = None
+                    if args.val_grid_enabled:
+                        val_grid_path = _run_validation_grid(
+                            model=ema,
+                            plane_to_sphere=plane_to_sphere,
+                            norm_mean=norm_mean,
+                            norm_std=norm_std,
+                            train_cameras=train_cameras,
+                            renderer_tuple=renderer_for_train,
+                            output_dir=args.results_dir,
+                            epoch=epoch,
+                            step=step,
+                            device=device,
+                            in_channels=in_channels,
+                            cond_pool=cond_pool,
+                            grid_seed=args.val_grid_seed,
+                            camera_idx=args.val_grid_camera_idx,
+                            grid_rows=args.val_grid_rows,
+                            grid_cols=args.val_grid_cols,
+                            dc_only=dc_only,
+                            predict_xstart=args.predict_xstart,
+                            noise_schedule=args.noise_schedule,
+                            diffusion_steps=diffusion.num_timesteps,
+                            val_sampling_steps=args.val_sampling_steps,
+                            val_sampler=args.val_sampler,
+                            dpm_solver_order=args.dpm_solver_order,
+                            dpm_algorithm_type=args.dpm_algorithm_type,
+                            dpm_solver_type=args.dpm_solver_type,
+                            dpm_timestep_spacing=args.dpm_timestep_spacing,
+                            dpm_use_karras_sigmas=args.dpm_use_karras_sigmas,
+                            ddim_eta=args.ddim_eta,
+                            cfg_scale=args.val_cfg_scale,
+                            P_mean=runtime.P_mean,
+                            P_std=args.P_std,
+                            rank_transform_tables=rank_transform_tables,
+                        )
                     loss_tracker.flush_plots()
+                    if wandb_run is not None and args.wandb_log_images:
+                        img_payload = {}
+                        if val_render_path and os.path.exists(val_render_path):
+                            img_payload["val/render"] = wandb.Image(val_render_path)
+                        if val_grid_path and os.path.exists(val_grid_path):
+                            img_payload["val/grid"] = wandb.Image(val_grid_path)
+                        if img_payload:
+                            _wandb_log(wandb_run, img_payload, step=step)
                 accelerator.wait_for_everyone()
+
+            if args.max_steps > 0 and step >= args.max_steps:
+                break
+        if args.max_steps > 0 and step >= args.max_steps:
+            if is_main:
+                logger.info(f"[max_steps] Reached --max_steps={args.max_steps}, stopping.")
+            break
 
     # Save final checkpoint
     accelerator.wait_for_everyone()
@@ -2084,6 +2534,11 @@ def main(args):
         logger.info(f"Training complete. Final checkpoint: {ckpt_path}")
         loss_tracker.flush_plots()
         loss_tracker.close()
+        if wandb_run is not None:
+            try:
+                wandb_run.finish()
+            except Exception as exc:
+                logger.warning("[wandb] finish failed: %s", exc)
     accelerator.wait_for_everyone()
 
 
@@ -2114,52 +2569,9 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
         '--class_dropout_prob',
         type=float,
         default=0.1,
-        help='Label dropout probability for classifier-free guidance (LabelEmbedder)',
-    )
-    parser.add_argument(
-        '--class_balanced_sampler',
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help='Sample with inverse class-frequency weights (WeightedRandomSampler) '
-             'to counter class imbalance. Ignored in --overfit mode.',
-    )
-    parser.add_argument(
-        '--aux_classifier',
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help='Attach a linear classification head on top of mean-pooled transformer tokens. '
-             'Trained with cross-entropy on un-dropped class labels; gives the transformer trunk '
-             'direct class-discriminative signal alongside the flow-matching MSE.',
-    )
-    parser.add_argument(
-        '--aux_classifier_weight',
-        type=float,
-        default=0.0,
-        help='Weight on the auxiliary cross-entropy classification loss. Overridable via overrides.yaml.',
-    )
-    parser.add_argument(
-        '--label_embed_init_std',
-        type=float,
-        default=0.02,
-        help='Init std for LabelEmbedder.embedding_table. Default 0.02 matches the original DiT recipe; '
-             'increase (e.g. 0.1) to amplify class conditioning at init.',
-    )
-    parser.add_argument(
-        '--null_repel_weight',
-        type=float,
-        default=0.0,
-        help='Weight on the class-from-null cosine repulsion regularizer. '
-             'Pushes class embeddings away from the CFG null token to strengthen '
-             'classifier-free guidance. 0.0 (default) = disabled; override via '
-             'overrides.yaml for hot-reload fine-tuning.',
-    )
-    parser.add_argument(
-        '--null_repel_margin',
-        type=float,
-        default=0.5,
-        help='Cosine margin for the null repulsion hinge. No penalty when '
-             'cos(e_c, e_null) <= margin; quadratic penalty above. Static (set at '
-             'start of training); not hot-reloadable.',
+        help='Conditioning-dropout probability for classifier-free guidance. '
+             'Name kept for YAML/CLI backwards compatibility; applies to the '
+             'text conditioning vector (replaced with the learned null embedding).',
     )
 
     # Data
@@ -2178,8 +2590,32 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
                              'applied before the renderer\'s sigmoid/exp. '
                              'mean/std for these channels are forced to (0,1) '
                              'so the standardize round-trip is a no-op.')
-    parser.add_argument('--class_map', type=str, default='object_labels/object_to_class.json',
-                        help='Path to object-to-class mapping JSON')
+    parser.add_argument('--clip_thresholds_file', type=str, default=None,
+                        help='Path to per-channel hard-clip thresholds built by '
+                             'data/build_clip_thresholds.py. Listed channels are '
+                             'clipped to [lower, upper] at load time, BEFORE the '
+                             'rank transform. When clipped channels are also in the '
+                             'rank set, the rank tables must have been built on the '
+                             'clipped stream (build_rank_transform.py '
+                             '--clip_thresholds_file).')
+    parser.add_argument('--text_embed_path', type=str, default=None,
+                        help='Path to precomputed pooled CLIP vectors. Accepts a '
+                             'directory containing keys.json + pooled.npy (the '
+                             'mmap-friendly format produced by '
+                             'object_classification/encode_text_embeddings.py — '
+                             'tokens.npy / mask.npy are ignored if present), or a '
+                             '.npz with keys + pooled (or legacy embeddings) field. '
+                             'Comma-separated shard list also accepted. '
+                             'Required for text-conditioned training.')
+    parser.add_argument('--null_text_token_path', type=str, default=None,
+                        help='Path to null_text_token.npz produced by the encoder '
+                             '(EOS token of empty-string penultimate-norm encoding). '
+                             'If omitted, defaults to null_text_token.npz next to the '
+                             'first --text_embed_path shard.')
+    parser.add_argument('--val_prompts_file', type=str, default=None,
+                        help='Optional JSON list of validation prompts to encode '
+                             'with CLIP-L/14 at startup. If None, uses the built-in 64-prompt '
+                             'mix (simple, multi-attribute, compositional/spatial).')
     parser.add_argument('--sphere2plane_path', type=str, default='data/sphere2plane.npy',
                         help='Path to sphere2plane.npy permutation file')
     parser.add_argument('--exclude_keys_file', type=str, default=None,
@@ -2220,8 +2656,35 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
 
     # Training
     parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--max_steps', type=int, default=0,
+                        help='Stop training after this many optimizer steps (0 = disabled). '
+                             'Used by jit/sweep.py to cap each hyperparameter trial.')
     parser.add_argument('--batch_size', type=int, default=4)
     parser.add_argument('--lr', type=float, default=1e-4)
+    parser.add_argument(
+        '--betas',
+        type=float,
+        nargs=2,
+        default=[0.9, 0.999],
+        metavar=('BETA1', 'BETA2'),
+        help='AdamW betas for the main parameter group.',
+    )
+    parser.add_argument(
+        '--text_proj_lr',
+        type=float,
+        default=None,
+        help='Optional learning rate for the text-projection MLP '
+             '(y_embedder.proj feeding the AdaLN signal). Defaults to --lr. '
+             'Follows the same warmup+cosine shape as --lr, anchored at this peak.',
+    )
+    parser.add_argument(
+        '--text_proj_betas',
+        type=float,
+        nargs=2,
+        default=None,
+        metavar=('BETA1', 'BETA2'),
+        help='Optional AdamW betas for the text-projection MLP. Defaults to --betas.',
+    )
     parser.add_argument(
         '--lr_schedule',
         type=str,
@@ -2259,6 +2722,12 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
     parser.add_argument('--compile', action=argparse.BooleanOptionalAction, default=False,
                         help='Enable torch.compile on the model for faster training (requires PyTorch 2.0+). '
                              'First step is slow (compilation); subsequent steps are faster.')
+    parser.add_argument('--compile_mode', type=str, default='default',
+                        choices=('default', 'reduce-overhead', 'max-autotune', 'max-autotune-no-cudagraphs'),
+                        help='torch.compile mode. default=safe baseline, max-autotune-no-cudagraphs=Triton '
+                             'tile-size autotuning (same numerical path), reduce-overhead=CUDA Graphs '
+                             '(removes per-kernel launch overhead, requires stable strides under DDP), '
+                             'max-autotune=both autotune+cudagraphs.')
     parser.add_argument('--profile_step_times', action=argparse.BooleanOptionalAction, default=False,
                         help='Print rolling per-phase step time breakdown (data/h2d/fwd/bwd/opt) every '
                              '100 steps on rank 0. Adds explicit GPU syncs around each phase, so step '
@@ -2366,6 +2835,21 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
     parser.add_argument('--val_cfg_scale', type=float, default=1.0,
                         help='Classifier-free guidance scale for validation sampling (1.0 = disabled). '
                              'Requires class_dropout_prob > 0 during training.')
+    parser.add_argument('--val_grid_enabled', action=argparse.BooleanOptionalAction, default=True,
+                        help='In addition to the single-random-sample validation render, also produce a '
+                             'fixed-seed `val_grid_rows x val_grid_cols` class grid every val_every steps. '
+                             'Requires val_sampler in {heun,euler}.')
+    parser.add_argument('--val_grid_rows', type=int, default=4,
+                        help='Rows in the fixed-seed validation grid.')
+    parser.add_argument('--val_grid_cols', type=int, default=4,
+                        help='Cols in the fixed-seed validation grid.')
+    parser.add_argument('--val_grid_seed', type=int, default=1234,
+                        help='Base seed for the fixed-seed validation grid. Per-tile noise is seeded '
+                             'with (val_grid_seed + tile_idx), so a given (seed, tile_idx) pair is stable '
+                             'across runs.')
+    parser.add_argument('--val_grid_camera_idx', type=int, default=0,
+                        help='Camera index (into ref_camera_tar) used for every tile in the validation '
+                             'grid. Held fixed so cross-step diffs reflect model changes, not camera changes.')
     parser.add_argument('--results_dir', type=str, default='output/dit_results')
 
     # Resume
@@ -2378,6 +2862,25 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
         default=None,
         help='YAML file with hyperparameters; merged before CLI (CLI overrides).',
     )
+
+    # Weights & Biases logging
+    parser.add_argument('--wandb', action=argparse.BooleanOptionalAction, default=True,
+                        help='Enable wandb logging on rank-0. --no-wandb to disable.')
+    parser.add_argument('--wandb_project', type=str, default='3dgen-jit',
+                        help='wandb project name.')
+    parser.add_argument('--wandb_entity', type=str, default=None,
+                        help='wandb entity (team or user). Defaults to WANDB_ENTITY env / wandb default.')
+    parser.add_argument('--wandb_run_name', type=str, default=None,
+                        help='wandb run name. Defaults to basename(results_dir).')
+    parser.add_argument('--wandb_mode', type=str, default='online',
+                        choices=('online', 'offline', 'disabled'),
+                        help='wandb mode. "disabled" matches --no-wandb.')
+    parser.add_argument('--wandb_tags', type=str, default='',
+                        help='Comma-separated tags applied to the wandb run.')
+    parser.add_argument('--wandb_group', type=str, default=None,
+                        help='Optional wandb group (useful for sweep aggregation).')
+    parser.add_argument('--wandb_log_images', action=argparse.BooleanOptionalAction, default=True,
+                        help='Upload validation PNGs to wandb (in addition to saving locally).')
     return parser
 
 

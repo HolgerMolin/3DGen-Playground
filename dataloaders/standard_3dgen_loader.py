@@ -62,20 +62,150 @@ def load_obj_list(obj_list_paths: List[str]) -> Dict[str, str]:
 
 def load_captions(caption_path: str) -> Dict[str, str]:
     """Load the captions JSON file.
-    
+
     Args:
         caption_path: Path to captions.json
-        
+
     Returns:
         Dictionary mapping foldername/filename to caption text
     """
     logging.info(f"Loading captions from {caption_path}")
-    
+
     with open(caption_path, 'r') as f:
         data = json.load(f)
-    
+
     logging.info(f"Loaded {len(data)} captions")
     return data
+
+
+def load_text_pooled(
+    text_embed_path: str,
+) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], Dict[str, int]]:
+    """Load the precomputed per-caption CLIP arrays.
+
+    ``text_embed_path`` is one of:
+      * A directory containing ``keys.json`` + ``pooled.npy`` (+ optional
+        ``tokens.npy`` and ``mask.npy`` for cross-attention conditioning).
+        All arrays are opened with ``mmap_mode='r'`` so worker processes
+        share a single page cache instead of duplicating per worker.
+      * A ``.npz`` file containing ``keys`` + one of ``pooled`` or
+        ``embeddings`` (the legacy field name); ``tokens`` / ``mask`` fields
+        are loaded if present. Fully loaded into RAM.
+      * A comma-separated list of any mix of the above; arrays are
+        concatenated in order. Shards must be disjoint. Tokens/mask are
+        returned only if EVERY shard supplies them.
+
+    Returns ``(pooled, tokens, mask, key_to_row)`` — pooled (always), tokens
+    and mask (optional, ``None`` if absent in source). Arrays stay in their
+    on-disk dtype; upcast happens at sample-fetch time.
+    """
+    shard_paths = [p.strip() for p in text_embed_path.split(",") if p.strip()]
+    if not shard_paths:
+        raise ValueError(f"Empty text_embed_path: {text_embed_path!r}")
+
+    keys_all: list[str] = []
+    pooled_chunks: list[np.ndarray] = []
+    tokens_chunks: list[Optional[np.ndarray]] = []
+    mask_chunks: list[Optional[np.ndarray]] = []
+    sources: list[str] = []
+    for path in shard_paths:
+        p = Path(path)
+        tokens_arr: Optional[np.ndarray] = None
+        mask_arr: Optional[np.ndarray] = None
+        if p.is_dir():
+            logging.info(f"mmap'ing CLIP arrays from {p}")
+            keys_json = p / "keys.json"
+            with open(keys_json, "r", encoding="utf-8") as f:
+                k = json.load(f)
+            pooled = np.load(p / "pooled.npy", mmap_mode="r")
+            tokens_path = p / "tokens.npy"
+            mask_path = p / "mask.npy"
+            if tokens_path.exists():
+                tokens_arr = np.load(tokens_path, mmap_mode="r")
+            if mask_path.exists():
+                mask_arr = np.load(mask_path, mmap_mode="r")
+            sources.append(f"{p} (mmap)")
+        else:
+            logging.info(f"Loading CLIP arrays from {path}")
+            data = np.load(path, allow_pickle=True)
+            if "keys" not in data.files:
+                raise ValueError(f"{path} is missing required field 'keys'.")
+            if "pooled" in data.files:
+                pooled = np.asarray(data["pooled"])
+            elif "embeddings" in data.files:
+                pooled = np.asarray(data["embeddings"])
+            else:
+                raise ValueError(
+                    f"{path} must contain 'pooled' or legacy 'embeddings' field."
+                )
+            if "tokens" in data.files:
+                tokens_arr = np.asarray(data["tokens"])
+            if "mask" in data.files:
+                mask_arr = np.asarray(data["mask"])
+            k = data["keys"].tolist()
+            sources.append(f"{path} (npz)")
+        if pooled.shape[0] != len(k):
+            raise ValueError(
+                f"Corrupt shard {path}: keys={len(k)} pooled={pooled.shape[0]}"
+            )
+        if tokens_arr is not None and tokens_arr.shape[0] != len(k):
+            raise ValueError(
+                f"Corrupt shard {path}: keys={len(k)} tokens={tokens_arr.shape[0]}"
+            )
+        if mask_arr is not None and mask_arr.shape[0] != len(k):
+            raise ValueError(
+                f"Corrupt shard {path}: keys={len(k)} mask={mask_arr.shape[0]}"
+            )
+        keys_all.extend(k)
+        pooled_chunks.append(pooled)
+        tokens_chunks.append(tokens_arr)
+        mask_chunks.append(mask_arr)
+
+    if len(pooled_chunks) == 1:
+        pooled = pooled_chunks[0]
+        tokens = tokens_chunks[0]
+        mask = mask_chunks[0]
+    else:
+        pooled = np.concatenate(pooled_chunks, axis=0)
+        if all(t is not None for t in tokens_chunks):
+            tokens = np.concatenate(tokens_chunks, axis=0)
+        else:
+            tokens = None
+        if all(m is not None for m in mask_chunks):
+            mask = np.concatenate(mask_chunks, axis=0)
+        else:
+            mask = None
+
+    key_to_row = {k: i for i, k in enumerate(keys_all)}
+    if len(key_to_row) != len(keys_all):
+        raise ValueError(
+            "Duplicate keys across shards — shards must be disjoint "
+            "(produced by --num-shards/--shard-id without overlap)."
+        )
+    extras = []
+    if tokens is not None:
+        extras.append(f"tokens={tokens.shape}({tokens.dtype})")
+    if mask is not None:
+        extras.append(f"mask={mask.shape}({mask.dtype})")
+    extras_str = f" + {', '.join(extras)}" if extras else ""
+    logging.info(
+        f"Loaded {len(keys_all):,} pooled CLIP vectors: shape={pooled.shape} "
+        f"({pooled.dtype}){extras_str} from {len(shard_paths)} source(s): {', '.join(sources)}"
+    )
+    return pooled, tokens, mask, key_to_row
+
+
+def load_null_text_token(path: str) -> np.ndarray:
+    """Load the cached empty-string CLIP token from null_text_token.npz.
+    Returns a (1, D) fp16 numpy array."""
+    logging.info(f"Loading null text token from {path}")
+    data = np.load(path)
+    nt = np.asarray(data["null_token"])
+    if nt.ndim != 2 or nt.shape[0] != 1:
+        raise ValueError(
+            f"{path} null_token must be shape (1, D); got {nt.shape}"
+        )
+    return nt
 
 
 def load_ply(path: str) -> np.ndarray:
@@ -199,6 +329,55 @@ def load_rank_transform_payload(path: str) -> dict:
     }
 
 
+def load_clip_thresholds_payload(path: str) -> dict:
+    """Load per-channel hard-clip thresholds built by data/build_clip_thresholds.py.
+
+    Returns a dict with `channels` (list[int], indices into the full 59-channel
+    feature space), `lower` and `upper` (np.ndarray of shape (C,), float32). The
+    clip is applied in the raw data domain (right after load_ply), so when it is
+    combined with the rank transform it MUST run first — clip then rank.
+    """
+    payload = torch.load(path, weights_only=False)
+    lower = payload["lower"]
+    upper = payload["upper"]
+    if isinstance(lower, torch.Tensor):
+        lower = lower.cpu().numpy()
+    if isinstance(upper, torch.Tensor):
+        upper = upper.cpu().numpy()
+    return {
+        "channels": [int(c) for c in payload["channels"]],
+        "lower": np.asarray(lower, dtype=np.float32),
+        "upper": np.asarray(upper, dtype=np.float32),
+    }
+
+
+def _apply_clip_numpy(
+    point_cloud: np.ndarray,
+    clip_channels: np.ndarray,
+    lower: np.ndarray,
+    upper: np.ndarray,
+) -> np.ndarray:
+    """Hard-clip listed channels to [lower, upper]; other channels untouched.
+
+    Accepts (C, H, W) or (N, C). Mirrors `_apply_rank_transform_numpy`'s shape
+    handling so it can run on either the plane grid or a flat point list.
+    """
+    if clip_channels.size == 0:
+        return point_cloud
+    out = point_cloud.copy()
+    if point_cloud.ndim == 3:
+        for i, c in enumerate(clip_channels):
+            out[c] = np.clip(point_cloud[c], lower[i], upper[i])
+    elif point_cloud.ndim == 2:
+        for i, c in enumerate(clip_channels):
+            out[:, c] = np.clip(point_cloud[:, c], lower[i], upper[i])
+    else:
+        raise ValueError(
+            f"Unsupported point_cloud shape for clip: {point_cloud.shape}"
+        )
+    return out
+
+
 def _apply_rank_transform_numpy(
     point_cloud: np.ndarray,
     rank_channels: np.ndarray,
@@ -280,6 +459,8 @@ class Standard3DGenDataset(Dataset):
         sphere2plane_path: str = "data/sphere2plane.npy",
         exclude_keys_file: Optional[str] = None,
         rank_transform_file: Optional[str] = None,
+        clip_thresholds_file: Optional[str] = None,
+        text_embed_path: Optional[str] = None,
     ):
         """Initialize the dataset.
         
@@ -322,6 +503,34 @@ class Standard3DGenDataset(Dataset):
             self.captions = load_captions(caption_path)
         else:
             self.captions = {}
+
+        # Load precomputed EOS-pooled CLIP vectors (optional). When set, every
+        # sample also returns the (text_dim,) pooled vector for AdaLN
+        # conditioning. Keys are caption stems "chunk/file" matching
+        # captions.json; we drop obj_data entries that lack an embedding so
+        # __getitem__ never returns silent nulls.
+        self.text_pooled: Optional[np.ndarray] = None
+        self.text_tokens: Optional[np.ndarray] = None
+        self.text_mask: Optional[np.ndarray] = None
+        self.text_embed_key_to_row: Dict[str, int] = {}
+        if text_embed_path is not None:
+            (
+                self.text_pooled,
+                self.text_tokens,
+                self.text_mask,
+                self.text_embed_key_to_row,
+            ) = load_text_pooled(text_embed_path)
+            before = len(self.obj_data)
+            self.obj_data = {
+                h: p for h, p in self.obj_data.items()
+                if p.split('.tar.gz')[0] in self.text_embed_key_to_row
+            }
+            dropped = before - len(self.obj_data)
+            if dropped:
+                logging.info(
+                    f"Dropped {dropped} of {before} obj entries missing a text embedding"
+                )
+            self.keys = list(self.obj_data.keys())
         
         # Load normalization statistics if provided
         self.mean = None
@@ -332,6 +541,19 @@ class Standard3DGenDataset(Dataset):
             self.std = torch.load(std_file).cpu().numpy().astype(np.float32)
         else:
             logging.warning("Normalization is NOT enabled, mean or std file not provided.")
+
+        # Load per-channel hard-clip thresholds if provided. Applied in __getitem__
+        # right after load_ply and BEFORE the rank transform / standardize, so when
+        # a channel is both clipped and rank-transformed the order is clip -> rank.
+        self.clip_channels: Optional[np.ndarray] = None
+        self.clip_lower: Optional[np.ndarray] = None
+        self.clip_upper: Optional[np.ndarray] = None
+        if clip_thresholds_file is not None:
+            logging.info(f"Loading clip thresholds from {clip_thresholds_file}")
+            clip_payload = load_clip_thresholds_payload(clip_thresholds_file)
+            self.clip_channels = np.asarray(clip_payload["channels"], dtype=np.int64)
+            self.clip_lower = clip_payload["lower"]
+            self.clip_upper = clip_payload["upper"]
 
         # Load Gaussian rank-transform tables if provided. Channels listed in the
         # payload are mapped to N(0,1) before the mean/std standardize step; we
@@ -575,6 +797,17 @@ class Standard3DGenDataset(Dataset):
         # Load 3DGS data
         point_cloud, gs2sphere = self._load_3dgs_data(directory_number, filename)
 
+        # Hard-clip selected channels (if loaded). Must run BEFORE the rank
+        # transform so the rank tables (built on the clipped stream) see the
+        # same distribution.
+        if self.clip_channels is not None:
+            point_cloud = _apply_clip_numpy(
+                point_cloud,
+                self.clip_channels,
+                self.clip_lower,
+                self.clip_upper,
+            )
+
         # Apply Gaussian rank transform on selected channels (if loaded)
         if self.rank_channels is not None:
             point_cloud = _apply_rank_transform_numpy(
@@ -591,7 +824,7 @@ class Standard3DGenDataset(Dataset):
         # Get caption (key is directory/filename without .tar.gz)
         caption_key = tar_gz_path.split('.tar.gz')[0]
         caption = self.captions.get(caption_key, "")
-        
+
         # Prepare output
         sample = {
             'point_cloud': torch.from_numpy(point_cloud),
@@ -599,6 +832,13 @@ class Standard3DGenDataset(Dataset):
             'hash_key': hash_key,
             'tar_gz_path': tar_gz_path,
         }
+
+        if self.text_pooled is not None:
+            row = self.text_embed_key_to_row[caption_key]
+            # fp16 on disk -> fp32 here so downstream arithmetic stays accurate.
+            sample['text_pooled'] = torch.from_numpy(
+                self.text_pooled[row].astype(np.float32, copy=False)
+            )
         
         # Load renderings and cameras if path is provided
         if self.rendering_path is not None:
@@ -629,6 +869,8 @@ def create_dataloader(
     std_file: Optional[str] = None,
     sphere2plane_path: str = "data/sphere2plane.npy",
     rank_transform_file: Optional[str] = None,
+    clip_thresholds_file: Optional[str] = None,
+    text_embed_path: Optional[str] = None,
     batch_size: int = 1,
     num_workers: int = 0,
     shuffle: bool = True,
@@ -663,8 +905,10 @@ def create_dataloader(
         std_file=std_file,
         sphere2plane_path=sphere2plane_path,
         rank_transform_file=rank_transform_file,
+        clip_thresholds_file=clip_thresholds_file,
+        text_embed_path=text_embed_path,
     )
-    
+
     dataloader = DataLoader(
         dataset,
         batch_size=batch_size,

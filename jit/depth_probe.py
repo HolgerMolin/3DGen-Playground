@@ -1,6 +1,18 @@
 """Depth-wise linear probe diagnostic for JiT checkpoints.
 
-For each transformer block in a frozen JiT trunk, this script reports:
+DISABLED on the text_embeddings branch: the probe trains an `nn.Linear(d_model,
+num_classes)` per block, which has no analog under continuous text-embedding
+conditioning. Rework to a per-block retrieval-against-prompts probe before
+re-enabling.
+"""
+
+raise NotImplementedError(
+    "jit/depth_probe.py is class-only and not ported to the text_embeddings "
+    "branch. Rework the linear-classifier-per-block scheme into a retrieval@k "
+    "probe over held-out captions before re-enabling."
+)
+
+_LEGACY_DOC = """For each transformer block in a frozen JiT trunk, this script reports:
 
   (1) probe_eval_acc — accuracy of a fresh ``nn.Linear(d_model, num_classes)``
       trained with plain CE to predict the class label from the mean-pooled

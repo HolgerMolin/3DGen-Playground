@@ -56,7 +56,7 @@ _SAMPLES_PER_OBJECT: Optional[int] = None
 
 
 def _worker_init(obj_list, gs_path, sphere2plane_path, exclude_keys_file,
-                 channels, samples_per_object):
+                 channels, samples_per_object, clip_thresholds_file):
     global _DATASET, _TARGET_CHANNELS, _SAMPLES_PER_OBJECT
     logging.getLogger().setLevel(logging.WARNING)
     _DATASET = Standard3DGenDataset(
@@ -66,6 +66,7 @@ def _worker_init(obj_list, gs_path, sphere2plane_path, exclude_keys_file,
         std_file=None,
         sphere2plane_path=sphere2plane_path,
         exclude_keys_file=exclude_keys_file,
+        clip_thresholds_file=clip_thresholds_file,
     )
     _TARGET_CHANNELS = channels
     _SAMPLES_PER_OBJECT = samples_per_object
@@ -124,6 +125,10 @@ def main() -> int:
     p.add_argument("--sphere2plane_path", required=True)
     p.add_argument("--exclude_keys_file", default="data/outlier_keys_8sigma.json",
                    help="Path to JSON list of hash_keys to drop (set to '' to disable).")
+    p.add_argument("--clip_thresholds_file", default=None,
+                   help="Optional clip-thresholds payload (data/build_clip_thresholds.py). "
+                        "When set, listed channels are hard-clipped BEFORE quantiles are "
+                        "sampled, so the rank tables are built on the clipped distribution.")
     p.add_argument("--out", default="data/stats/rank_quantiles.pt")
     p.add_argument("--channels", type=int, nargs="+", default=list(DEFAULT_CHANNELS),
                    help="Channel indices to build a rank transform for.")
@@ -146,6 +151,7 @@ def main() -> int:
         std_file=None,
         sphere2plane_path=args.sphere2plane_path,
         exclude_keys_file=exclude_keys_file,
+        clip_thresholds_file=args.clip_thresholds_file,
     )
     n_total = len(ds)
     n = n_total if args.limit is None else min(args.limit, n_total)
@@ -169,7 +175,8 @@ def main() -> int:
         processes=args.num_workers,
         initializer=_worker_init,
         initargs=(args.obj_list, args.gs_path, args.sphere2plane_path,
-                  exclude_keys_file, tuple(args.channels), args.samples_per_object),
+                  exclude_keys_file, tuple(args.channels), args.samples_per_object,
+                  args.clip_thresholds_file),
     ) as pool:
         for done, picks_per_channel in enumerate(
             pool.imap_unordered(_worker_fn, indices, chunksize=4), 1
@@ -235,6 +242,7 @@ def main() -> int:
         "num_quantiles": K,
         "samples_per_channel": int(per_channel_arrays[0].size),
         "exclude_keys_file": exclude_keys_file or "",
+        "clip_thresholds_file": args.clip_thresholds_file or "",
         "obj_list": list(args.obj_list),
     }
     torch.save(payload, out_path)
