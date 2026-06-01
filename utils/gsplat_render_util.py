@@ -108,13 +108,27 @@ def _prepare_train_cameras(
     ref_cameras: list[dict[str, Any]],
     train_render_size: int,
     device: torch.device,
+    zoom_factor: float = 1.0,
 ) -> dict[str, Any]:
+    """Build the camera bundle for training renders.
+
+    ``zoom_factor > 1`` narrows the effective FOV (equivalent to increasing focal length
+    by the same factor) so the object fills more of the frame — fixes the situation where
+    most rendered pixels are background and dilute the per-pixel L1/LPIPS loss-mean. View
+    matrices are untouched (camera doesn't move); only the projection cone narrows. Mapping:
+    new_fov/2 = atan(tan(old_fov/2) / zoom). 1.0 = no change (back-compat default).
+    """
+    if zoom_factor <= 0:
+        raise ValueError(f"zoom_factor must be positive, got {zoom_factor}")
     viewmats = []
     intrinsics = []
     for ref_cam in ref_cameras:
         ref_small = dict(ref_cam)
         ref_small["width"] = int(train_render_size)
         ref_small["height"] = int(train_render_size)
+        if zoom_factor != 1.0:
+            ref_small["fovx"] = 2.0 * math.atan(math.tan(float(ref_cam["fovx"]) / 2.0) / zoom_factor)
+            ref_small["fovy"] = 2.0 * math.atan(math.tan(float(ref_cam["fovy"]) / 2.0) / zoom_factor)
         viewmats.append(_camera_viewmat_from_ref(ref_small))
         intrinsics.append(_camera_intrinsics_from_ref(ref_small))
     return {
@@ -376,8 +390,16 @@ def _render_gsplat_batch(
     cam_indices: list[int],
     device: torch.device,
     return_alpha: bool = False,
+    per_sample_zooms: Optional[torch.Tensor] = None,
 ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
-    """Render a batch of Gaussian sets across a batch of cameras with gsplat."""
+    """Render a batch of Gaussian sets across a batch of cameras with gsplat.
+
+    ``per_sample_zooms`` (optional, shape ``(B, num_cam_chosen)``): per-batch-element,
+    per-chosen-camera zoom factor applied to (fx, fy) of the intrinsics. cx/cy are left at
+    image center (no recentering). gsplat's kernel indexes Ks[bid, cid] per element, so
+    per-sample varying intrinsics are natively supported. Pre-computed offline by
+    ``data/build_per_sample_render_fov.py``.
+    """
     batch_size = gaussian_inputs["means"].shape[0]
     cam_idx = torch.tensor(cam_indices, device=device, dtype=torch.long)
     viewmats = camera_bundle["viewmats"].index_select(0, cam_idx)
@@ -386,6 +408,13 @@ def _render_gsplat_batch(
 
     viewmats = viewmats.unsqueeze(0).expand(batch_size, -1, -1, -1).contiguous()
     intrinsics = intrinsics.unsqueeze(0).expand(batch_size, -1, -1, -1).contiguous()
+    if per_sample_zooms is not None:
+        # Scale (fx, fy) per (batch, cam) — cx, cy stay at image center (no recentering;
+        # the offset distribution is small, see jit/measure_alpha_coverage.py findings).
+        zoom = per_sample_zooms.to(device=device, dtype=intrinsics.dtype)   # (B, num_cam)
+        intrinsics = intrinsics.clone()
+        intrinsics[..., 0, 0] = intrinsics[..., 0, 0] * zoom
+        intrinsics[..., 1, 1] = intrinsics[..., 1, 1] * zoom
     backgrounds = torch.zeros((batch_size, num_cam, 3), dtype=torch.float32, device=device)
 
     renders, alphas, _ = renderer_module.rasterization(
@@ -427,6 +456,7 @@ def _compute_render_loss_for_batch(
     plane_to_sphere: Optional[torch.Tensor] = None,
     sample_weights: Optional[torch.Tensor] = None,
     rank_transform_tables: Optional[dict] = None,
+    per_sample_cam_zooms: Optional[torch.Tensor] = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Compute differentiable RGB, alpha-mask, and LPIPS losses over the full batch with gsplat.
 
@@ -442,6 +472,12 @@ def _compute_render_loss_for_batch(
     view_count = max(1, int(num_cam))
     total_cams = int(train_cameras["viewmats"].shape[0])
     cam_indices = random.sample(range(total_cams), min(view_count, total_cams))
+    # Select per-sample zooms for the chosen subset of cameras. Same indices for GT/pred
+    # so both sides render through identical intrinsics (otherwise the loss is meaningless).
+    sample_zooms = None
+    if per_sample_cam_zooms is not None:
+        cam_idx_t = torch.tensor(cam_indices, device=per_sample_cam_zooms.device, dtype=torch.long)
+        sample_zooms = per_sample_cam_zooms.index_select(1, cam_idx_t)   # (B, num_cam_chosen)
 
     gt_pc_norm = _plane_to_point_cloud_batch(x_gt_full.float(), plane_to_sphere)
     gt_pc_raw = _denormalize_point_cloud(gt_pc_norm, norm_mean_full, norm_std_full)
@@ -473,6 +509,7 @@ def _compute_render_loss_for_batch(
             cam_indices,
             device,
             return_alpha=True,
+            per_sample_zooms=sample_zooms,
         )
     pred, pred_alpha = _render_gsplat_batch(
         renderer_tuple,
@@ -481,6 +518,7 @@ def _compute_render_loss_for_batch(
         cam_indices,
         device,
         return_alpha=True,
+        per_sample_zooms=sample_zooms,
     )
 
     # Per-sample losses: average over (cameras, channels, H, W) → shape (B,)

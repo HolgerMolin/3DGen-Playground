@@ -29,6 +29,19 @@ Two granularities are run (``--granularities full,patch``):
     patch  — shuffle the 16x16 grid of 8x8 patches, keeping each patch's
              internal order (scrambles global layout, keeps local structure).
 
+OUTPUT-permutation metrics (``--output_perm``, on by default) measure the dual
+question — *how much does the model permute its OWN output?* On the canonical
+(un-permuted) prediction, each pred cell is matched to the GT Gaussian it best
+represents (feature-NN), and we report per ``t``:
+    perm_gain   = L_index − L_chamfer   (~0 => keeps canonical order; large => permutes)
+    mean_disp   = atlas-grid cells the matched Gaussian travelled
+    in_patch@P  = fraction of matches staying in the same PxP patch (spatial scale
+                  of the permutation -> informs chamfer_patch_size)
+    exact%      = fraction whose match is its own cell
+    collision%  = pred cells mapping to a duplicated GT (mode collapse)
+These reuse the canonical forward pass; ``--match_space {feature,xyz}`` picks the
+matching space, ``--patch_fracs`` the P values for in_patch.
+
 Convention (flow matching, NOT DDPM — see CLAUDE.md):
     x_t = t_value * x_0 + (1 - t_value) * eps;  t=0 -> noise, t=1 -> clean.
     t_discrete = round(t_value * (T - 1)) is the integer step fed to t_embedder.
@@ -78,6 +91,7 @@ from dataloaders.text_3dgen_loader import (  # noqa: E402
 )
 from jit.models import JiT_3DGS_models  # noqa: E402
 from jit.diffusion import create_diffusion  # noqa: E402
+from jit.diffusion.gaussian_diffusion import _keops_available, _keops_argmin  # noqa: E402
 
 
 def find_latest_checkpoint(search_root: str) -> str | None:
@@ -162,6 +176,130 @@ def _per_sample_mse(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     return ((a.float() - b.float()) ** 2).mean(dim=(1, 2, 3))
 
 
+# ---------------------------------------------------------------------------
+# Output-permutation metrics — "how much does the MODEL permute its output?"
+#
+# Distinct from the input-scramble experiment above. Given a CANONICAL (un-
+# permuted) input x_t built from a real x0, the model predicts ``pred``. Because
+# Chamfer training never constrains the output ordering, ``pred`` may place the
+# right Gaussian in a different atlas cell than canonical. We measure that:
+#   * match each pred cell to the GT Gaussian it best represents (feature-NN);
+#   * displacement = atlas-grid distance from the pred cell to that GT cell's
+#     home position; in-patch fraction (matched stays in same P×P patch) gives
+#     the SPATIAL SCALE of the permutation -> informs chamfer_patch_size.
+#   * permutation_gain = L_index - L_chamfer = how much reordering helps
+#     (~0 => model preserves canonical order; large => heavy permutation).
+#   * collision_rate = fraction of pred cells whose NN GT is a duplicate (mode
+#     collapse: the model emitting the same Gaussian many times).
+# Feature-NN is a proxy (not a bijection); collision_rate quantifies its slack.
+# ---------------------------------------------------------------------------
+
+def _nn_argmin(q: torch.Tensor, r: torch.Tensor, chunk: int = 4096) -> torch.Tensor:
+    """Index of nearest r-row (squared L2) per q-row. q,r:(B,N,Ds) -> (B,N) long.
+
+    KeOps when available (no NxN materialization); else a chunked-cdist fallback
+    that bounds memory to (B, chunk, N)."""
+    if _keops_available():
+        return _keops_argmin(q, r)
+    B, N, _ = q.shape
+    out = torch.empty(B, N, dtype=torch.long, device=q.device)
+    for s in range(0, N, chunk):
+        d = torch.cdist(q[:, s:s + chunk], r)          # (B, c, N)
+        out[:, s:s + chunk] = d.argmin(dim=-1)
+    return out
+
+
+def _output_perm_metrics(pred, x0, W, patch_sizes, match_space, chamfer_patch_size=4,
+                         exact_assignment=False, exact_patch_subset=32):
+    """Per-sample output-permutation metrics for one (pred, x0) batch.
+
+    pred / x0: (B, C, H, W). Returns a dict of per-sample tensors (B,) plus an
+    ``in_patch`` dict {P: (B,)}. ``match_space`` selects the matching feature
+    space ('feature' = all C channels, 'xyz' = first 3)."""
+    B, C, H, _ = pred.shape
+    N = H * W
+    pf = pred.reshape(B, C, N).transpose(1, 2).float().contiguous()  # (B, N, C)
+    xf = x0.reshape(B, C, N).transpose(1, 2).float().contiguous()
+    if match_space == "xyz":
+        q, r = pf[..., :3].contiguous(), xf[..., :3].contiguous()
+    else:
+        q, r = pf, xf
+    jstar = _nn_argmin(q, r)                                          # (B, N) GT idx per pred cell
+    matched = torch.gather(xf, 1, jstar.unsqueeze(-1).expand(B, N, C))
+    l_chamfer = ((pf - matched) ** 2).mean(dim=(1, 2))               # (B,) over N and C
+
+    i_idx = torch.arange(N, device=pred.device)
+    ri, ci = i_idx // W, i_idx % W                                    # (N,)
+    rj, cj = jstar // W, jstar % W                                    # (B, N)
+    disp = torch.sqrt(((rj - ri) ** 2 + (cj - ci) ** 2).float())     # (B, N) atlas-grid distance
+    mean_disp = disp.mean(dim=1)                                      # (B,)
+    exact_frac = (jstar == i_idx).float().mean(dim=1)                 # (B,) matched cell == own cell
+    in_patch = {
+        P: ((ri // P == rj // P) & (ci // P == cj // P)).float().mean(dim=1)  # (B,)
+        for P in patch_sizes
+    }
+    collision = torch.tensor(
+        [1.0 - torch.unique(jstar[b]).numel() / N for b in range(B)],
+        device=pred.device,
+    )
+    # Within-patch collision — FAITHFUL to the chamfer_patch loss, which matches each
+    # pred point to its nearest target WITHIN its own PxP patch (M=P*P candidates), not
+    # globally. collision_patch[b] = mean over patches of (1 - distinct_targets_hit / M):
+    # 0 => bijection (no collision), ->1 => mode collapse (pred points pile onto few
+    # targets, leaving the rest uncovered & gradient-free).
+    Pc = int(chamfer_patch_size)
+    H = pred.shape[2]
+    if Pc > 0 and (H % Pc == 0) and (W % Pc == 0):
+        nH, nW = H // Pc, W // Pc
+        M = Pc * Pc
+        feat = pred if match_space != "xyz" else pred[:, :3]
+        tgt = x0 if match_space != "xyz" else x0[:, :3]
+        Cm = feat.shape[1]
+
+        def _patches(t):  # (B,Cm,H,W) -> (B, nP, M, Cm); grouping == chamfer_patch loss
+            return (t.float()
+                    .reshape(B, Cm, nH, Pc, nW, Pc)
+                    .permute(0, 2, 4, 1, 3, 5)
+                    .reshape(B, nH * nW, Cm, M)
+                    .transpose(-1, -2)
+                    .contiguous())
+
+        xpp, ypp = _patches(feat), _patches(tgt)              # (B, nP, M, Cm)
+        sqp = (xpp.pow(2).sum(-1).unsqueeze(-1)
+               + ypp.pow(2).sum(-1).unsqueeze(-2)
+               - 2 * (xpp @ ypp.transpose(-1, -2))).clamp_min(0)   # (B, nP, M, M)
+        jstar_p = sqp.argmin(dim=-1)                          # (B, nP, M) nearest tgt in-patch
+        hitf = torch.zeros(B, nH * nW, M, device=pred.device)
+        hitf.scatter_(-1, jstar_p, torch.ones_like(jstar_p, dtype=hitf.dtype))
+        distinct = (hitf > 0).sum(-1).float()                 # (B, nP) distinct targets hit
+        collision_patch = (1.0 - distinct / M).mean(dim=1)    # (B,)
+        if exact_assignment:
+            # Exact optimal assignment (Hungarian) per patch on the SAME within-patch cost,
+            # subsampling patches to bound CPU cost. emd_patch[b] = mean over the patch subset
+            # of (optimal matched sq-distance summed / M) = the EMD "ceiling" the Sinkhorn loss
+            # targets (an exact within-patch bijection has 0 collision by construction). This is
+            # >= the NN forward L_chamfer (bijection constraint costs >= greedy NN).
+            from scipy.optimize import linear_sum_assignment
+            nP_tot = sqp.shape[1]
+            k = min(int(exact_patch_subset), nP_tot)
+            pidx = torch.randperm(nP_tot, device=sqp.device)[:k]
+            sub = sqp[:, pidx].detach().float().cpu().numpy()    # (B, k, M, M)
+            cost = np.empty((B, k), dtype=np.float64)
+            for b in range(B):
+                for p in range(k):
+                    ri, ci = linear_sum_assignment(sub[b, p])
+                    cost[b, p] = sub[b, p][ri, ci].sum() / M     # mean matched sq-dist / patch
+            emd_patch = torch.tensor(cost.mean(axis=1), device=pred.device, dtype=torch.float32)
+        else:
+            emd_patch = torch.full((B,), float("nan"), device=pred.device)
+    else:
+        collision_patch = torch.full((B,), float("nan"), device=pred.device)
+        emd_patch = torch.full((B,), float("nan"), device=pred.device)
+    return dict(l_chamfer=l_chamfer, mean_disp=mean_disp, exact_frac=exact_frac,
+                in_patch=in_patch, collision=collision, collision_patch=collision_patch,
+                emd_patch=emd_patch)
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     # Model / checkpoint
@@ -195,6 +333,30 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--patch_size", type=int, default=None,
                    help="Patch side for 'patch' granularity. Default: parsed from --model "
                         "(e.g. JiT-B/8 -> 8).")
+    # Output-permutation metrics ("how much does the MODEL permute its output?")
+    p.add_argument("--output_perm", action=argparse.BooleanOptionalAction, default=True,
+                   help="Also measure how much the model permutes its OWN output vs the "
+                        "canonical GT (feature-NN displacement, in-patch fraction, "
+                        "permutation gain L_index-L_chamfer, collision rate). Computed on the "
+                        "canonical-input prediction, so it reuses the same forward pass.")
+    p.add_argument("--match_space", type=str, default="feature", choices=("feature", "xyz"),
+                   help="Feature space for matching pred->GT: 'feature' = all C channels "
+                        "(most identifying), 'xyz' = first 3 (physical proximity).")
+    p.add_argument("--chamfer_patch_size", type=int, default=4,
+                   help="Within-patch size for the FAITHFUL collision metric matching "
+                        "recon_loss=chamfer_patch (each pred point matched to nearest target "
+                        "inside its own PxP patch). Should equal the run's chamfer_patch_size.")
+    p.add_argument("--exact_assignment", action=argparse.BooleanOptionalAction, default=False,
+                   help="Also compute the EXACT optimal-assignment (Hungarian, scipy) within-patch "
+                        "cost = the EMD 'ceiling' that recon_loss=sinkhorn_patch targets (and >= the "
+                        "NN L_chamfer). CPU; subsampled to --exact_patch_subset patches/sample.")
+    p.add_argument("--exact_patch_subset", type=int, default=32,
+                   help="Patches/sample for --exact_assignment (bounds CPU cost of the per-patch "
+                        "Hungarian solves; the mean over the subset is an unbiased EMD estimate).")
+    p.add_argument("--patch_fracs", type=str, default="4,8,16,32",
+                   help="Comma-separated patch sides for the in-patch fraction (the spatial "
+                        "scale of permutation). e.g. in_patch@8 => fraction of matches staying "
+                        "within the model's 8x8 patch (informs chamfer_patch_size).")
     p.add_argument("--num_samples", type=int, default=64)
     p.add_argument("--batch_size", type=int, default=8, help="Keep low to coexist with training.")
     p.add_argument("--num_workers", type=int, default=4)
@@ -227,6 +389,7 @@ def main() -> None:
     t_values = parse_t_values(args.t_values)
     granularities = parse_granularities(args.granularities)
     patch_size = args.patch_size if args.patch_size is not None else int(args.model.split("/")[-1])
+    patch_fracs = [int(p) for p in args.patch_fracs.split(",") if p.strip() != ""]
 
     # ── Resolve checkpoint ────────────────────────────────────────────────
     ckpt_path = args.resume or find_latest_checkpoint(args.ckpt_search_root)
@@ -306,14 +469,33 @@ def main() -> None:
 
     ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
     state = ckpt[args.weights]
+
+    # Strip torch.compile ('_orig_mod.') and DDP ('module.') prefixes so a checkpoint
+    # saved from a compiled/distributed model loads into this bare eval model. Without
+    # this, every key mismatches, strict=False loads NOTHING, and the probe silently
+    # runs on random weights (canonical MSE constant across t is the tell).
+    def _strip(k):
+        changed = True
+        while changed:
+            changed = False
+            for pre in ("_orig_mod.", "module."):
+                if k.startswith(pre):
+                    k = k[len(pre):]
+                    changed = True
+        return k
+
+    state = {_strip(k): v for k, v in state.items()}
     missing, unexpected = model.load_state_dict(state, strict=False)
     if missing or unexpected:
         print(f"[load] non-strict: {len(missing)} missing, {len(unexpected)} unexpected")
         if len(missing) > 5 or len(unexpected) > 5:
             print(f"       missing(head)={list(missing)[:5]}")
             print(f"       unexpected(head)={list(unexpected)[:5]}")
-            print("       ^ large mismatch — check --model/--bottleneck/--sh_degree0_only "
-                  "match this checkpoint.")
+            raise SystemExit(
+                "[load] ABORT: large state_dict mismatch after prefix-stripping — the probe "
+                "would run on random weights. Check --model/--bottleneck/--sh_degree0_only "
+                "match this checkpoint."
+            )
     step = int(ckpt.get("step", ckpt.get("opt_step", -1)))
     print(f"[load] checkpoint step={step}")
     model.to(device).eval()
@@ -342,6 +524,14 @@ def main() -> None:
     canon_sum = {t: 0.0 for t in t_values}
     pvp_sum = {g: {t: 0.0 for t in t_values} for g in granularities}   # vs permuted GT
     pvc_sum = {g: {t: 0.0 for t in t_values} for g in granularities}   # vs canonical GT
+    # Output-permutation accumulators (sums of per-sample scalars).
+    op_lcham = {t: 0.0 for t in t_values}
+    op_disp = {t: 0.0 for t in t_values}
+    op_exact = {t: 0.0 for t in t_values}
+    op_coll = {t: 0.0 for t in t_values}
+    op_coll_patch = {t: 0.0 for t in t_values}
+    op_emd = {t: 0.0 for t in t_values}
+    op_inpatch = {t: {P: 0.0 for P in patch_fracs} for t in t_values}
     n_seen = 0
 
     for batch_idx, batch in enumerate(loader):
@@ -386,6 +576,22 @@ def main() -> None:
             pred = forward(x_t, t_discrete, y_pooled)
             canon_sum[t] += float(_per_sample_mse(x, pred).sum().cpu())
 
+            # Output-permutation metrics on the canonical-input prediction.
+            if args.output_perm:
+                m = _output_perm_metrics(pred, x, W, patch_fracs, args.match_space,
+                                         chamfer_patch_size=args.chamfer_patch_size,
+                                         exact_assignment=args.exact_assignment,
+                                         exact_patch_subset=args.exact_patch_subset)
+                op_lcham[t] += float(m["l_chamfer"].sum().cpu())
+                op_disp[t] += float(m["mean_disp"].sum().cpu())
+                op_exact[t] += float(m["exact_frac"].sum().cpu())
+                op_coll[t] += float(m["collision"].sum().cpu())
+                op_coll_patch[t] += float(m["collision_patch"].sum().cpu())
+                if args.exact_assignment:
+                    op_emd[t] += float(m["emd_patch"].sum().cpu())
+                for P in patch_fracs:
+                    op_inpatch[t][P] += float(m["in_patch"][P].sum().cpu())
+
             for g, idx in idx_by_gran.items():
                 x_t_perm = _apply_perm(x_t, idx)     # == perm(x_t): same noise, scrambled order
                 x0_perm = _apply_perm(x, idx)        # permuted GT
@@ -403,7 +609,7 @@ def main() -> None:
     pvp = {g: {t: pvp_sum[g][t] / n_seen for t in t_values} for g in granularities}
     pvc = {g: {t: pvc_sum[g][t] / n_seen for t in t_values} for g in granularities}
 
-    # ── Print table ────────────────────────────────────────────────────────
+    # ── Print table (input-scramble experiment) ──────────────────────────────
     print(f"\n[result] N={n_seen}  (FM: t=0 noise → t=1 clean)")
     header = f"  {'t':>5}  {'canonical':>11}"
     for g in granularities:
@@ -416,6 +622,42 @@ def main() -> None:
             row += f"  {pvp[g][t]:>11.6f}  {pvc[g][t]:>11.6f}  {gap:>9.5f}"
         print(row)
     print("  (pvP=vs permuted GT, pvC=vs canonical GT, gap=pvP-canonical = reliance-on-order)")
+
+    # ── Output-permutation metrics (how much the model permutes its OWN output) ─
+    op = {}
+    if args.output_perm:
+        op = {
+            "l_chamfer": {t: op_lcham[t] / n_seen for t in t_values},
+            "perm_gain": {t: canon[t] - op_lcham[t] / n_seen for t in t_values},
+            "mean_disp": {t: op_disp[t] / n_seen for t in t_values},
+            "exact_frac": {t: op_exact[t] / n_seen for t in t_values},
+            "collision": {t: op_coll[t] / n_seen for t in t_values},
+            "collision_patch": {t: op_coll_patch[t] / n_seen for t in t_values},
+            "emd_patch": {t: op_emd[t] / n_seen for t in t_values},
+            "in_patch": {P: {t: op_inpatch[t][P] / n_seen for t in t_values} for P in patch_fracs},
+        }
+        print(f"\n[output-perm] match_space={args.match_space}  "
+              f"(L_index=canonical above; perm_gain=L_index-L_chamfer)")
+        hdr = (f"  {'t':>5}  {'L_chamfer':>10}  {'perm_gain':>10}  {'mean_disp':>9}  "
+               f"{'exact%':>7}  {'collide%':>8}  {f'P{args.chamfer_patch_size}coll%':>8}")
+        if args.exact_assignment:
+            hdr += f"  {'EMDopt':>9}"
+        hdr += "".join(f"  inP@{P:<3}" for P in patch_fracs)
+        print(hdr)
+        for t in t_values:
+            row = (f"  {t:>5}  {op['l_chamfer'][t]:>10.6f}  {op['perm_gain'][t]:>10.6f}  "
+                   f"{op['mean_disp'][t]:>9.3f}  {100*op['exact_frac'][t]:>6.2f}%  "
+                   f"{100*op['collision'][t]:>7.2f}%  {100*op['collision_patch'][t]:>7.2f}%")
+            if args.exact_assignment:
+                row += f"  {op['emd_patch'][t]:>9.6f}"
+            row += "".join(f"  {100*op['in_patch'][P][t]:>5.1f}%" for P in patch_fracs)
+            print(row)
+        print("  (perm_gain~0 => keeps canonical order; mean_disp in atlas cells; "
+              "inP@P = matched GT stays in same PxP patch; collide% = global dup matches; "
+              f"P{args.chamfer_patch_size}coll% = WITHIN-{args.chamfer_patch_size}x{args.chamfer_patch_size}-patch "
+              "collision = faithful to chamfer_patch loss = mode-collapse / gradient-sparsity"
+              + ("; EMDopt = exact-assignment mean matched sq-dist = the sinkhorn_patch target "
+                 "(>= L_chamfer; bijection => 0 collision)" if args.exact_assignment else "") + ")")
 
     # ── Save metadata JSON ───────────────────────────────────────────────────
     meta = {
@@ -445,6 +687,29 @@ def main() -> None:
                 "scramble; perm_vs_canonical=sanity (high). gap=perm_vs_perm-canonical "
                 "is the model's reliance on the canonical atlas order.",
     }
+    if args.output_perm:
+        meta["output_perm"] = {
+            "match_space": args.match_space,
+            "patch_fracs": patch_fracs,
+            "l_chamfer": {str(t): op["l_chamfer"][t] for t in t_values},
+            "perm_gain": {str(t): op["perm_gain"][t] for t in t_values},
+            "mean_disp_cells": {str(t): op["mean_disp"][t] for t in t_values},
+            "exact_cell_frac": {str(t): op["exact_frac"][t] for t in t_values},
+            "collision_rate": {str(t): op["collision"][t] for t in t_values},
+            "collision_rate_inpatch": {str(t): op["collision_patch"][t] for t in t_values},
+            "chamfer_patch_size": args.chamfer_patch_size,
+            "exact_assignment": bool(args.exact_assignment),
+            "emd_inpatch_optimal": ({str(t): op["emd_patch"][t] for t in t_values}
+                                    if args.exact_assignment else None),
+            "in_patch_frac": {str(P): {str(t): op["in_patch"][P][t] for t in t_values}
+                              for P in patch_fracs},
+            "note": "Output-permutation of the canonical-input prediction. Match each pred "
+                    "cell to its nearest GT Gaussian (in match_space); L_chamfer=mean min "
+                    "feature dist^2; perm_gain=L_index(canonical)-L_chamfer (~0 => keeps "
+                    "canonical order); mean_disp=atlas-grid cells moved; in_patch_frac[P]= "
+                    "fraction whose match stays in the same PxP patch; collision_rate= "
+                    "fraction of pred cells mapping to a duplicated GT (mode collapse).",
+        }
     with open(os.path.join(out_dir, "metadata.json"), "w") as f:
         json.dump(meta, f, indent=2)
 
@@ -467,13 +732,46 @@ def main() -> None:
     fig.savefig(os.path.join(out_dir, "permutation_mse_vs_t.png"), dpi=130, bbox_inches="tight")
     plt.close(fig)
 
+    # ── Figure: output-permutation (perm gain + spatial locality vs t) ────────
+    if args.output_perm:
+        fig2, (axg, axl) = plt.subplots(1, 2, figsize=(13, 5))
+        axg.plot(t_values, [canon[t] for t in t_values], "o-", color="black",
+                 label="L_index (canonical)")
+        axg.plot(t_values, [op["l_chamfer"][t] for t in t_values], "s-", color="tab:green",
+                 label="L_chamfer (best match)")
+        axg.plot(t_values, [op["perm_gain"][t] for t in t_values], "^--", color="tab:purple",
+                 label="perm_gain = L_index − L_chamfer")
+        axg.set_xlabel("t_value  (0 = noise, 1 = clean)")
+        axg.set_ylabel("mean (normalized training space)")
+        axg.set_title("Permutation gain")
+        axg.grid(True, alpha=0.3)
+        axg.legend(fontsize=8)
+        for P in patch_fracs:
+            axl.plot(t_values, [100 * op["in_patch"][P][t] for t in t_values], "o-",
+                     label=f"in-patch @ {P}")
+        axl.plot(t_values, [100 * op["exact_frac"][t] for t in t_values], "x--", color="black",
+                 alpha=0.7, label="exact cell")
+        axl.plot(t_values, [100 * op["collision"][t] for t in t_values], "s:", color="tab:red",
+                 alpha=0.7, label="collision rate")
+        axl.set_xlabel("t_value  (0 = noise, 1 = clean)")
+        axl.set_ylabel("percent")
+        axl.set_ylim(0, 100)
+        axl.set_title(f"Permutation locality (match_space={args.match_space})")
+        axl.grid(True, alpha=0.3)
+        axl.legend(fontsize=8)
+        fig2.suptitle(f"Output permutation  ({args.model} {args.weights} step {step}, N={n_seen})")
+        fig2.savefig(os.path.join(out_dir, "output_permutation_vs_t.png"), dpi=130,
+                     bbox_inches="tight")
+        plt.close(fig2)
+
     if device.type == "cuda":
         peak = torch.cuda.max_memory_allocated(device) / 1024**3
         reserved = torch.cuda.max_memory_reserved(device) / 1024**3
         print(f"[vram] peak allocated={peak:.2f} GiB, peak reserved={reserved:.2f} GiB "
               f"(batch_size={args.batch_size})")
 
-    print(f"\n[done] wrote metadata.json + permutation_mse_vs_t.png to:\n  {out_dir}")
+    figs = "permutation_mse_vs_t.png" + (" + output_permutation_vs_t.png" if args.output_perm else "")
+    print(f"\n[done] wrote metadata.json + {figs} to:\n  {out_dir}")
 
 
 if __name__ == "__main__":

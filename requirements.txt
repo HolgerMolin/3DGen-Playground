@@ -16,3 +16,18 @@ webdataset
 matplotlib
 plyfile>=0.7.4
 wandb
+
+# Chamfer reconstruction loss (--recon_loss chamfer_feature|chamfer_geometric).
+# No official wheel for torch 2.11.0+cu128; use the community prebuilt index:
+#   pip install --extra-index-url https://miropsota.github.io/torch_packages_builder \
+#       pytorch3d==0.7.9+d9839a9pt2.11.0cu128
+# (this venv is uv-managed: uv pip install -p .3dgen/bin/python --extra-index-url ... pytorch3d==...)
+# pytorch3d  # installed via the command above, not a plain PyPI wheel
+
+# Faster Chamfer kNN backend (~2.4-2.8x vs pytorch3d on the 16,384-pt cloud).
+# Auto-used by _chamfer_recon_loss when importable; pytorch3d is the fallback.
+# JIT-compiles kernels at runtime, needs a CUDA toolchain (nvcc + libnvrtc) -
+# /usr/local/cuda-12.8 is present here; gaussian_diffusion._keops_setup_cuda_env
+# wires the env automatically. Plain PyPI install:
+#   uv pip install -p .3dgen/bin/python pykeops
+# pykeops

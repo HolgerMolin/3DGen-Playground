@@ -8,7 +8,16 @@
 # P_mean: bias for JiT logit-normal timestep sampling before sigmoid (pairs with P_std in main config).
 #         Ignored when `P_mean_schedule` is set in the main config — the curriculum wins.
 # grad_norm_log_every_n_prints: log per-loss grad norms every N print intervals (1 = every print, 0 = disable).
+# chamfer_loss_weight: scalar weight on the Chamfer reconstruction term (no-op when recon_loss=mse).
+# mse_hybrid_weight: lambda on the index-MSE term added to a Chamfer loss (0 = off). Tune live to
+#                    trade refinement signal (steeper loss-vs-t) vs Chamfer permutation tolerance.
+# chamfer_rev_weight: multiplier on the backward (GT-as-query) Chamfer term (1 = symmetric). Sweep
+#                    >1 live to test how much coverage-upweighting steepens loss-vs-t / cuts collapse.
 
 lr_scale: 1.0
-max_grad_norm: 1
-P_mean: 0
+max_grad_norm: 4.0  # 2026-05-26: 1.0 -> 4.0 after cw=0.07 rebalance. With sinkhorn 14x smaller and render still ramping in, raw grad norms ran ~0.7-1.5 — 1.0 was clipping every step. 4.0 keeps a safety ceiling without throttling typical steps.
+P_mean: 0.0  # 2026-05-25: resume-from-0007000 experiment — resumed the -0.5 model, now training at P_mean=0.0 to test whether shifting mass back toward the clean end unlocks detail. Kept aligned to main config so the step>=enable_render_loss_after gate can't silently override it.
+chamfer_loss_weight: 0.07  # sinkhorn recon ~2.9 (sums over C); 0.12 -> ~0.35 to match MSE run's recon:render balance when render engages at 25k
+# mse_hybrid_weight: 0.1
+# chamfer_rev_weight: 2.0
+sinkhorn_epsilon: 0.05

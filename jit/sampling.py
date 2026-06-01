@@ -11,7 +11,7 @@ from jit.diffusion.gaussian_diffusion import get_named_beta_schedule
 if TYPE_CHECKING:
     from diffusers import DPMSolverMultistepScheduler
 
-SAMPLER_CHOICES = ("heun", "euler", "dpm", "ddpm", "ddim")
+SAMPLER_CHOICES = ("heun", "euler", "dpm", "ddpm", "ddim", "x0_renoise")
 TIMESTEP_SCHEDULE_CHOICES = ("linear", "logit_normal")
 
 
@@ -203,6 +203,41 @@ def _jit_velocity_from_xstart(
     return v_uncond + cfg_scale_interval * (v_cond - v_uncond)
 
 
+def _jit_predict_x0(
+    *,
+    model: torch.nn.Module,
+    sample: torch.Tensor,
+    t_value: torch.Tensor,
+    cond_embeds: torch.Tensor,  # (N, text_dim) pooled CLIP vectors
+    cfg_scale: float,
+    cfg_interval: tuple[float, float],
+    diffusion_steps: int = 1000,
+) -> torch.Tensor:
+    """Predict clean x₀ at continuous time t, with optional CFG on the x₀ outputs.
+
+    Same model call and t→discrete mapping as ``_jit_velocity_from_xstart`` but
+    returns the x₀ prediction directly instead of converting it to a velocity —
+    used by the non-accumulating ``x0_renoise`` sampler.
+    """
+    model_dtype = next(model.parameters()).dtype
+    t_discrete = (t_value * (diffusion_steps - 1)).round().clamp(0, diffusion_steps - 1).long()
+    t_batch = t_discrete.expand(sample.shape[0]).to(device=sample.device)
+    sample_input = sample.to(dtype=model_dtype)
+    x_cond = _cond_forward(model, sample_input, t_batch, cond_embeds, drop_to_null=False).float()
+
+    if cfg_scale == 1.0:
+        return x_cond
+
+    low, high = cfg_interval
+    t_scalar = float(t_value.item())
+    cfg_scale_interval = float(cfg_scale) if (t_scalar < high and (low == 0.0 or t_scalar > low)) else 1.0
+    if cfg_scale_interval == 1.0:
+        return x_cond
+
+    x_uncond = _cond_forward(model, sample_input, t_batch, cond_embeds, drop_to_null=True).float()
+    return x_uncond + cfg_scale_interval * (x_cond - x_uncond)
+
+
 def _jit_euler_step(
     *,
     model: torch.nn.Module,
@@ -350,6 +385,91 @@ def sample_with_jit_ode(
         t_eps=t_eps,
         diffusion_steps=diffusion_steps,
     )
+    if was_training:
+        model.train()
+
+    return sample
+
+
+@torch.no_grad()
+def sample_with_x0_renoise(
+    *,
+    model: torch.nn.Module,
+    shape: tuple[int, ...],
+    cond_embeds: torch.Tensor,  # (N, text_dim) pooled CLIP vectors
+    num_inference_steps: int,
+    device: torch.device,
+    predict_xstart: bool,
+    diffusion_steps: int = 1000,
+    cfg_scale: float = 1.0,
+    cfg_interval: tuple[float, float] = (0.0, 1.0),
+    noise_scale: float = 1.0,
+    timestep_schedule: str = "logit_normal",
+    P_mean: float = 0.0,
+    P_std: float = 1.0,
+    generator: Optional[torch.Generator] = None,
+    initial_noise: Optional[torch.Tensor] = None,
+) -> torch.Tensor:
+    """Non-accumulating sampler: predict x₀, then re-noise it with FRESH noise.
+
+    Unlike heun/euler/ddim/ddpm/dpm — which carry the running tensor forward and add
+    a per-cell function of x₀_pred to it — this sampler, at each step, predicts x₀ and
+    re-noises that x₀ to the next (cleaner) level with brand-new gaussian noise:
+
+        x_{t_next} = t_next · x₀_pred + (1 − t_next) · ε_fresh
+
+    The only per-cell relationship is within the model's own output, so it does not
+    require the model to preserve a fixed x_t↔x₀ correspondence across steps — making
+    it compatible with the permutation-invariant Chamfer reconstruction loss (which
+    discards that correspondence). Stochastic: fresh ε each step.
+
+    Convention: t ∈ [0, 1], t=0 pure noise, t=1 clean. Returns (B, C, H, W) float32
+    (not denormalized), matching the other samplers' contract.
+    """
+    if not predict_xstart:
+        raise ValueError("x0_renoise sampling requires predict_xstart=True (model predicts x0).")
+    if num_inference_steps < 1:
+        raise ValueError(f"num_inference_steps must be >= 1, got {num_inference_steps}")
+    low, high = cfg_interval
+    if not (0.0 <= low <= high <= 1.0):
+        raise ValueError(f"cfg_interval must satisfy 0 <= low <= high <= 1, got {cfg_interval}")
+
+    shape = _validate_sampling_shape(model, shape)
+    if initial_noise is not None:
+        if tuple(initial_noise.shape) != tuple(shape):
+            raise ValueError(
+                f"initial_noise shape {tuple(initial_noise.shape)} does not match sampling shape {tuple(shape)}"
+            )
+        sample = noise_scale * initial_noise.to(device=device, dtype=torch.float32)
+    else:
+        sample = noise_scale * torch.randn(shape, device=device, dtype=torch.float32, generator=generator)
+    timesteps = _build_inference_timesteps(
+        num_inference_steps=num_inference_steps,
+        schedule=timestep_schedule,
+        device=device,
+        P_mean=P_mean,
+        P_std=P_std,
+    )
+
+    was_training = model.training
+    model.eval()
+    for step_idx in range(num_inference_steps):
+        x0 = _jit_predict_x0(
+            model=model,
+            sample=sample,
+            t_value=timesteps[step_idx],
+            cond_embeds=cond_embeds,
+            cfg_scale=cfg_scale,
+            cfg_interval=cfg_interval,
+            diffusion_steps=diffusion_steps,
+        )
+        if step_idx == num_inference_steps - 1:
+            sample = x0  # final step lands at t≈1 (clean): return x0 directly
+        else:
+            t_next = timesteps[step_idx + 1].to(dtype=sample.dtype)
+            # FRESH unit-variance noise (no noise_scale here — exact FM interpolation).
+            eps = torch.randn(shape, device=device, dtype=torch.float32, generator=generator)
+            sample = t_next * x0 + (1.0 - t_next) * eps
     if was_training:
         model.train()
 
@@ -587,9 +707,27 @@ def sample_model(
             generator=generator,
             initial_noise=initial_noise,
         )
+    if sampler == "x0_renoise":
+        return sample_with_x0_renoise(
+            model=model,
+            shape=shape,
+            cond_embeds=cond_embeds,
+            num_inference_steps=num_inference_steps,
+            device=device,
+            predict_xstart=predict_xstart,
+            diffusion_steps=diffusion_steps,
+            cfg_scale=cfg_scale,
+            cfg_interval=cfg_interval,
+            noise_scale=noise_scale,
+            timestep_schedule=timestep_schedule,
+            P_mean=P_mean,
+            P_std=P_std,
+            generator=generator,
+            initial_noise=initial_noise,
+        )
     if initial_noise is not None:
         raise ValueError(
-            f"initial_noise is only supported for sampler in {{'heun','euler'}}, got {sampler!r}"
+            f"initial_noise is only supported for sampler in {{'heun','euler','x0_renoise'}}, got {sampler!r}"
         )
     if sampler == "dpm":
         return sample_with_dpm(

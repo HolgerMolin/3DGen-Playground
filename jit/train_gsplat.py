@@ -255,6 +255,11 @@ _OVERRIDABLE_KEYS = frozenset({
     "lpips_loss_weight",
     "P_mean",
     "grad_norm_log_every_n_prints",
+    "chamfer_loss_weight",
+    "recon_loss_weight",
+    "mse_hybrid_weight",
+    "chamfer_rev_weight",
+    "sinkhorn_epsilon",
 })
 
 
@@ -269,6 +274,11 @@ class TrainRuntimeOverrides:
     lpips_loss_weight: float
     P_mean: float
     grad_norm_log_every_n_prints: float  # float so overrides YAML can write it; cast to int on use
+    chamfer_loss_weight: float  # scales the Chamfer reconstruction term (no-op when recon_loss=mse)
+    recon_loss_weight: float  # outer scalar on the recon return in total_loss (1.0 = on, 0.0 = render-only)
+    mse_hybrid_weight: float  # lambda on the index-MSE term added to Chamfer (0 = off)
+    chamfer_rev_weight: float  # multiplier on the backward (GT-as-query) Chamfer term (1 = symmetric)
+    sinkhorn_epsilon: float  # entropic-OT regularizer for recon_loss=sinkhorn_patch (hard<->soft)
 
     @classmethod
     def from_args(cls, args: argparse.Namespace) -> "TrainRuntimeOverrides":
@@ -280,6 +290,11 @@ class TrainRuntimeOverrides:
             lpips_loss_weight=float(args.lpips_loss_weight),
             P_mean=float(args.P_mean),
             grad_norm_log_every_n_prints=float(args.grad_norm_log_every_n_prints),
+            chamfer_loss_weight=float(args.chamfer_loss_weight),
+            recon_loss_weight=float(args.recon_loss_weight),
+            mse_hybrid_weight=float(args.mse_hybrid_weight),
+            chamfer_rev_weight=float(args.chamfer_rev_weight),
+            sinkhorn_epsilon=float(args.sinkhorn_epsilon),
         )
 
 
@@ -339,6 +354,46 @@ def _p_mean_at_step(schedule: list[tuple[int, float]], step: int) -> float:
             frac = (step - s0) / (s1 - s0)
             return v0 + frac * (v1 - v0)
     return schedule[-1][1]
+
+
+def _parse_lr_scale_schedule(raw: Any) -> Optional[list[tuple[int, float]]]:
+    """Normalize an lr_scale ramp into sorted [(step, value)] control points.
+
+    Same shape as P_mean_schedule but values must be > 0 (lr_scale is multiplicative).
+    Used to cushion the optimizer when a new loss component engages: configure e.g.
+    ``[[22000, 0.2], [24000, 1.0]]`` to linearly ramp lr_scale 0.2 → 1.0 over the 2k
+    steps following render-loss engagement. Held constant outside the endpoints.
+    When active, overrides any ``lr_scale`` set via ``--overrides_yaml``.
+    """
+    if raw is None:
+        return None
+    if isinstance(raw, str):
+        raw = raw.strip()
+        if not raw:
+            return None
+        try:
+            raw = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"--lr_scale_schedule JSON parse error: {exc}") from exc
+    if not isinstance(raw, (list, tuple)) or len(raw) == 0:
+        raise ValueError(
+            f"--lr_scale_schedule must be a non-empty list of [step, value] pairs, got {raw!r}"
+        )
+    pts: list[tuple[int, float]] = []
+    for item in raw:
+        if not isinstance(item, (list, tuple)) or len(item) != 2:
+            raise ValueError(f"--lr_scale_schedule entry must be [step, value], got {item!r}")
+        s, v = item
+        if float(v) <= 0:
+            raise ValueError(f"--lr_scale_schedule values must be > 0, got {item!r}")
+        pts.append((int(s), float(v)))
+    pts.sort(key=lambda p: p[0])
+    for (s_prev, _), (s_cur, _) in zip(pts, pts[1:]):
+        if s_cur == s_prev:
+            raise ValueError(f"--lr_scale_schedule has duplicate step {s_cur}")
+    if pts[0][0] < 0:
+        raise ValueError(f"--lr_scale_schedule first step must be >= 0, got {pts[0][0]}")
+    return pts
 
 
 def _parse_render_weight_schedule(
@@ -477,8 +532,9 @@ def _sample_jit_timesteps(
     device: torch.device,
     p_mean: float,
     p_std: float,
+    dist: str = "logitnormal",
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Sample JiT-style logit-normal timesteps.
+    """Sample JiT-style timesteps (``dist``: logit-normal or uniform).
 
     Returns ``(t_value, t_discrete)``:
 
@@ -489,11 +545,17 @@ def _sample_jit_timesteps(
         embedding, using the same ``round(t_value · (T-1))`` mapping as the
         heun/euler samplers so training and inference share a grid.
     """
-    probs = torch.sigmoid(torch.randn(batch_size, device=device) * p_std + p_mean)
     # Keep t_value strictly inside (0, 1) to avoid the (1 - t) singularity in
     # the velocity used by heun/euler at the clean end.
     eps = 1e-4
-    t_value = probs.clamp(min=eps, max=1.0 - eps)
+    if dist == "uniform":
+        # Equal mass on every noise level; P_mean/P_std are ignored.
+        t_value = torch.rand(batch_size, device=device).clamp(min=eps, max=1.0 - eps)
+    elif dist == "logitnormal":
+        probs = torch.sigmoid(torch.randn(batch_size, device=device) * p_std + p_mean)
+        t_value = probs.clamp(min=eps, max=1.0 - eps)
+    else:
+        raise ValueError(f"Unknown timestep_dist {dist!r}; choices: logitnormal, uniform")
     t_discrete = torch.clamp(
         (t_value * (num_timesteps - 1)).round().long(),
         min=0,
@@ -859,12 +921,12 @@ def _run_validation_grid(
     from a CPU torch.Generator seeded with ``grid_seed + i`` — so a given
     (grid_seed, prompt_idx) pair always produces the same noise.
 
-    Only supports the heun/euler samplers (other samplers don't accept
+    Only supports the heun/euler/x0_renoise samplers (other samplers don't accept
     injected initial noise — see jit/sampling.py).
     """
-    if val_sampler not in {"heun", "euler"}:
+    if val_sampler not in {"heun", "euler", "x0_renoise"}:
         logger.warning(
-            "[validation-grid] sampler=%s not supported (only heun/euler accept "
+            "[validation-grid] sampler=%s not supported (only heun/euler/x0_renoise accept "
             "initial_noise); skipping grid",
             val_sampler,
         )
@@ -1387,14 +1449,22 @@ def main(args):
         logger.info(f"Diffusion timesteps: {diffusion.num_timesteps}, "
                      f"predict={'x0' if args.predict_xstart else 'eps'}, "
                      f"schedule={args.noise_schedule}")
-        logger.info(
-            "Training mode: DDPM (sampler=%s), timestep sampling: sigmoid(N(%.3f, %.3f)) "
-            "mapped to discrete steps [0, %d]",
-            args.val_sampler,
-            args.P_mean,
-            args.P_std,
-            diffusion.num_timesteps - 1,
-        )
+        if args.timestep_dist == "uniform":
+            logger.info(
+                "Training mode: DDPM (sampler=%s), timestep sampling: uniform U(0,1) "
+                "mapped to discrete steps [0, %d]",
+                args.val_sampler,
+                diffusion.num_timesteps - 1,
+            )
+        else:
+            logger.info(
+                "Training mode: DDPM (sampler=%s), timestep sampling: sigmoid(N(%.3f, %.3f)) "
+                "mapped to discrete steps [0, %d]",
+                args.val_sampler,
+                args.P_mean,
+                args.P_std,
+                diffusion.num_timesteps - 1,
+            )
 
     # Optimizer — split params so the text-projection MLP can have its own LR/betas.
     # The projection is a small set of params at the conditioning input; a larger LR
@@ -1548,10 +1618,127 @@ def main(args):
                 float(channel_loss_weights.max().item()),
             )
 
+    # Reconstruction loss selection. Fail fast if a kNN-based Chamfer mode is requested
+    # but pytorch3d is missing, rather than crashing mid-training on the first step.
+    # chamfer_patch is pure-torch (no KeOps/pytorch3d), so it's exempt from the gate.
+    if args.recon_loss not in ("mse", "chamfer_patch", "sinkhorn_patch", "sinkhorn_patch_hard"):
+        try:
+            import pytorch3d  # noqa: F401
+            from pytorch3d.loss import chamfer_distance  # noqa: F401
+            from pytorch3d.ops import knn_gather, knn_points  # noqa: F401
+        except Exception as exc:  # pragma: no cover - environment dependent
+            raise RuntimeError(
+                f"--recon_loss={args.recon_loss} requires the pytorch3d package, "
+                f"which failed to import: {exc}"
+            )
+        if is_main:
+            sub = int(args.chamfer_subsample)
+            logger.info(
+                "[recon_loss] %s active (chamfer_loss_weight=%.4g, chamfer_subsample=%s)",
+                args.recon_loss, float(args.chamfer_loss_weight),
+                f"{sub} query pts/dir" if sub > 0 else "off (all points)",
+            )
+
+    if args.recon_loss == "chamfer_patch" and is_main:
+        logger.info(
+            "[recon_loss] chamfer_patch active (chamfer_loss_weight=%.4g, patch_size=%s)",
+            float(args.chamfer_loss_weight),
+            args.chamfer_patch_size if args.chamfer_patch_size > 0 else "model",
+        )
+
+    if args.recon_loss in ("sinkhorn_patch", "sinkhorn_patch_hard") and is_main:
+        logger.info(
+            "[recon_loss] %s active — %s "
+            "(chamfer_loss_weight=%.4g, patch_size=%s, sinkhorn_eps=%.4g, sinkhorn_iters=%d, compile=%s). "
+            "chamfer_rev_weight is a no-op for this mode.",
+            args.recon_loss,
+            "argmax-HARD assignment (MSE to single matched target; monitor SinkColl%)"
+            if args.recon_loss == "sinkhorn_patch_hard"
+            else "optimal-assignment EMD (soft plan-weighted)",
+            float(args.chamfer_loss_weight),
+            args.chamfer_patch_size if args.chamfer_patch_size > 0 else "model",
+            float(args.sinkhorn_epsilon), int(args.sinkhorn_iters),
+            "on (~8x, fused logsumexp; ~1min first-step compile)" if args.compile_sinkhorn else "off",
+        )
+
+    if args.chamfer_rev_weight != 1.0 and args.recon_loss not in ("sinkhorn_patch", "sinkhorn_patch_hard"):
+        if args.recon_loss not in ("chamfer_feature", "chamfer_geometric", "chamfer_patch"):
+            raise ValueError(
+                "--chamfer_rev_weight only applies to a Chamfer recon_loss "
+                f"(got recon_loss={args.recon_loss!r}; it is a no-op for sinkhorn_patch)."
+            )
+        if is_main:
+            logger.info(
+                "[recon_loss] backward (GT-as-query) Chamfer term weighted x%.4g "
+                "(coverage/recall upweight, hot-reloadable)",
+                float(args.chamfer_rev_weight),
+            )
+
+    if args.mse_hybrid_weight > 0.0:
+        if args.recon_loss not in ("chamfer_feature", "chamfer_geometric", "chamfer_patch",
+                                   "sinkhorn_patch", "sinkhorn_patch_hard"):
+            raise ValueError(
+                "--mse_hybrid_weight only applies on top of a Chamfer/assignment recon_loss "
+                f"(got recon_loss={args.recon_loss!r}; for plain MSE use --recon_loss=mse)."
+            )
+        if is_main:
+            if int(args.mse_hybrid_warmup_steps) > 0:
+                logger.info(
+                    "[recon_loss] Chamfer+MSE hybrid as COLD-START BOOTSTRAP: index-MSE λ "
+                    "decays linearly %.4g -> 0 over %d steps, then 0 (schedule governs; "
+                    "hot-reload ignored while active)",
+                    float(args.mse_hybrid_weight), int(args.mse_hybrid_warmup_steps),
+                )
+            else:
+                logger.info(
+                    "[recon_loss] Chamfer+MSE hybrid active (mse_hybrid_weight=%.4g, hot-reloadable)",
+                    float(args.mse_hybrid_weight),
+                )
+
+    if float(args.recon_loss_weight) != 1.0 and is_main:
+        rlw = float(args.recon_loss_weight)
+        if rlw == 0.0:
+            logger.info(
+                "[recon_loss] recon_loss_weight=0.0 — RENDER-ONLY mode: recon forward "
+                "(Sinkhorn/Chamfer/MSE) SKIPPED entirely. SinkResid/SinkColl/MSE_hyb "
+                "diagnostics will not log. Flip recon_loss_weight nonzero via overrides.yaml "
+                "to re-enable next step."
+            )
+        else:
+            logger.info(
+                "[recon_loss] recon_loss_weight=%.4g (outer scalar on recon contribution to "
+                "total_loss; hot-reloadable)",
+                rlw,
+            )
+
+    if args.permute_atlas != "none":
+        if args.recon_loss == "mse":
+            raise ValueError(
+                "--permute_atlas requires a Chamfer recon_loss; index-aligned MSE is "
+                "unlearnable under input permutation (the ordering signal vanishes in noise)."
+            )
+        if is_main:
+            _model_patch = int(args.model.split("/")[-1])
+            if args.permute_atlas == "patch" and args.recon_loss in (
+                "chamfer_patch", "sinkhorn_patch", "sinkhorn_patch_hard"
+            ):
+                _pp = int(args.chamfer_patch_size) or _model_patch
+                aligned = f"patch_size={_pp} (aligned to chamfer_patch_size)"
+            elif args.permute_atlas == "patch":
+                aligned = f"patch_size={_model_patch} (model patch)"
+            else:
+                aligned = "global"
+            logger.info(
+                "[permute_atlas] %s permutation active, %s (fresh per step, Chamfer-only)",
+                args.permute_atlas, aligned,
+            )
+
     # Render / validation setup (per-process; gsplat renderer is local)
     renderer_for_train = None
     lpips_fn_for_train = None
     train_cameras = None
+    per_sample_zoom_table = None    # (N_obj, num_cam) float zoom factors; loaded below if --per_sample_zoom_file
+    hash_to_zoom_row: dict[str, int] = {}
     enable_val = args.val_every > 0
     needs_renderer = (
         use_render_loss or enable_val or enable_train_render_log or args.overrides_yaml is not None
@@ -1568,7 +1755,63 @@ def main(args):
         renderer_probe = _try_import_renderer()
         if not isinstance(renderer_probe, Exception):
             renderer_for_train = renderer_probe
-            train_cameras = _prepare_train_cameras(ref_cameras, args.train_render_size, device)
+            train_cameras = _prepare_train_cameras(
+                ref_cameras, args.train_render_size, device,
+                zoom_factor=float(args.render_zoom_factor),
+            )
+            if is_main and float(args.render_zoom_factor) != 1.0:
+                import math as _m
+                _old_fov = _m.degrees(float(ref_cameras[0]["fovx"]))
+                _new_fov = _m.degrees(
+                    2.0 * _m.atan(_m.tan(float(ref_cameras[0]["fovx"]) / 2.0) / float(args.render_zoom_factor))
+                )
+                logger.info(
+                    "[renderer] zoom_factor=%.2gx active; FOV %.1f° -> %.1f° (intrinsics narrowed, "
+                    "camera position unchanged) — object fills more of the rendered frame so render "
+                    "L1/LPIPS aren't diluted by background pixels.",
+                    float(args.render_zoom_factor), _old_fov, _new_fov,
+                )
+            # Per-sample zoom table (data/build_per_sample_render_fov.py). When provided
+            # each (sample, chosen_cam) pair gets its own (fx, fy) scale at render time —
+            # a tighter, per-object framing than the global --render_zoom_factor allows.
+            # Composes multiplicatively with the global zoom (per-sample × global).
+            per_sample_zoom_table = None
+            hash_to_zoom_row: dict[str, int] = {}
+            if args.per_sample_zoom_file:
+                _zoom_path = Path(args.per_sample_zoom_file)
+                if not _zoom_path.is_file():
+                    raise FileNotFoundError(
+                        f"--per_sample_zoom_file does not exist: {args.per_sample_zoom_file}"
+                    )
+                _payload = torch.load(_zoom_path, map_location="cpu", weights_only=False)
+                _zoom_t = _payload["zoom_factors"].float()
+                _hashes = list(_payload["hash_keys"])
+                if _zoom_t.shape[0] != len(_hashes):
+                    raise ValueError(
+                        f"per_sample_zoom_file: zoom_factors row count {_zoom_t.shape[0]} "
+                        f"!= hash_keys length {len(_hashes)}"
+                    )
+                if _zoom_t.shape[1] != len(ref_cameras):
+                    raise ValueError(
+                        f"per_sample_zoom_file has {_zoom_t.shape[1]} cameras but training "
+                        f"loaded {len(ref_cameras)} ref cameras — table was built for a "
+                        "different ref_camera_tar; rebuild it."
+                    )
+                hash_to_zoom_row = {h: i for i, h in enumerate(_hashes)}
+                per_sample_zoom_table = _zoom_t.to(device)
+                if is_main:
+                    _mean = float(_zoom_t.mean())
+                    _p50, _p95, _p99 = (float(torch.quantile(_zoom_t.reshape(-1), q)) for q in (0.5, 0.95, 0.99))
+                    _meta = _payload.get("meta", {})
+                    logger.info(
+                        "[renderer] per_sample_zoom: loaded %s — %d objects × %d cameras "
+                        "(zoom mean=%.3f p50=%.3f p95=%.3f p99=%.3f, target_fill=%s, "
+                        "zoom_range=[%s, %s])",
+                        args.per_sample_zoom_file, _zoom_t.shape[0], _zoom_t.shape[1],
+                        _mean, _p50, _p95, _p99,
+                        _meta.get("target_bbox_fill", "?"),
+                        _meta.get("zoom_min", "?"), _meta.get("zoom_max", "?"),
+                    )
             if use_render_loss and args.lpips_loss_weight > 0.0:
                 if args.perceptual_backend == 'dinov2':
                     # torch.hub.load downloads on first call; serialize ranks to keep
@@ -1712,6 +1955,11 @@ def main(args):
     # Accumulate as GPU scalar tensors; .item() is deferred to the log block to
     # avoid forcing a GPU–CPU sync (and DDP barrier) on every training step.
     log_loss = torch.zeros([], device=device)
+    log_mse_hybrid = torch.zeros([], device=device)  # raw MSE component (Chamfer+MSE hybrid)
+    log_sinkhorn_resid = torch.zeros([], device=device)  # sinkhorn plan marginal residual (convergence monitor)
+    log_sinkhorn_coll = torch.zeros([], device=device)   # sinkhorn_patch_hard argmax collision fraction (bijection monitor)
+    log_render_kept = 0.0  # sum of render-kept sample counts (host int; folded into Step line)
+    log_render_kept_steps = 0  # micro-batches that ran render (for averaging the kept count)
     log_render_l1 = torch.zeros([], device=device)
     log_render_alpha_l1 = torch.zeros([], device=device)
     log_render_lpips = torch.zeros([], device=device)
@@ -1769,6 +2017,16 @@ def main(args):
             )
 
     runtime = TrainRuntimeOverrides.from_args(args)
+
+    lr_scale_schedule = _parse_lr_scale_schedule(args.lr_scale_schedule)
+    if lr_scale_schedule is not None and is_main:
+        pretty = ", ".join(f"({s}, x{v:.3f})" for s, v in lr_scale_schedule)
+        _initial = _p_mean_at_step(lr_scale_schedule, start_step)
+        logger.info(
+            "[lr_scale_schedule] active with %d control points: %s | "
+            "initial lr_scale at step %d = x%.4f (overrides any lr_scale in --overrides_yaml)",
+            len(lr_scale_schedule), pretty, start_step, _initial,
+        )
 
     p_mean_schedule = _parse_p_mean_schedule(args.P_mean_schedule)
     if p_mean_schedule is not None:
@@ -1843,6 +2101,16 @@ def main(args):
                 if p_mean_schedule is not None:
                     runtime.P_mean = _p_mean_at_step(p_mean_schedule, step)
 
+                # Cold-start bootstrap: linearly decay the index-MSE hybrid term
+                # from its base (args.mse_hybrid_weight, at step 0) to 0 (at
+                # mse_hybrid_warmup_steps), then hold 0. Governs the term entirely
+                # while active (hot-reload of mse_hybrid_weight is gated after
+                # enable_render_loss_after and stays 0 here). Breaks the symmetric
+                # mean-collapse that stalls sinkhorn_patch trained from scratch.
+                if int(args.mse_hybrid_warmup_steps) > 0:
+                    _decay = max(0.0, 1.0 - step / float(args.mse_hybrid_warmup_steps))
+                    runtime.mse_hybrid_weight = float(args.mse_hybrid_weight) * _decay
+
                 if render_weight_schedule is not None:
                     rl1_s, alpha_s, lpips_s = _render_weights_at_step(
                         render_weight_schedule, step
@@ -1873,6 +2141,11 @@ def main(args):
                         lr_warmup_steps=args.lr_warmup_steps,
                         max_opt_steps=max_opt_steps,
                     )
+                    # Schedule wins over the override-hot-reload value when configured,
+                    # so step-1 (and all subsequent steps) see the right lr_scale even
+                    # before the override-yaml reload tick fires.
+                    if lr_scale_schedule is not None:
+                        runtime.lr_scale = _p_mean_at_step(lr_scale_schedule, step)
                     eff_lr = lr_val * float(runtime.lr_scale)
                     eff_lr_tp = lr_val_tp * float(runtime.lr_scale)
                     for pg in opt.param_groups:
@@ -1906,13 +2179,16 @@ def main(args):
                 # ``t`` (discrete) conditions the model — same mapping as the
                 # heun/euler samplers.
                 t_value, t = _sample_jit_timesteps(
-                    x.shape[0], diffusion.num_timesteps, device, runtime.P_mean, args.P_std
+                    x.shape[0], diffusion.num_timesteps, device, runtime.P_mean, args.P_std,
+                    dist=args.timestep_dist,
                 )
                 noise = torch.randn_like(x)
 
                 # CFG drop is drawn once inside DiT.forward at the model level.
                 unwrapped_model = accelerator.unwrap_model(model)
                 model_kwargs = dict(y_pooled=y_pooled)
+                # Resolved chamfer patch side (0 => model patch size). Permute aligns to it.
+                _cps = int(args.chamfer_patch_size) or int(unwrapped_model.patch_size)
 
                 if _prof:
                     _prof_ev_fwd_start.record()
@@ -1926,7 +2202,31 @@ def main(args):
                     model_kwargs=model_kwargs,
                     noise=noise,
                     channel_loss_weights=channel_loss_weights,
+                    recon_loss=args.recon_loss,
+                    chamfer_loss_weight=float(runtime.chamfer_loss_weight),
+                    chamfer_subsample=int(args.chamfer_subsample),
+                    chamfer_patch_size=_cps,
+                    chamfer_rev_weight=float(runtime.chamfer_rev_weight),
+                    mse_hybrid_weight=float(runtime.mse_hybrid_weight),
+                    mse_hybrid_lownoise_mult=float(args.mse_hybrid_lownoise_mult),
+                    sinkhorn_eps=float(runtime.sinkhorn_epsilon),
+                    sinkhorn_iters=int(args.sinkhorn_iters),
+                    compile_sinkhorn=bool(args.compile_sinkhorn),
+                    permute_mode=args.permute_atlas,
+                    # Permute must stay within chamfer patches or the per-patch target
+                    # becomes non-stationary, so for chamfer_patch/sinkhorn_patch we align the
+                    # permute granularity to chamfer_patch_size; otherwise use the model patch.
+                    permute_patch_size=(
+                        _cps if args.recon_loss in ("chamfer_patch", "sinkhorn_patch", "sinkhorn_patch_hard")
+                        else int(unwrapped_model.patch_size)
+                    ),
+                    # When recon_loss_weight==0, the recon term contributes nothing to backward —
+                    # skip the OT/Chamfer/MSE forward entirely (hot-reloadable via overrides.yaml).
+                    skip_recon=(float(runtime.recon_loss_weight) == 0.0),
                 )
+                # ``mse_loss`` is the per-step reconstruction term (index-aligned MSE
+                # or Chamfer, depending on --recon_loss). Name/log keys kept as "mse"
+                # for dashboard continuity; the Chamfer weight is already folded in.
                 sample_losses = loss_dict["loss"]
                 mse_loss = sample_losses.mean()
                 x0_pred = loss_dict.get("pred_xstart")
@@ -2003,6 +2303,7 @@ def main(args):
                     # gsplat or LPIPS — the cutoff is the memory cap.
                     x0_pred_render = x0_pred
                     x_gt_render = x_gt_for_render
+                    kept_hash_keys = hash_keys
                     noise_cutoff = float(args.render_loss_noise_cutoff)
                     if noise_cutoff > 0.0:
                         keep_mask = (t_value >= noise_cutoff)
@@ -2012,16 +2313,29 @@ def main(args):
                         # add a redundant sync per micro-batch).
                         x0_pred_render = x0_pred[keep_mask]
                         x_gt_render = x_gt_for_render[keep_mask]
+                        # Filter hash_keys with the same mask so per-sample zoom lookups stay aligned.
+                        keep_mask_cpu = keep_mask.detach().cpu().tolist()
+                        kept_hash_keys = [h for h, k in zip(hash_keys, keep_mask_cpu) if k]
                         n_kept = x0_pred_render.shape[0]
                         if n_kept == 0:
                             should_compute_render = False
-                        elif is_main and step % args.log_every == 0 and n_kept < x.shape[0]:
-                            logger.info(
-                                "[render-loss] step=%d kept %d/%d samples (t_value >= %.2f)",
-                                step, n_kept, x.shape[0], noise_cutoff,
-                            )
 
                     if should_compute_render:
+                        # Track the render-kept count for the periodic log line (folded
+                        # into the main "Step" row instead of a separate per-microbatch print).
+                        log_render_kept += x0_pred_render.shape[0]
+                        log_render_kept_steps += 1
+                        # Per-sample camera zooms — gather rows for the kept-batch's hashes.
+                        # Composes multiplicatively with --render_zoom_factor (already baked
+                        # into train_cameras' Ks), so the effective per-(sample, cam) zoom is
+                        # render_zoom_factor × per_sample_cam_zooms[b, c].
+                        per_sample_cam_zooms = None
+                        if per_sample_zoom_table is not None:
+                            rows = torch.tensor(
+                                [hash_to_zoom_row[h] for h in kept_hash_keys],
+                                device=per_sample_zoom_table.device, dtype=torch.long,
+                            )
+                            per_sample_cam_zooms = per_sample_zoom_table.index_select(0, rows)
                         render_l1_loss, render_alpha_l1_loss, render_lpips_loss = _compute_render_loss_for_batch(
                             x0_pred=x0_pred_render,
                             x_gt_full=x_gt_render,
@@ -2038,6 +2352,7 @@ def main(args):
                             plane_to_sphere=plane_to_sphere,
                             sample_weights=None,
                             rank_transform_tables=rank_transform_tables,
+                            per_sample_cam_zooms=per_sample_cam_zooms,
                         )
 
                 if train_render_preview_due:
@@ -2089,7 +2404,7 @@ def main(args):
                     accelerator.wait_for_everyone()
 
                 total_loss = (
-                    mse_loss
+                    float(runtime.recon_loss_weight) * mse_loss
                     + float(runtime.render_loss_weight) * render_l1_loss
                     + float(runtime.alpha_mask_loss_weight) * render_alpha_l1_loss
                     + float(runtime.lpips_loss_weight) * render_lpips_loss
@@ -2181,6 +2496,15 @@ def main(args):
 
             # Logging
             log_loss += mse_loss.detach()
+            _mh = loss_dict.get("mse_hybrid")
+            if _mh is not None:
+                log_mse_hybrid += _mh.detach().mean()
+            _sr = loss_dict.get("sinkhorn_marginal_resid")
+            if _sr is not None:
+                log_sinkhorn_resid += _sr.detach()
+            _sc = loss_dict.get("sinkhorn_collision_frac")
+            if _sc is not None:
+                log_sinkhorn_coll += _sc.detach()
             log_render_l1 += render_l1_loss.detach()
             log_render_alpha_l1 += render_alpha_l1_loss.detach()
             log_render_lpips += render_lpips_loss.detach()
@@ -2222,6 +2546,16 @@ def main(args):
 
             if step % args.log_every == 0 and is_main and accelerator.sync_gradients:
                 avg_loss = log_loss.item() / log_steps
+                # Sinkhorn convergence monitor (accumulated for both sinkhorn recon modes);
+                # collision fraction is hard-mode only.
+                avg_sink_resid = (
+                    log_sinkhorn_resid.item() / log_steps
+                    if args.recon_loss in ("sinkhorn_patch", "sinkhorn_patch_hard") else None
+                )
+                avg_sink_coll = (
+                    log_sinkhorn_coll.item() / log_steps
+                    if args.recon_loss == "sinkhorn_patch_hard" else None
+                )
                 elapsed = time.time() - start_time
                 # Optim steps / sec — log_optim_steps counts sync micro-batches
                 # only, while log_steps counts every micro-batch (used for
@@ -2241,6 +2575,13 @@ def main(args):
                         msg += f" (txt {last_text_proj_lr_val:.2e})"
                 if p_mean_schedule is not None:
                     msg += f" | P_mean: {runtime.P_mean:+.3f}"
+                if float(runtime.mse_hybrid_weight) > 0.0:
+                    avg_mse_hyb = log_mse_hybrid.item() / log_steps
+                    msg += f" | MSE_hyb: {avg_mse_hyb:.4f} (λ{float(runtime.mse_hybrid_weight):.3g})"
+                if avg_sink_resid is not None:
+                    msg += f" | SinkResid: {avg_sink_resid:.2e}"
+                if avg_sink_coll is not None:
+                    msg += f" | SinkColl: {avg_sink_coll*100:.2f}%"
                 if _any_render_loss_weight(runtime):
                     avg_rl1 = log_render_l1.item() / log_steps
                     avg_alpha_rl1 = log_render_alpha_l1.item() / log_steps
@@ -2250,6 +2591,8 @@ def main(args):
                         f" | Alpha_L1: {avg_alpha_rl1:.4f}"
                         f" | Render_LPIPS: {avg_rlpips:.4f}"
                     )
+                    if log_render_kept_steps > 0:
+                        msg += f" | kept: {log_render_kept / log_render_kept_steps:.0f}/{x.shape[0]}"
                 grad_steps_int = int(log_grad_steps.item())
                 if grad_steps_int > 0:
                     avg_grad_norm = log_grad_norm.item() / grad_steps_int
@@ -2278,41 +2621,6 @@ def main(args):
                 )
                 msg += f" | MSE/t: {bucket_str}"
                 logger.info(msg)
-
-                # Conditioning-signal probe over the validation prompt pool.
-                if args.class_dropout_prob > 0:
-                    # FM convention: t_value=0 is max noise; pure-noise probe input
-                    # is then in-distribution at t_discrete=0. See CLAUDE.md
-                    # "Diffusion / timestep convention".
-                    _cond_sig_print = _measure_conditioning_signal(
-                        model=accelerator.unwrap_model(model),
-                        cond_pool=cond_pool,
-                        in_channels=in_channels,
-                        diffusion_num_timesteps=diffusion.num_timesteps,
-                        device=device,
-                        t_value=0.0,
-                        batch_size=args.batch_size,
-                        seed=args.seed,
-                    )
-                    logger.info(
-                        "[cond] cfg_signal=%.4f (min=%.4f max=%.4f, n=%d) | "
-                        "cond_signal=%.4f (min=%.4f max=%.4f, n=%d) | pred_rms=%.4f",
-                        _cond_sig_print["cfg_signal"],
-                        _cond_sig_print["cfg_signal_min"],
-                        _cond_sig_print["cfg_signal_max"],
-                        _cond_sig_print["num_cond_probes"],
-                        _cond_sig_print["cond_signal"],
-                        _cond_sig_print["cond_signal_min"],
-                        _cond_sig_print["cond_signal_max"],
-                        _cond_sig_print["num_cond_pairs"],
-                        _cond_sig_print["pred_rms"],
-                    )
-                    _wandb_log(
-                        wandb_run,
-                        {f"cond/{k}": v for k, v in _cond_sig_print.items()
-                         if isinstance(v, (int, float))},
-                        step=step,
-                    )
 
                 # Persist this print's averages to the loss tracker. Values are
                 # already host-side floats, so this is a cheap dict append +
@@ -2356,6 +2664,13 @@ def main(args):
                         "train/p_mean": runtime.P_mean,
                         "train/steps_per_sec": steps_per_sec,
                     }
+                    if float(runtime.mse_hybrid_weight) > 0.0:
+                        payload["train/mse_hybrid"] = log_mse_hybrid.item() / log_steps
+                        payload["train/mse_hybrid_weight"] = float(runtime.mse_hybrid_weight)
+                    if avg_sink_resid is not None:
+                        payload["train/sinkhorn_marginal_resid"] = avg_sink_resid
+                    if avg_sink_coll is not None:
+                        payload["train/sinkhorn_collision_frac"] = avg_sink_coll
                     if render_active:
                         payload["train/render_l1"] = _render_l1
                         payload["train/alpha_l1"] = _alpha_l1
@@ -2372,6 +2687,11 @@ def main(args):
                     _wandb_log(wandb_run, payload, step=step)
 
                 log_loss.zero_()
+                log_mse_hybrid.zero_()
+                log_sinkhorn_resid.zero_()
+                log_sinkhorn_coll.zero_()
+                log_render_kept = 0.0
+                log_render_kept_steps = 0
                 log_render_l1.zero_()
                 log_render_alpha_l1.zero_()
                 log_render_lpips.zero_()
@@ -2401,33 +2721,6 @@ def main(args):
                         'step': step,
                     }, ckpt_path)
                     logger.info(f"Saved checkpoint to {ckpt_path}")
-                    if args.class_dropout_prob > 0:
-                        # FM convention: t_value=0 is max noise; in-distribution
-                        # probe input. See CLAUDE.md "Diffusion / timestep convention".
-                        sig = _measure_conditioning_signal(
-                            model=accelerator.unwrap_model(model),
-                            cond_pool=cond_pool,
-                            in_channels=in_channels,
-                            diffusion_num_timesteps=diffusion.num_timesteps,
-                            device=device,
-                            t_value=0.0,
-                            batch_size=args.batch_size,
-                            seed=args.seed,
-                        )
-                        logger.info(
-                            "[cond] cfg_signal=%.4f (min=%.4f max=%.4f, n=%d) | "
-                            "cond_signal=%.4f (min=%.4f max=%.4f, n=%d) | pred_rms=%.4f",
-                            sig["cfg_signal"], sig["cfg_signal_min"], sig["cfg_signal_max"],
-                            sig["num_cond_probes"],
-                            sig["cond_signal"], sig["cond_signal_min"], sig["cond_signal_max"],
-                            sig["num_cond_pairs"], sig["pred_rms"],
-                        )
-                        _wandb_log(
-                            wandb_run,
-                            {f"cond/{k}": v for k, v in sig.items()
-                             if isinstance(v, (int, float))},
-                            step=step,
-                        )
                 accelerator.wait_for_everyone()
 
             validation_due = (
@@ -2511,6 +2804,37 @@ def main(args):
                             img_payload["val/grid"] = wandb.Image(val_grid_path)
                         if img_payload:
                             _wandb_log(wandb_run, img_payload, step=step)
+
+                    # Conditioning-signal probe — measured only alongside the
+                    # validation images, not on every train log line.
+                    if args.class_dropout_prob > 0:
+                        # FM convention: t_value=0 is max noise; pure-noise probe
+                        # input is then in-distribution at t_discrete=0. See
+                        # CLAUDE.md "Diffusion / timestep convention".
+                        sig = _measure_conditioning_signal(
+                            model=accelerator.unwrap_model(model),
+                            cond_pool=cond_pool,
+                            in_channels=in_channels,
+                            diffusion_num_timesteps=diffusion.num_timesteps,
+                            device=device,
+                            t_value=0.0,
+                            batch_size=args.batch_size,
+                            seed=args.seed,
+                        )
+                        logger.info(
+                            "[cond] cfg_signal=%.4f (min=%.4f max=%.4f, n=%d) | "
+                            "cond_signal=%.4f (min=%.4f max=%.4f, n=%d) | pred_rms=%.4f",
+                            sig["cfg_signal"], sig["cfg_signal_min"], sig["cfg_signal_max"],
+                            sig["num_cond_probes"],
+                            sig["cond_signal"], sig["cond_signal_min"], sig["cond_signal_max"],
+                            sig["num_cond_pairs"], sig["pred_rms"],
+                        )
+                        _wandb_log(
+                            wandb_run,
+                            {f"cond/{k}": v for k, v in sig.items()
+                             if isinstance(v, (int, float))},
+                            step=step,
+                        )
                 accelerator.wait_for_everyone()
 
             if args.max_steps > 0 and step >= args.max_steps:
@@ -2642,8 +2966,22 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
                         help='Number of cameras to randomly sample per render loss step')
     parser.add_argument('--train_render_size', type=int, default=128,
                         help='Train-time rendering resolution for render loss')
+    parser.add_argument('--render_zoom_factor', type=float, default=1.0,
+                        help='Zoom factor applied to the rendering FOV (>1 = zoomed in; equivalent '
+                             'to increasing focal length). 1.0 = no change (default). At the '
+                             'gaussianverse fovx=39.6° the objects fill only ~20%% of the frame so '
+                             '~80%% of every render L1/LPIPS pixel is background that dilutes the '
+                             'loss-mean. 1.6-2.0 narrows the FOV to make the object fill the frame, '
+                             'boosting per-pixel signal density ~4x. Camera position unchanged; '
+                             'only intrinsics narrow. Set at launch only (cameras built once).')
     parser.add_argument('--ref_camera_tar', type=str, default='/home/tiangexiang/gen3d/ref_camera.tar.gz',
                         help='Path to reference camera tar.gz for render loss')
+    parser.add_argument('--per_sample_zoom_file', type=str, default=None,
+                        help='Optional .pt produced by data/build_per_sample_render_fov.py: '
+                             'per-(sample, camera) zoom factor used to scale the rendering '
+                             'fx/fy at training time so each render fills the frame with the '
+                             "object. When unset, falls back to the global --render_zoom_factor "
+                             '(default 1.0). Composes multiplicatively with --render_zoom_factor.')
     parser.add_argument('--enable_render_loss_after', type=int, default=0,
                         help='Number of training steps before enabling render loss (-1 disables render loss)')
     parser.add_argument('--render_loss_noise_cutoff', type=float, default=0.4,
@@ -2771,6 +3109,11 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
                         help='Mean of the JiT logit-normal timestep sampler before sigmoid.')
     parser.add_argument('--P_std', type=float, default=0.8,
                         help='Stddev of the JiT logit-normal timestep sampler before sigmoid.')
+    parser.add_argument('--timestep_dist', type=str, default='logitnormal',
+                        choices=['logitnormal', 'uniform'],
+                        help='Training t_value distribution. logitnormal: sigmoid(N(P_mean,P_std)) '
+                             '(default). uniform: t_value ~ U(0,1) — equal mass on every noise level '
+                             '(P_mean/P_std ignored).')
     parser.add_argument(
         '--P_mean_schedule',
         type=str,
@@ -2779,6 +3122,17 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
              'Linear interpolation between points; held constant outside the endpoints. '
              'On CLI pass as JSON, e.g. --P_mean_schedule "[[0,-0.5],[20000,0.0],[40000,0.3],[70000,0.5]]". '
              'When active, overrides both --P_mean and any P_mean in --overrides_yaml.',
+    )
+    parser.add_argument(
+        '--lr_scale_schedule',
+        type=str,
+        default=None,
+        help='Optional lr_scale curriculum: list of [step, lr_scale] control points (values > 0). '
+             'Linear interpolation between points; held constant outside the endpoints. Used to '
+             'cushion the optimizer when introducing a new loss (engagement warmup), e.g. '
+             '--lr_scale_schedule "[[22000,0.2],[24000,1.0]]" linearly ramps LR from 20%% to 100%% '
+             'over the 2k steps after render-loss engagement. When active, overrides any '
+             'lr_scale in --overrides_yaml.',
     )
     parser.add_argument(
         '--render_weight_schedule',
@@ -2802,6 +3156,162 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
              'channels otherwise get near-zero gradient signal). Computed from '
              'data/audit_norm_stats.py. Normalize to mean=1 so the scalar loss '
              'magnitude is preserved.',
+    )
+    parser.add_argument(
+        '--recon_loss',
+        type=str,
+        default='mse',
+        choices=['mse', 'chamfer_feature', 'chamfer_geometric', 'chamfer_patch', 'sinkhorn_patch',
+                 'sinkhorn_patch_hard'],
+        help='Reconstruction loss on the predicted x0. "mse" (default) is the '
+             'index-aligned per-Gaussian MSE. "chamfer_feature" uses '
+             'pytorch3d.loss.chamfer_distance over all channels (each Gaussian is a '
+             'point in C-dim feature space). "chamfer_geometric" matches Gaussians by '
+             'xyz via pytorch3d knn_points, then MSE on all matched channels (both '
+             'directions). "chamfer_patch" is bidirectional Chamfer restricted to within '
+             'each --chamfer_patch_size patch (pure-torch, no pytorch3d; a middle ground '
+             'that bounds matches to a patch and composes with --permute_atlas=patch). '
+             'The Chamfer modes are permutation-invariant (globally, or per-patch for '
+             'chamfer_patch), removing the dependence on the atlas ordering. '
+             'channel_loss_weights are reused inside the distance metric. feature/'
+             'geometric require the pytorch3d package; chamfer_patch does not. '
+             '"sinkhorn_patch" reuses the chamfer_patch per-patch cost but matches via OPTIMAL '
+             'ASSIGNMENT (entropic-OT EMD via log-Sinkhorn) instead of nearest-neighbour, forcing '
+             'a within-patch bijection (collision -> 0); see --sinkhorn_epsilon / --sinkhorn_iters. '
+             '"sinkhorn_patch_hard" uses the SAME Sinkhorn plan but HARD-rounds it '
+             '(argmax per pred) to MSE against a single matched target (DETR-style): a crisp '
+             'per-point gradient with no soft blend / mean-pull. The argmax converges in far '
+             'fewer --sinkhorn_iters than the soft plan, but is only ~bijective (watch the '
+             'logged SinkColl%% collision monitor).',
+    )
+    parser.add_argument(
+        '--chamfer_loss_weight',
+        type=float,
+        default=1.0,
+        help='Scalar weight on the Chamfer reconstruction term (no-op when '
+             '--recon_loss=mse). Overridable live via overrides.yaml. NOTE: stock '
+             'chamfer_feature magnitude is ~2*C larger than MSE (~118x for C=59); '
+             'expect a small value (~0.005-0.02) for feature mode. chamfer_geometric '
+             'is already ~MSE scale.',
+    )
+    parser.add_argument(
+        '--recon_loss_weight',
+        type=float,
+        default=1.0,
+        help='Outer scalar on the reconstruction loss (mse / Chamfer / Sinkhorn) in the '
+             'total-loss combination. 1.0 (default) = unchanged behaviour; 0.0 = zero recon '
+             'gradient (recon still computes for diagnostics like SinkResid/SinkColl, but '
+             'contributes nothing to backward). Use for render-only or render-dominant '
+             'experiments without ripping the recon plumbing out. Overridable live via '
+             'overrides.yaml. Independent of --chamfer_loss_weight, which only scales the '
+             'Chamfer term INSIDE the recon return.',
+    )
+    parser.add_argument(
+        '--chamfer_subsample',
+        type=int,
+        default=0,
+        help='Cap the Chamfer kNN search at this many *query* points per direction '
+             '(no-op when --recon_loss=mse). A fresh uniform subset is drawn each step; '
+             'the full target cloud is kept so each query gets its exact nearest '
+             'neighbour, and since the point reduction is a mean this is an unbiased '
+             'estimate of the full Chamfer (trades a little gradient variance for speed; '
+             'cost ~linear in this value). 0 (default) or >= N (16384) uses all points. '
+             'e.g. 4096 ~= 2.2x faster, 8192 ~= 1.4x.',
+    )
+    parser.add_argument(
+        '--chamfer_patch_size',
+        type=int,
+        default=0,
+        help='Patch side length for --recon_loss=chamfer_patch (Chamfer is restricted '
+             'within each patch_size x patch_size patch; no cross-patch matching). 0 '
+             '(default) resolves to the model patch_size at the call site so it aligns '
+             'with the Conv2d patchify and --permute_atlas=patch. No-op for other '
+             'recon_loss modes; --chamfer_subsample does not apply to chamfer_patch.',
+    )
+    parser.add_argument(
+        '--chamfer_rev_weight',
+        type=float,
+        default=1.0,
+        help='Multiplier on the BACKWARD (GT-as-query) Chamfer term in all chamfer modes '
+             '(1.0 = symmetric). The backward term is the coverage/recall direction: every '
+             'GT Gaussian must have a nearby prediction. >1 upweights coverage to fight '
+             'mode-collapse and push the model to represent every GT Gaussian somewhere — '
+             'a set-level lever (no per-cell/ordering constraint). Overridable live via '
+             'overrides.yaml. No-op when recon_loss=mse.',
+    )
+    parser.add_argument(
+        '--mse_hybrid_weight',
+        type=float,
+        default=0.0,
+        help='Lambda on an index-aligned MSE term added on top of a Chamfer recon_loss '
+             '(Chamfer+MSE hybrid; no-op for recon_loss=mse or 0). Chamfer is permutation-'
+             'degenerate so it gives no gradient toward copying the clean low-noise input; '
+             'this MSE term supplies it, dragging the low-noise loss down and steepening '
+             'loss-vs-t. Under --permute_atlas it rewards equivariant copying (target is the '
+             'permuted x_start), so it is compatible with the permutation augmentation. '
+             'Overridable live via overrides.yaml. Start small (~0.05-0.2).',
+    )
+    parser.add_argument(
+        '--mse_hybrid_warmup_steps',
+        type=int,
+        default=0,
+        help='If >0, linearly DECAY the index-MSE hybrid term from --mse_hybrid_weight (at step 0) '
+             'to 0 (at this step), then keep it 0. This is the cold-start BOOTSTRAP for '
+             'optimal-assignment recon (sinkhorn_patch): index-MSE binds cell->target to break the '
+             'symmetric mean-collapse trap that stalls sinkhorn from scratch, then fades out leaving '
+             'pure assignment. Use --mse_hybrid_weight ~1.0 as the starting magnitude. Overrides any '
+             'live mse_hybrid_weight (governs the term entirely while >0). 0 = disabled.',
+    )
+    parser.add_argument(
+        '--mse_hybrid_lownoise_mult',
+        type=float,
+        default=1.0,
+        help='Linearly UPWEIGHT the index-MSE hybrid term toward low noise: per-sample weight '
+             'w(t) = 1 + (mult-1)*t_value, i.e. w=1 at the noisy end (t=0) ramping to w=mult at '
+             'the clean end (t=1). mult=1 = uniform across t (back-compat). Unlike a t**p downweight '
+             'this keeps the t=0 baseline and AMPLIFIES clean (effective clean weight = '
+             'mse_hybrid_weight*mult). Pairs with --mse_hybrid_weight / --mse_hybrid_warmup_steps.',
+    )
+    parser.add_argument(
+        '--sinkhorn_epsilon',
+        type=float,
+        default=0.05,
+        help='Entropic-OT regularizer for --recon_loss=sinkhorn_patch (the optimal-assignment '
+             'EMD via log-Sinkhorn). Controls hard<->soft: smaller => sharper plan closer to an '
+             'exact within-patch bijection (lower collision, stiffer gradient); larger => softer / '
+             'blurrier plan that re-collapses toward the mean. No-op for other recon_loss modes. '
+             'Overridable live via overrides.yaml.',
+    )
+    parser.add_argument(
+        '--sinkhorn_iters',
+        type=int,
+        default=50,
+        help='Fixed number of log-domain Sinkhorn iterations for --recon_loss=sinkhorn_patch. '
+             'Fixed (not hot-reloadable) so the loss stays torch.compile-safe (changing it forces '
+             'a recompile). No-op for other recon_loss modes.',
+    )
+    parser.add_argument(
+        '--compile_sinkhorn',
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help='torch.compile the log-Sinkhorn loop (sinkhorn_patch / sinkhorn_patch_hard). The '
+             'eager loop is memory-bound (materializes the (B,nP,M,M) broadcast to HBM each '
+             'logsumexp); Inductor fuses it for ~8x on the Sinkhorn term (numerically identical '
+             'fp32), measured ~2x whole-step throughput. One-time ~1min compile at first step; '
+             'shapes are static (drop_last=True). No-op for non-sinkhorn recon modes.',
+    )
+    parser.add_argument(
+        '--permute_atlas',
+        type=str,
+        default='none',
+        choices=['none', 'patch', 'global'],
+        help='Randomize the per-Gaussian ordering the model sees each step (Chamfer '
+             'recon_loss ONLY; raises on mse). Fixes the iterative-sampling collapse where '
+             'the model, trained only on the canonical sphere2plane ordering, sees its own '
+             'non-canonical output fed back at sampling time (OOD). "patch" permutes within '
+             'each patch_size² patch (keeps patch-level pos-embed meaningful — targets local '
+             'permutation); "global" permutes all 16384 points (also voids the pos-embed). '
+             'Fresh permutation per step, ~sub-ms cost. See diffusion.permute_atlas.',
     )
 
     # Logging / Checkpoints / Validation

@@ -5,6 +5,7 @@
 
 
 import math
+import os
 
 import numpy as np
 import torch as th
@@ -24,6 +25,401 @@ def mean_flat(tensor):
     Take the mean over all non-batch dimensions.
     """
     return tensor.mean(dim=list(range(1, len(tensor.shape))))
+
+
+# --- KeOps backend for the Chamfer kNN search (optional; ~2.4-2.8x faster) -----
+# pytorch3d's kNN is correct but memory-bandwidth-bound. KeOps does the same
+# nearest-neighbor search as an online reduction (no NxN materialization) and is
+# substantially faster on this 16,384-point cloud. We use KeOps only for the
+# (non-differentiable) argmin search and keep the differentiable distance in torch
+# via gather — numerically identical to pytorch3d. Falls back to pytorch3d if
+# pykeops or a CUDA toolchain is unavailable.
+_KEOPS_STATE = {"checked": False, "ok": False}
+
+
+def _keops_setup_cuda_env():
+    """Point KeOps' runtime JIT at a CUDA toolchain (nvcc + libnvrtc) via env vars.
+
+    KeOps compiles/links its kernels with g++/nvrtc at first use, which need the
+    CUDA lib dir on LIBRARY_PATH/LD_LIBRARY_PATH. Idempotent; auto-detects a system
+    CUDA install when CUDA_PATH/CUDA_HOME are unset. The launcher should also export
+    these before process start so the compiled kernel loads reliably.
+    """
+    if os.environ.get("_KEOPS_CUDA_ENV_DONE"):
+        return
+    cuda = os.environ.get("CUDA_PATH") or os.environ.get("CUDA_HOME")
+    if not cuda or not os.path.isdir(cuda):
+        for cand in ("/usr/local/cuda", "/usr/local/cuda-12.8"):
+            if os.path.isdir(cand):
+                cuda = cand
+                break
+    if cuda and os.path.isdir(cuda):
+        os.environ["CUDA_PATH"] = cuda
+        os.environ.setdefault("CUDA_HOME", cuda)
+        for var, sub in (("PATH", "bin"), ("LIBRARY_PATH", "lib64"), ("LD_LIBRARY_PATH", "lib64")):
+            val = os.path.join(cuda, sub)
+            cur = os.environ.get(var, "")
+            if val not in cur.split(os.pathsep):
+                os.environ[var] = val + (os.pathsep + cur if cur else "")
+    os.environ["_KEOPS_CUDA_ENV_DONE"] = "1"
+
+
+def _keops_available():
+    """True if pykeops imports (and its CUDA env is set up); cached. Else pytorch3d."""
+    if not _KEOPS_STATE["checked"]:
+        _KEOPS_STATE["checked"] = True
+        try:
+            _keops_setup_cuda_env()
+            from pykeops.torch import LazyTensor  # noqa: F401
+            _KEOPS_STATE["ok"] = True
+        except Exception:
+            _KEOPS_STATE["ok"] = False
+    return _KEOPS_STATE["ok"]
+
+
+def _keops_argmin(x, y):
+    """Index of nearest y-row (squared L2) per x-row. x:(B,N,Ds) y:(B,M,Ds) -> (B,N) long.
+
+    Search only — argmin indices carry no gradient (as in any kNN). Inputs are
+    detached so KeOps does no autograd bookkeeping; the differentiable distance is
+    recomputed in torch by the caller on the gathered rows.
+    """
+    from pykeops.torch import LazyTensor
+    x_i = LazyTensor(x.detach().unsqueeze(2).contiguous())  # (B,N,1,Ds)
+    y_j = LazyTensor(y.detach().unsqueeze(1).contiguous())  # (B,1,M,Ds)
+    return ((x_i - y_j) ** 2).sum(-1).argmin(dim=2)[..., 0].long()  # (B,N)
+
+
+def _gather_rows(src, idx):
+    """src:(B,M,C), idx:(B,N) -> (B,N,C): row idx[b,n] of src[b]."""
+    return th.gather(src, 1, idx.unsqueeze(-1).expand(-1, -1, src.shape[-1]))
+
+
+def _subsample_query_idx(B, N, M, device):
+    """``(B, M)`` long: M distinct uniform query indices per batch element (no replacement).
+
+    Used to draw a fresh random subset of *query* points for the Chamfer search each
+    step. argsort-of-rand is the cheap vectorized way to sample without replacement per
+    row; the cost is negligible next to the kNN search.
+    """
+    return th.rand(B, N, device=device).argsort(dim=1)[:, :M]
+
+
+def _sinkhorn_log(C, eps, iters):
+    """Entropic-OT transport plan via log-domain Sinkhorn (uniform marginals).
+
+    ``C``: (B, nP, M, M) squared-distance cost. Returns the (B, nP, M, M) soft transport
+    plan assigning M pred points to M target points within each patch, marginals a=b=1/M.
+    Fixed ``iters`` + pure tensor ops keep it torch.compile-safe (no data-dependent control
+    flow, no CPU sync). As ``eps`` -> 0 the plan -> a hard permutation (exact assignment);
+    larger ``eps`` -> softer/blurrier plan (re-collapses toward the mean).
+    """
+    M = C.shape[-1]
+    logK = -C / eps                                              # (B, nP, M, M)
+    logm = -math.log(M)                                         # log uniform marginal
+    f = th.zeros(C.shape[:-1], device=C.device, dtype=C.dtype)  # (B, nP, M)
+    g = th.zeros_like(f)
+    for _ in range(int(iters)):
+        f = logm - th.logsumexp(logK + g.unsqueeze(-2), dim=-1)
+        g = logm - th.logsumexp(logK + f.unsqueeze(-1), dim=-2)
+    return th.exp(logK + f.unsqueeze(-1) + g.unsqueeze(-2))     # (B, nP, M, M) plan
+
+
+# Lazily-compiled handle for _sinkhorn_log. The loop is memory-bound: eager, each iter
+# materializes the full (B,nP,M,M) broadcast `logK + g.unsqueeze(...)` to HBM before the
+# logsumexp reduction (200 such ~1GB round-trips/step at B=256). Inductor FUSES the broadcast
+# into the reduction, keeping it in SRAM — measured ~8x on the Sinkhorn term (1463->184 ms,
+# B=128/100 iters), numerically identical fp32 (same math, just fused). Compile-safe by design
+# (fixed iters, no data-dependent control flow / CPU sync). Compiles once; shapes are static
+# because training uses drop_last=True. Opt-in via compile_sinkhorn so probes/tests stay eager.
+_sinkhorn_log_compiled = None
+
+
+def _resolve_sinkhorn(compiled: bool):
+    """Return the eager or (lazily) compiled _sinkhorn_log. Specializes on shape/eps/iters;
+    fine since those are constant within a run (drop_last=True; iters launch-time fixed)."""
+    global _sinkhorn_log_compiled
+    if not compiled:
+        return _sinkhorn_log
+    if _sinkhorn_log_compiled is None:
+        _sinkhorn_log_compiled = th.compile(_sinkhorn_log)
+    return _sinkhorn_log_compiled
+
+
+def _chamfer_recon_loss(pred, target, mode, channel_loss_weights=None, weight=1.0,
+                        subsample=0, patch_size=8, rev_weight=1.0,
+                        sinkhorn_eps=0.05, sinkhorn_iters=50, return_diag=False,
+                        compile_sinkhorn=False):
+    """Permutation-invariant reconstruction loss over the per-Gaussian point set.
+
+    ``pred`` / ``target`` are atlas tensors ``(B, C, H, W)``. Chamfer/kNN matching is
+    permutation-invariant, so the spatial grid is flattened straight to a point cloud
+    ``(B, N=H*W, C)`` — the sphere/atlas ordering is irrelevant (the whole point of
+    switching away from index-aligned MSE).
+
+    Modes:
+      * ``chamfer_feature``   — match Gaussians by their full C-dim feature vector;
+        loss is the bidirectional Chamfer of those vectors.
+      * ``chamfer_geometric`` — match Gaussians by xyz, then MSE on all channels of
+        the matched pairs (both directions).
+      * ``chamfer_patch``     — bidirectional Chamfer restricted to *within* each
+        ``patch_size × patch_size`` patch (the model's Conv2d(stride=patch_size)
+        patchify). A middle ground between global Chamfer (fully permutation-free) and
+        index-MSE: bounds a Gaussian's correspondence to its own patch, restoring a
+        coarse per-patch alignment. Pure-torch (no KeOps/pytorch3d), exact (no
+        ``subsample``), and ~``N/patch_size²`` cheaper than the global kNN. Uses the
+        IDENTICAL patch grouping as ``permute_atlas('patch')``, so the two compose:
+        within-patch permutation leaves a patch's point set unchanged → loss invariant.
+      * ``sinkhorn_patch``     — same per-patch grouping/cost as ``chamfer_patch`` but the
+        match is the OPTIMAL ASSIGNMENT (entropic-OT EMD via log-Sinkhorn) instead of hard
+        nearest-neighbour. With M pred == M target the optimum is a bijection, forcing
+        coverage (within-patch collision → 0) and a dense gradient while staying within-patch
+        permutation-invariant. ``sinkhorn_eps`` controls hard↔soft; ``rev_weight`` is a no-op
+        (OT marginals are symmetric). Reuses ``sq``; the plan is detached so the gradient is
+        the squared distance under the (soft-)optimal assignment.
+
+    The kNN search (feature/geometric) runs on KeOps when available (~2.4-2.8x faster),
+    else pytorch3d; both give identical results. Distances are in normalized model space.
+    ``channel_loss_weights`` (if given) re-weights channels inside the distance:
+    ``feature``/``patch`` scale each channel by ``sqrt(w_c)`` (affects match + distance);
+    ``geometric`` applies ``w_c`` to the per-channel squared error.
+
+    ``subsample`` (>0 and < N): cap the search at ``M = subsample`` *query* points per
+    direction, drawn fresh and uniformly (without replacement) each call. The full
+    target cloud is kept, so every query still finds its exact nearest neighbour; since
+    the point reduction is a mean, the mean over M queries is an unbiased estimate of
+    the mean over all N. Cost scales ~linearly in M (the search is O(M·N·C)), trading a
+    little gradient variance for a large speedup. ``subsample=0`` (or ``>= N``) uses all
+    points and is bit-for-bit the previous behaviour.
+
+    ``rev_weight`` scales the backward (GT-as-query) term in all modes — the
+    coverage/recall direction (every GT Gaussian must have a nearby prediction).
+    ``rev_weight=1`` is the symmetric Chamfer; ``>1`` upweights coverage (fights
+    mode-collapse, pushes the model to represent every GT Gaussian somewhere).
+
+    Returns a per-sample tensor ``(B,)`` (un-reduced over batch so downstream
+    t-bucketing / logging still works), already scaled by ``weight``. When
+    ``return_diag=True`` returns ``(loss, diag)`` instead, where ``diag`` is a dict of
+    scalar tensors (currently ``sinkhorn_marginal_resid`` for ``sinkhorn_patch`` — the
+    Sinkhorn convergence monitor); empty for the other modes.
+    """
+    def _ret(loss, diag=None):
+        return (loss, diag or {}) if return_diag else loss
+
+    # kNN kernels (both backends) require float32; cast keeps autocast (fp16/bf16)
+    # forward passes from breaking them. The cast is differentiable so grads still
+    # reach ``model_output`` through the torch-side distance.
+    pred_pc = pred.flatten(2).transpose(1, 2).float().contiguous()      # (B, N, C)
+    target_pc = target.flatten(2).transpose(1, 2).float().contiguous()  # (B, N, C)
+
+    w = None
+    if channel_loss_weights is not None:
+        w = channel_loss_weights.to(device=pred_pc.device, dtype=pred_pc.dtype).clamp_min(0)
+
+    use_keops = _keops_available()
+
+    B, N = pred_pc.shape[0], pred_pc.shape[1]
+    M = subsample if (subsample and 0 < subsample < N) else 0  # 0 => use all points
+
+    if mode == "chamfer_feature":
+        x, y = pred_pc, target_pc
+        if w is not None:
+            scale = w.sqrt().view(1, 1, -1)  # weighted Euclidean: Σ w_c (Δ_c)²
+            x = x * scale
+            y = y * scale
+        # Query points for each direction: a fresh random subset of M when subsampling,
+        # else the full cloud. The full target (y / x) is always searched, so each
+        # query's nearest neighbour is exact.
+        if M:
+            xq = _gather_rows(x, _subsample_query_idx(B, N, M, x.device))  # (B,M,C)
+            yq = _gather_rows(y, _subsample_query_idx(B, N, M, y.device))
+        else:
+            xq, yq = x, y
+        if use_keops:
+            # search full C-dim feature space; differentiable distance via gather.
+            sq_f = (xq - _gather_rows(y, _keops_argmin(xq, y))) ** 2  # (B,M|N,C)
+            sq_r = (yq - _gather_rows(x, _keops_argmin(yq, x))) ** 2
+            # rev_weight scales the backward (GT-as-query) term — the coverage/recall
+            # direction (every GT Gaussian must have a nearby prediction).
+            loss_b = sq_f.sum(-1).mean(1) + rev_weight * sq_r.sum(-1).mean(1)
+        else:
+            from pytorch3d.loss import chamfer_distance
+            # single_directional so we can feed the subsampled query set on each side.
+            kw = dict(batch_reduction=None, point_reduction="mean", norm=2)
+            loss_f, _ = chamfer_distance(xq, y, single_directional=True, **kw)  # (B,)
+            loss_r, _ = chamfer_distance(yq, x, single_directional=True, **kw)
+            loss_b = loss_f + rev_weight * loss_r
+        return _ret(weight * loss_b)
+
+    if mode == "chamfer_geometric":
+        wv = w.view(1, 1, -1) if w is not None else None
+        pred_xyz = pred_pc[..., :3].contiguous()
+        gt_xyz = target_pc[..., :3].contiguous()
+        # Subsample the query side (pred for forward, target for reverse); match against
+        # the full opposite cloud by xyz, then squared error on all channels.
+        if M:
+            pred_q = _gather_rows(pred_pc, _subsample_query_idx(B, N, M, pred_pc.device))    # (B,M,C)
+            gt_q = _gather_rows(target_pc, _subsample_query_idx(B, N, M, target_pc.device))  # (B,M,C)
+            pred_q_xyz = pred_q[..., :3].contiguous()
+            gt_q_xyz = gt_q[..., :3].contiguous()
+        else:
+            pred_q, gt_q = pred_pc, target_pc
+            pred_q_xyz, gt_q_xyz = pred_xyz, gt_xyz
+        if use_keops:
+            gt_match = _gather_rows(target_pc, _keops_argmin(pred_q_xyz, gt_xyz))    # (B,M|N,C)
+            pred_match = _gather_rows(pred_pc, _keops_argmin(gt_q_xyz, pred_xyz))    # (B,M|N,C)
+        else:
+            from pytorch3d.ops import knn_gather, knn_points
+            gt_match = knn_gather(target_pc, knn_points(pred_q_xyz, gt_xyz, K=1).idx)[:, :, 0, :]
+            pred_match = knn_gather(pred_pc, knn_points(gt_q_xyz, pred_xyz, K=1).idx)[:, :, 0, :]
+        sq_fwd = (pred_q - gt_match) ** 2   # forward: pred query -> nearest target by xyz
+        sq_rev = (gt_q - pred_match) ** 2   # reverse: target query -> nearest pred by xyz
+        if wv is not None:
+            sq_fwd = sq_fwd * wv
+            sq_rev = sq_rev * wv
+        return _ret(weight * 0.5 * (sq_fwd.mean(dim=(1, 2)) + rev_weight * sq_rev.mean(dim=(1, 2))))
+
+    if mode in ("chamfer_patch", "sinkhorn_patch", "sinkhorn_patch_hard"):
+        # Bidirectional Chamfer WITHIN each patch_size×patch_size patch. Works from the
+        # original (B,C,H,W) atlas (not the flattened pred_pc/target_pc) so we can group
+        # points by patch exactly as permute_atlas('patch') / the Conv2d patchify do.
+        P = int(patch_size)
+        B, C, H, W = pred.shape
+        if H % P or W % P:
+            raise ValueError(
+                f"chamfer_patch needs H,W divisible by patch_size={P}; got {(H, W)}"
+            )
+        nH, nW = H // P, W // P
+        M = P * P  # Gaussians per patch
+
+        def to_patches(t):
+            # (B,C,H,W) -> (B, nP, M, C); identical grouping to permute_atlas('patch').
+            return (
+                t.float()
+                .reshape(B, C, nH, P, nW, P)
+                .permute(0, 2, 4, 1, 3, 5)
+                .reshape(B, nH * nW, C, M)
+                .transpose(-1, -2)
+                .contiguous()
+            )
+
+        xp = to_patches(pred)      # (B, nP, M, C)
+        yp = to_patches(target)
+        if w is not None:
+            scale = w.sqrt().view(1, 1, 1, -1)  # weighted Euclidean, as in chamfer_feature
+            xp = xp * scale
+            yp = yp * scale
+        # Squared in-patch distances via the Gram form ‖x‖²+‖y‖²−2x·y. Avoids the
+        # (B,nP,M,M,C) broadcast (~15GB at B=256/C=14); materializes only (B,nP,M,M)
+        # (~1.07GB at B=256/P=8). No sqrt -> gradient-safe at coincident points.
+        aa = xp.pow(2).sum(-1)                       # (B, nP, M)
+        bb = yp.pow(2).sum(-1)                       # (B, nP, M)
+        ab = xp @ yp.transpose(-1, -2)              # (B, nP, M, M)
+        sq = (aa.unsqueeze(-1) + bb.unsqueeze(-2) - 2 * ab).clamp_min(0)  # (B, nP, M, M)
+        patch_diag = {}
+        if mode == "chamfer_patch":
+            fwd = sq.min(dim=-1).values              # pred  -> nearest in-patch target
+            rev = sq.min(dim=-2).values              # target -> nearest in-patch pred
+            # mean over points (patches × M) — sum-over-C already in sq, matches chamfer_feature scale.
+            loss_b = fwd.mean(dim=(1, 2)) + rev_weight * rev.mean(dim=(1, 2))  # (B,)
+        else:  # sinkhorn_patch (soft) / sinkhorn_patch_hard — optimal-assignment matching
+            # Optimal assignment of the M pred points to the M target points within each patch,
+            # approximated by entropic-OT log-Sinkhorn. The plan only decides the MATCHING —
+            # the gradient flows through `sq`, never through the plan — so it is computed under
+            # no_grad. Otherwise autograd records the iters-deep recursion for a backward that
+            # never uses it (~1.1 GB/iter of dead graph at B=128 — the dominant training-memory
+            # cost and a hard cap on sinkhorn_iters); under no_grad peak memory is O(1) in iters.
+            # rev_weight is irrelevant (OT marginals already cover both directions).
+            with th.no_grad():
+                # compiled (fused logsumexp) when compile_sinkhorn — ~8x, numerically identical.
+                P = _resolve_sinkhorn(compile_sinkhorn)(sq, sinkhorn_eps, sinkhorn_iters)  # (B,nP,M,M); no graph
+                if mode == "sinkhorn_patch_hard":
+                    sigma = P.argmax(dim=-1)                          # (B, nP, M) assigned target per pred
+                if return_diag:
+                    # Sinkhorn convergence monitor. The log-domain recursion ends on the column
+                    # update, so the COLUMN marginal (sum over pred i, dim=-2) is exact (=1/M);
+                    # the ROW marginal (sum over target j, dim=-1) carries the residual. mean
+                    # |rowsum − 1/M| → 0 as the plan converges to doubly-stochastic, rising if
+                    # sinkhorn_iters is too few for the eps / cost sharpness. ~free.
+                    row = P.sum(dim=-1)                               # (B, nP, M)
+                    patch_diag["sinkhorn_marginal_resid"] = (row - (1.0 / M)).abs().mean()
+                    if mode == "sinkhorn_patch_hard":
+                        # Collision fraction: preds whose argmax target is shared with another
+                        # pred in the patch — i.e. how far the rounded assignment is from a true
+                        # bijection. Floors at the eps non-permutation (≠0), not at full conv.
+                        col_counts = th.zeros_like(row)              # (B, nP, M) counts over columns j
+                        col_counts.scatter_add_(-1, sigma, th.ones_like(row))
+                        extra = (col_counts - 1.0).clamp_min(0).sum(dim=-1)  # duplicate picks per patch
+                        patch_diag["sinkhorn_collision_frac"] = (extra / M).mean()
+            if mode == "sinkhorn_patch_hard":
+                # HARD assignment: MSE to the single argmax-matched target (DETR-style hard
+                # matching). σ is detached, so the gradient is a crisp per-pred MSE toward
+                # tgt_σ(i) — no soft blend, hence no mean-pull. Gradient flows through `sq`
+                # gathered at the detached σ. mean_i sq[i,σ(i)] = the same scale as the soft
+                # <P, sq> when the plan is a permutation.
+                hard_sq = sq.gather(-1, sigma.unsqueeze(-1)).squeeze(-1)  # (B, nP, M) = sq[i,σ(i)]
+                loss_b = hard_sq.mean(dim=(1, 2))                     # (B,)
+            else:  # sinkhorn_patch (soft)
+                # SOFT: <P, sq> is the plan-weighted (blended) matched distance; the induced
+                # per-pred gradient pulls toward M·Σ_j P[i,j]·tgt_j (a blend → mean-pull when P
+                # is blurry). Plan mass sums to 1 per patch → ~chamfer_patch scale.
+                loss_b = (P * sq).sum(dim=(-1, -2)).mean(dim=1)      # (B,) gradient via `sq` only
+        return _ret(weight * loss_b, patch_diag)
+
+    raise ValueError(f"unknown recon_loss mode: {mode!r}")
+
+
+def permute_atlas(x, mode="none", patch_size=8, generator=None):
+    """Randomly permute the per-Gaussian ordering of an atlas ``(B, C, H, W)``.
+
+    Augmentation for Chamfer training: the model is otherwise only ever shown the
+    canonical sphere2plane ordering (every training input is a noised *canonical*
+    atlas), so at inference — where a sampler feeds the model's own non-canonical
+    output back in — the ordering is OOD and samples collapse. Permuting the input
+    each step teaches order-robustness. Permutation is applied to the same Gaussians
+    across all channels (xyz/opacity/SH of a point move together); ε is i.i.d. so it
+    needs no matching permutation, and the Chamfer target is permutation-invariant so
+    the loss is unchanged. ONLY valid with a Chamfer recon_loss — index-aligned MSE
+    becomes unlearnable at high noise (the ordering signal is gone in ε).
+
+    Modes:
+      * ``"none"``   — identity.
+      * ``"patch"``  — permute the ``patch_size²`` Gaussians *within* each patch,
+        independently per patch/sample. Matches the model's Conv2d(stride=patch_size)
+        patchify exactly (each patch is a contiguous P×P block), so the patch-level
+        positional embedding stays meaningful — only the fine, within-patch ordering
+        is randomized. Targets the hypothesis that the model permutes *locally*.
+      * ``"global"`` — permute all ``H·W`` Gaussians across the whole atlas, per
+        sample. Maximal augmentation; also makes the positional embedding
+        uninformative (every patch becomes a random bag of points).
+
+    A fresh permutation is drawn on every call (on-the-fly); the cost is a gather
+    along the spatial axis (~sub-ms at B=256/N=16384), negligible vs the forward.
+    Returns a tensor of the same shape and (channels-last) memory format as ``x``.
+    """
+    if mode == "none":
+        return x
+    B, C, H, W = x.shape
+    channels_last = x.is_contiguous(memory_format=th.channels_last)
+    if mode == "global":
+        N = H * W
+        perm = th.rand(B, N, device=x.device, generator=generator).argsort(dim=-1)  # (B, N)
+        idx = perm.unsqueeze(1).expand(B, C, N)
+        out = th.gather(x.reshape(B, C, N), 2, idx).reshape(B, C, H, W)
+    elif mode == "patch":
+        P = int(patch_size)
+        if H % P or W % P:
+            raise ValueError(f"patch permute needs H,W divisible by patch_size={P}; got {(H, W)}")
+        nH, nW = H // P, W // P
+        # (B,C,H,W) -> per-patch flattened points (B, nH, nW, C, P*P)
+        xr = x.reshape(B, C, nH, P, nW, P).permute(0, 2, 4, 1, 3, 5).reshape(B, nH, nW, C, P * P)
+        perm = th.rand(B, nH, nW, P * P, device=x.device, generator=generator).argsort(dim=-1)
+        idx = perm.unsqueeze(3).expand(B, nH, nW, C, P * P)
+        xr = th.gather(xr, 4, idx)
+        out = xr.reshape(B, nH, nW, C, P, P).permute(0, 3, 1, 4, 2, 5).reshape(B, C, H, W)
+    else:
+        raise ValueError(f"unknown permute_atlas mode: {mode!r} (expected none|patch|global)")
+    return out.contiguous(memory_format=th.channels_last) if channels_last else out.contiguous()
 
 
 class ModelMeanType(enum.Enum):
@@ -259,6 +655,19 @@ class GaussianDiffusion:
         model_kwargs=None,
         noise=None,
         channel_loss_weights=None,
+        recon_loss="mse",
+        chamfer_loss_weight=1.0,
+        chamfer_subsample=0,
+        chamfer_patch_size=8,
+        chamfer_rev_weight=1.0,
+        mse_hybrid_weight=0.0,
+        mse_hybrid_lownoise_mult=1.0,
+        sinkhorn_eps=0.05,
+        sinkhorn_iters=50,
+        compile_sinkhorn=False,
+        permute_mode="none",
+        permute_patch_size=8,
+        skip_recon=False,
     ):
         """JiT flow-matching loss with x₀ prediction.
 
@@ -266,12 +675,40 @@ class GaussianDiffusion:
         ``x_t = t * x_0 + (1 - t) * ε``. ``t_discrete`` is the integer timestep
         (typically ``round(t_value * (T-1))``) fed to the model's timestep
         embedding, keeping the sampler and trainer on the same grid. The model
-        predicts x₀ directly; loss is ``MSE(pred, x_0)``.
+        predicts x₀ directly.
 
-        ``channel_loss_weights`` (optional) is a 1-D tensor of length C that
-        scales the per-channel squared error before spatial averaging. Use it
-        to compensate channels whose per-object spatial std is much smaller
-        than 1 after normalization (they'd otherwise get ~var² less gradient).
+        ``recon_loss`` selects the reconstruction term:
+          * ``"mse"`` (default) — index-aligned ``MSE(pred, x_0)``.
+          * ``"chamfer_feature"`` / ``"chamfer_geometric"`` — permutation-invariant
+            Chamfer over the per-Gaussian point set (see ``_chamfer_recon_loss``),
+            scaled by ``chamfer_loss_weight``. This removes the dependence on the
+            (near-random) atlas ordering that the index-aligned MSE assumes.
+          * ``"chamfer_patch"`` — Chamfer restricted to within each
+            ``chamfer_patch_size``-sized patch (see ``_chamfer_recon_loss``); a middle
+            ground that bounds matches to a patch and composes with
+            ``permute_mode="patch"``.
+          * ``"sinkhorn_patch"`` — same per-patch grouping but the OPTIMAL ASSIGNMENT
+            (entropic-OT EMD via log-Sinkhorn, ``sinkhorn_eps``/``sinkhorn_iters``) instead of
+            hard nearest-neighbour: forces a within-patch bijection (collision → 0) with a
+            dense gradient. ``chamfer_rev_weight`` is a no-op for this mode.
+          * ``"sinkhorn_patch_hard"`` — same Sinkhorn plan, but HARD-rounded
+            (``σ(i)=argmax_j Π[i,j]``) to a single matched target, then ``MSE(pred_i, tgt_σ(i))``
+            (DETR-style hard matching). Gives a crisp per-point gradient with no soft blend (no
+            mean-pull); the argmax converges in far fewer ``sinkhorn_iters`` than the soft plan,
+            but the rounding is only ~bijective (monitor ``sinkhorn_collision_frac``).
+
+        ``mse_hybrid_weight`` (>0, Chamfer modes only): add ``λ · MSE(pred, x_start)`` on
+        top of the Chamfer term. Chamfer's optimum is permutation-degenerate so it gives no
+        gradient toward copying the (near-clean) low-noise input; this index-aligned MSE
+        supplies that gradient, dragging the low-noise loss toward 0 and steepening
+        loss-vs-t. With ``permute_mode!="none"`` the target is the permuted ``x_start``, so
+        it rewards equivariant copying (compatible with the augmentation).
+
+        ``channel_loss_weights`` (optional) is a 1-D tensor of length C. For MSE it
+        scales the per-channel squared error before spatial averaging (compensating
+        channels whose post-normalization per-object spatial std is ≪ 1, which would
+        otherwise get ~var² less gradient). For the Chamfer modes it re-weights
+        channels inside the distance metric (see ``_chamfer_recon_loss``).
         """
         if self.model_mean_type != ModelMeanType.START_X:
             raise ValueError(
@@ -284,27 +721,112 @@ class GaussianDiffusion:
         if noise is None:
             noise = th.randn_like(x_start)
 
+        # Order-robustness augmentation (Chamfer only): randomize the per-Gaussian
+        # ordering the model sees, so iterative sampling on its own non-canonical
+        # output is in-distribution. Permutation-invariant Chamfer makes the target
+        # loss unchanged; ε is i.i.d. so the externally-supplied noise still applies.
+        if permute_mode != "none":
+            if recon_loss == "mse":
+                raise ValueError(
+                    "permute_mode requires a Chamfer recon_loss; index-aligned MSE is "
+                    "unlearnable under input permutation (ordering signal vanishes in noise)."
+                )
+            x_start = permute_atlas(x_start, permute_mode, permute_patch_size)
+
         x_t = self.flow_matching_q_sample(x_start, t_value, noise=noise)
         model_output = model(x_t, t_discrete, **model_kwargs)
         assert model_output.shape == x_start.shape
 
-        sq_err = (x_start - model_output) ** 2
-        if channel_loss_weights is not None:
-            w = channel_loss_weights.to(device=sq_err.device, dtype=sq_err.dtype)
-            if w.ndim != 1 or w.shape[0] != sq_err.shape[1]:
-                raise ValueError(
-                    f"channel_loss_weights must be 1-D of length C={sq_err.shape[1]}, "
-                    f"got shape {tuple(w.shape)}"
-                )
-            view_shape = (1, -1) + (1,) * (sq_err.ndim - 2)
-            sq_err = sq_err * w.view(view_shape)
+        # Caller-gated short-circuit: when the outer recon_loss_weight is 0 (render-only
+        # mode), the recon dispatch (Sinkhorn / Chamfer / MSE) contributes nothing to
+        # backward. Skip it entirely — saves the OT/forward compute. The model forward
+        # MUST still run because the render path consumes pred_xstart downstream.
+        if skip_recon:
+            recon = th.zeros(x_start.shape[0], device=x_start.device, dtype=model_output.dtype)
+            return {
+                "loss": recon,
+                "mse": recon,
+                "pred_xstart": model_output,
+                "x_t": x_t,
+            }
 
+        if channel_loss_weights is not None:
+            if channel_loss_weights.ndim != 1 or channel_loss_weights.shape[0] != x_start.shape[1]:
+                raise ValueError(
+                    f"channel_loss_weights must be 1-D of length C={x_start.shape[1]}, "
+                    f"got shape {tuple(channel_loss_weights.shape)}"
+                )
+
+        def _weighted_mse_flat(a, b):
+            """Per-sample index-aligned MSE (mean over C,H,W) with channel weights -> (B,)."""
+            sq = (a - b) ** 2
+            if channel_loss_weights is not None:
+                w = channel_loss_weights.to(device=sq.device, dtype=sq.dtype)
+                sq = sq * w.view((1, -1) + (1,) * (sq.ndim - 2))
+            return mean_flat(sq)
+
+        mse_hybrid = None
+        recon_diag = {}
+        if recon_loss == "mse":
+            recon = _weighted_mse_flat(x_start, model_output)
+        elif recon_loss in ("chamfer_feature", "chamfer_geometric", "chamfer_patch",
+                             "sinkhorn_patch", "sinkhorn_patch_hard"):
+            recon, recon_diag = _chamfer_recon_loss(
+                model_output,
+                x_start,
+                recon_loss,
+                channel_loss_weights=channel_loss_weights,
+                weight=chamfer_loss_weight,
+                subsample=chamfer_subsample,
+                patch_size=chamfer_patch_size,
+                rev_weight=chamfer_rev_weight,
+                sinkhorn_eps=sinkhorn_eps,
+                sinkhorn_iters=sinkhorn_iters,
+                compile_sinkhorn=compile_sinkhorn,
+                return_diag=True,
+            )
+            # Optional Chamfer+MSE hybrid: add an index-aligned MSE term. Chamfer's
+            # nearest-match optimum is degenerate over within-patch permutations, so it
+            # gives no gradient toward the input-copying solution; this MSE term supplies
+            # that gradient (mandatory per-cell match), which collapses the low-noise loss
+            # toward 0 and steepens loss-vs-t. Target is x_start (already permuted if
+            # permute_mode!=none), so under permutation it rewards EQUIVARIANT copying.
+            if mse_hybrid_weight > 0.0:
+                mse_hybrid = _weighted_mse_flat(x_start, model_output)
+                # Optionally UPWEIGHT the MSE hybrid toward the LOW-NOISE regime (high
+                # t_value) with a linear ramp: w(t) = 1 + (mult-1)*t_value, so w=1 at the
+                # noisy end (t=0, full mse_hybrid_weight) ramping to w=mult at the clean
+                # end (t=1). mult=1 -> uniform across t (back-compat). Unlike a t**p
+                # downweight, this KEEPS the t=0 baseline and amplifies toward clean.
+                if mse_hybrid_lownoise_mult != 1.0:
+                    ln_w = 1.0 + (mse_hybrid_lownoise_mult - 1.0) * t_value.to(mse_hybrid.dtype)
+                    recon = recon + mse_hybrid_weight * ln_w * mse_hybrid
+                else:
+                    recon = recon + mse_hybrid_weight * mse_hybrid
+        else:
+            raise ValueError(
+                "recon_loss must be one of "
+                "mse|chamfer_feature|chamfer_geometric|chamfer_patch|sinkhorn_patch|"
+                "sinkhorn_patch_hard, "
+                f"got {recon_loss!r}"
+            )
+
+        # Key kept as "mse" for backward-compatible logging/keys downstream even
+        # when the term is actually a Chamfer loss (+ optional MSE hybrid).
         terms = {
-            "mse": mean_flat(sq_err),
+            "mse": recon,
         }
-        terms["loss"] = terms["mse"]
+        terms["loss"] = recon
         terms["pred_xstart"] = model_output
         terms["x_t"] = x_t
+        if mse_hybrid is not None:
+            terms["mse_hybrid"] = mse_hybrid  # raw (un-weighted-by-lambda) per-sample MSE term
+        if "sinkhorn_marginal_resid" in recon_diag:
+            # Scalar convergence monitor (mean |plan row-marginal − 1/M|); see _chamfer_recon_loss.
+            terms["sinkhorn_marginal_resid"] = recon_diag["sinkhorn_marginal_resid"]
+        if "sinkhorn_collision_frac" in recon_diag:
+            # Scalar bijection monitor for sinkhorn_patch_hard (argmax collision fraction).
+            terms["sinkhorn_collision_frac"] = recon_diag["sinkhorn_collision_frac"]
         return terms
 
     def q_posterior_mean_variance(self, x_start, x_t, t):

@@ -9,7 +9,7 @@
 # train_render_log_every 100, val_every 100, train_render_log_num_cam 1.
 
 # --- Model ---
-model: JiT-B/8
+model: JiT-B/8  # 2026-05-25 capacity test: same ramp4x low-noise-MSE setup on the larger model. REVERT to JiT-B/8 after.
 bottleneck: false
 predict_xstart: true
 noise_schedule: squaredcos_cap_v2
@@ -36,50 +36,138 @@ sh_degree0_only: true
 # Per-channel MSE weighting (14 DC channels): uniform — render schedule handles overall balance.
 
 # Training Setup
-epochs: 200
-batch_size: 128
+epochs: 200  # 2026-05-26: 200-epoch render run resuming from pmean_curriculum ckpt 0022000.pt.
+batch_size: 256  # micro-batch (per opt-substep). With grad_accum=2 -> EFFECTIVE batch 512. ~57GB footprint (proven from the bs512 run) so no OOM. 2026-05-30: from-scratch render-at-5k run; the eff-1024/ga4 + 2x-LR scaling experiment was reverted.
 ema_decay: 0.995
 
 # Optimizer parameters
-lr: 4e-4
+lr: 4e-4  # 2026-05-30: 1x LR for the FROM-SCRATCH render-at-5k run. The 2x-LR (8e-4) eff-1024 experiment was reverted — it sat at a ~30% higher recon floor (measured, matched render weight), evidence against linear-scaling here.
 betas: [0.9, 0.999]
-text_proj_lr: 4e-4
+text_proj_lr: 4e-4  # 2026-05-30: matched to base lr (1x regime). Was 8e-4 — a leftover from the reverted 2x-LR experiment.
 text_proj_betas: [0.9, 0.999]
 lr_schedule: cosine
 lr_warmup_steps: 200
 lr_min: 1e-6
-lr_cosine_total_steps: 0
+lr_cosine_total_steps: 99600  # 2026-05-30: ~= the full FROM-SCRATCH eff-512 horizon (epochs 200 x ~496 opt-steps/epoch = ~99,200 steps), so cosine decays fully to lr_min by run end. NOTE: this number is coupled to ga=2; at ga=4 (eff-1024) the run would be ~49.6k steps and this horizon would only half-decay the LR.
+# Optional engagement-warmup: list of [step, lr_scale] control points, linearly interpolated.
+# Used to cushion the optimizer when a new loss component engages — small steps during the
+# chaotic phase keep AdamW's moments from baking in bad directions. Values must be > 0.
+# When active, OVERRIDES any lr_scale set via --overrides_yaml.
+# lr_scale_schedule REMOVED 2026-05-30 (was [[22000, 0.2], [24000, 1.0]]). That was a render-at-22k
+# engagement cushion for a RESUMED run. For this FROM-SCRATCH render-at-5k run it would clamp steps
+# 0->22000 to 0.2x LR (see _p_mean_at_step: step <= first control point returns the first value),
+# crippling the cold-start bootstrap and the entire render ramp, then snap to full LR AFTER render is
+# fully engaged — backwards. lr_warmup_steps + the gradual render-weight ramp handle engagement; lr_scale
+# stays 1.0 throughout (overrides.yaml).
 
 # Diffusion parameters
-P_mean: -0.5
+P_mean: 0.0  # 2026-05-26: static neutral for the 200-epoch render run (terminated the 0.0->0.3 curriculum). Schedule disabled below.
 P_std: 1.5
+# Training timestep distribution: logitnormal (sigmoid(N(P_mean,P_std)), default) or
+# uniform (t_value ~ U(0,1) — equal mass on every noise level; P_mean/P_std ignored).
+timestep_dist: logitnormal
+# P_mean_schedule DISABLED 2026-05-26: terminated the 0.0->0.3 curriculum; static P_mean=0.0 above governs.
+# Previous schedule kept for reference:
+#   - [0, 0.0]
+#   - [14000, 0.0]
+#   - [44000, 0.3]
+
+# --- Reconstruction loss ---
+# mse              : index-aligned per-Gaussian MSE (default; depends on atlas ordering).
+# chamfer_feature  : pytorch3d.loss.chamfer_distance over all channels (permutation-invariant).
+# chamfer_geometric: knn_points xyz-matching + MSE on matched channels (permutation-invariant).
+# chamfer_patch    : bidirectional Chamfer WITHIN each chamfer_patch_size patch (pure-torch, no
+#                    pytorch3d; per-patch permutation-invariant). Middle ground that bounds a
+#                    splat's match to its patch + composes with permute_atlas=patch. ~63x cheaper.
+# feature/geometric require pytorch3d; all Chamfer modes reuse channel_loss_weights.
+recon_loss: sinkhorn_patch_hard
+# Scalar weight on the Chamfer term (no-op for mse). Hot-reloadable via overrides.yaml.
+# stock chamfer_feature is ~2*C larger than MSE (~28x for C=14 DC-only, ~118x for C=59).
+# 0.03 validated for C=14: weighted loss ~0.6 at init (~half MSE scale).
+# NOTE: chamfer_geometric (xyz-only matching) was tested 2026-05-22 and STALLS on this
+# dense atlas (overfit floor ~0.49 vs feature's 0.042) regardless of weight — dense-cloud
+# hard-NN local minima, not under-weighting. Don't switch to it without a k>1 soft-match fix.
+chamfer_loss_weight: 0.07  # 2026-05-26: 1.0 -> 0.07 (= 1/C=14). Sinkhorn (hard or soft) sums over C=14 channels, making its clean-end param-grad exactly 14x MSE-equivalent at unit weight (measured: jit/diag_grad_magnitude.py @ step 14k EMA). 0.07 normalizes the clean-end recon grad to MSE-equivalent so render losses (LPIPS/L1/alpha) can actually compete at the clean end.
+# Outer scalar on the recon return in total_loss (mse_loss * recon_loss_weight, then summed with
+# render_l1 / alpha_l1 / lpips). 1.0 = recon-on (default). 0.0 = RENDER-ONLY: recon still computes
+# (SinkColl/SinkResid/MSE keep logging) but contributes nothing to backward. Hot-reloadable.
+# 2026-05-28: 1.0 (recon ON) for the FINAL sinkhorn+render run. Render-only (0.0) was REJECTED:
+# both render-only runs collapsed to dark/formless samples — recon is the load-bearing anchor on
+# atlas opacity/scale/color statistics. See memory project_render_only_broken.
+recon_loss_weight: 1.0
+# Cap the Chamfer kNN search at this many *query* points per direction (no-op for mse).
+# Fresh uniform subset each step against the full target -> exact NN per query, unbiased
+# mean estimate. 0 = all 16384 points; 4096 ~= 2.2x faster, 8192 ~= 1.4x. Below ~2048 the
+# per-step plumbing (casts/copies) dominates, so gains flatten.
+chamfer_subsample: 4096
+# Patch side for recon_loss=chamfer_patch (loss matches WITHIN each chamfer_patch_size patch).
+# 0 => model patch_size (8). Smaller => less within-patch permutation freedom => steeper
+# loss-vs-t (P=1 == index-MSE). 4 chosen to force per-cell refinement that P=8 was too loose
+# to (see CLAUDE.md). Independent of the model patch (still 8); chamfer_subsample N/A here.
+# permute_atlas=patch auto-aligns its permute granularity to THIS value.
+chamfer_patch_size: 8
+# Backward (GT-as-query) Chamfer weight (1.0 = symmetric). The backward term is coverage/recall:
+# every GT Gaussian must have a nearby prediction. >1 upweights coverage to fight mode-collapse
+# and force every Gaussian to be represented somewhere — a SET-level lever (no per-cell/ordering
+# constraint), aligned with the set-fidelity objective. Hot-reloadable (overrides.yaml). Testing
+# whether this alone restores a reasonable loss-vs-t t-delta (mse_hybrid disabled to not confound).
+chamfer_rev_weight: 12.0
+# Chamfer+MSE hybrid: lambda on an index-aligned MSE term added on top of the Chamfer loss.
+# 2026-05-23: COLD-START BOOTSTRAP for from-scratch sinkhorn_patch. mse_hybrid_weight is the
+# starting magnitude (W0); mse_hybrid_warmup_steps linearly decays it W0 -> 0 over N steps then
+# holds 0. The index-MSE binds cell->target to break the symmetric mean-collapse trap that stalls
+# sinkhorn from scratch, then fades out leaving pure assignment. Testing whether a short co-train
+# sets the model up for sinkhorn better than 20k steps of pure-MSE pretraining.
+mse_hybrid_weight: 1.5
+mse_hybrid_warmup_steps: 1000
+mse_hybrid_lownoise_mult: 4.0  # 2026-05-25: UPWEIGHT index-MSE toward low noise — linear ramp w(t)=1+3*t_value (w=1 at t=0 baseline -> w=4 at t=1 clean). Effective clean weight = mse_hybrid_weight*4 = 12. Amplifies clean (vs the failed t**2 downweight which only suppressed elsewhere). 1.0 = uniform/off.
+sinkhorn_epsilon: 0.05
+sinkhorn_iters: 100  # 2026-05-25: 150->100 for throughput. For sinkhorn_patch_hard the argmax/hard-loss converges far faster than the soft plan; at 100/eps0.05 collision ~4.5% (vs 3.6% @150), still ~at the eps floor (~2%). Don't go below ~75. Watch SinkColl% (~4-5% healthy). Launch-time only (not hot-reloadable).
+# Atlas ordering augmentation (Chamfer-only): randomize the per-Gaussian ordering the
+# model sees each step so multi-step sampling on its own (non-canonical) output is in-dist.
+# patch = permute within each patch (kept for multi-step-sampling robustness); global = permute
+# all 16384; none = off. For recon_loss=chamfer_patch the permute granularity auto-aligns to
+# chamfer_patch_size (=4 here) so permutation stays within chamfer patches. ~sub-ms/step.
+# 2026-05-23: PATCH for the cold-start bootstrap run — matches the documented cold-start-collapse
+# condition (UPDATE3) and actually exercises sinkhorn's permutation-invariance (permute=none lets
+# sinkhorn degenerate to MSE-like at clean t, which would trivially "succeed").
+permute_atlas: patch
 
 # --- Render loss ---
 render_loss_weight: 8.0
 alpha_mask_loss_weight: 4.0
-lpips_loss_weight: 4.0
+lpips_loss_weight: 8.0  # 2026-05-26: 4.0->8.0 (doubled) to lean harder on the perceptual/coherence signal at the productive band.
 lpips_net: vgg # TODO
 # lpips | dinov2.
 perceptual_backend: vgg
-render_loss_num_cam: 4
+render_loss_num_cam: 2  # 2026-05-28: KEEP at 2 for the FINAL run (the perf win). Render cost ~ kept*num_cam; 4->2 ~halves render (est. ~+30% throughput, ~1.05->~1.4 sps). 2 cams preserves multi-view signal. See memory project_render_perf_budget.
 train_render_size: 224
+render_zoom_factor: 1.0  # 2026-05-26: zoom factor on the camera FOV (>1 = narrower FOV / object fills more of frame). At zoom=1 the gaussianverse objects fill ~20% of the rendered frame (bbox_fill measured via jit/measure_alpha_coverage.py), so ~80% of every render L1/LPIPS pixel is background diluting the loss-mean. Probe with --render_zoom_factor 1.6 or 2.0 before committing.
+# Per-(sample, camera) zoom table from data/build_per_sample_render_fov.py — tighter per-
+# object framing than the global render_zoom_factor can give without clipping. Composes
+# multiplicatively with render_zoom_factor; leave commented to use only the global zoom.
+per_sample_zoom_file: data/stats/per_sample_render_fov.pt  # 2026-05-26: enabled. Probe measured alpha_mean 0.154 -> 0.218 (1.45x signal density gain), clip_frac unchanged at 3.91%. Render-weight schedule below divided by 1.45 to keep gradient magnitudes ~constant; the change is in DIRECTION (cleaner LPIPS inputs, more pixels actually painting object).
 ref_camera_tar: /home/tiangexiang/gen3d/ref_camera.tar.gz
-enable_render_loss_after: 20000
+enable_render_loss_after: 5000  # 2026-05-30: FROM-SCRATCH run — render fires from step 5000 (schedule below ramps weights 0 -> max over 5k->15k). NOTE: this also gates overrides.yaml (all keys apply at step>=5000); audited consistent with main config, no silent flip.
 render_weight_schedule:
-  - [20000,  0.0, 0.0,  0.0 ]
-  - [40000,  8.0, 4.0, 4.0]
+  # 2026-05-30: render ramp for the FROM-SCRATCH eff-512 run. 5000->15000 = 10k steps x eff512 =
+  # 5.12M samples, sample-matched to the parent's render-engagement budget. COUPLED TO ga=2: if ga
+  # is bumped to 4 (eff-1024) this silently becomes a 10.24M-sample ramp (render under-engaged) — keep
+  # the endpoint in sync with ga. Columns: [step, render_l1, alpha_l1, lpips].
+  - [5000, 0.0, 0.0, 0.0]
+  - [15000, 5.5, 2.75, 5.5]
 # Hard mask on FM t_value: render loss only applies when t_value >= cutoffhttps://vscode-remote+ssh-002dremote-002b34-002e66-002e119-002e50.vscode-resource.vscode-cdn.net/home/hmolin/3DGen-Playground/output/jit_B8_20260429_042413/dit_validation/epoch_023_step_0023000_class001.png?version%3D1777438679927
 # (i.e. the clean fraction is >= cutoff). 0 disables the mask. Samples
 # below the cutoff are SLICED OUT before the render+LPIPS path runs, so
 # the cutoff doubles as a memory cap (lower cutoff → bigger render batch).
-render_loss_noise_cutoff: 0.8
+render_loss_noise_cutoff: 0.8  # 2026-05-28: 0.0 -> 0.8 for the FINAL run. Render fires only on the clean band (t>=0.8, ~22/128 samples); the sinkhorn recon covers the noisy band. Paired with num_cam=2 -> ~22*2=44 cam-renders/microbatch (vs render-only's 256) — the throughput win.
 train_render_log_every: 0
 train_render_log_num_cam: 4
 
 # --- Training ---
 
 mixed_precision: bf16
-gradient_accumulation_steps: 2
+gradient_accumulation_steps: 2  # batch_size 256 x ga 2 = EFFECTIVE batch 512. 2026-05-30: the ga=4 (eff-1024) scaling experiment was reverted. The render-ramp endpoint (15k) and lr_cosine horizon (99600) are both calibrated to ga=2 — keep them in sync if you change this.
 gradient_checkpointing: false
 compile: true
 # Diagnostic only: prints rolling per-phase step-time breakdown (data/h2d/fwd/
@@ -87,7 +175,7 @@ compile: true
 # phase, so totals are higher than non-profile runs — read the *ratios*. Off
 # for normal runs.
 profile_step_times: false
-max_grad_norm: 1.0
+max_grad_norm: 4.0  # 2026-05-26: 1.0 -> 4.0; with cw=0.07 the post-rebalance grad-norms were clipping every step at 1.0. Restart from ckpt 29000.
 num_workers: 10
 preload_to_cpu: false
 lazy_cache_to_cpu: true
@@ -101,21 +189,29 @@ seed: 0
 # Training uses JiT flow-matching noising (x_t = t*x_0 + (1-t)*eps, t=0 noise,
 # t=1 clean) via flow_matching_training_losses; heun/euler are the consistent
 # samplers. ddim/dpm/ddpm will produce garbage on FM checkpoints.
-log_every: 500
+log_every: 50
 grad_norm_log_every_n_prints: 10
-ckpt_every: 20000
-val_every: 5000
+ckpt_every: 1000
+val_every: 1000
+# Multi-step x0_renoise validation (permute_atlas=patch is on, so the model should tolerate
+# its own non-canonical output fed back across steps). Set to 1 for one-shot if permute=none.
 val_sampling_steps: 50
+# heun (deterministic PF-ODE, 2nd order). MEASURED 2026-05-24 (jit/diag_small_objects.py +
+# permutation_probe): deterministic samplers keep the atlas cell<->Gaussian map FROZEN across
+# steps (exact-match ~100%, 0 displacement after the first high-noise steps), so heun/euler do
+# NOT collapse — they render bigger + coherent (~40% of GT extent, no specks). x0_renoise instead
+# reshuffles ~60 cells/step AND contracts to ~20% extent via fresh-noise re-injection. So the
+# earlier "heun collapses under permutation" claim was wrong. Gate: {heun,euler,x0_renoise}.
 val_sampler: heun
-val_cfg_scale: 1.5
+val_cfg_scale: 2.0
 ddim_eta: 0.0
 # Fixed-seed prompt grid: tile i uses cond_pool[i] (validation prompts encoded
 # at startup) and initial noise seeded with (val_grid_seed + i). One fixed
 # camera per tile so cross-step diffs reflect model changes only.
-# Only supported for val_sampler in {heun, euler}.
+# Only supported for val_sampler in {heun, euler, x0_renoise}.
 val_grid_enabled: true
-val_grid_rows: 2
-val_grid_cols: 2
+val_grid_rows: 3
+val_grid_cols: 3
 val_grid_seed: 1234
 val_grid_camera_idx: 0
 # Optional JSON list of validation prompts. If unset, a 64-prompt default
