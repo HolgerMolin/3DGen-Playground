@@ -303,6 +303,32 @@ class TextEmbedder(nn.Module):
         return self.proj(pooled)
 
 
+class LabelEmbedder(nn.Module):
+    """A learnable AdaLN vector per class. ``nn.Embedding(num_classes + 1,
+    hidden_size)`` — the extra row (index ``num_classes``) is the CFG
+    null/unconditional embedding.
+
+    Same call signature as ``TextEmbedder`` (``forward(y, drop_ids)``) so
+    ``DiT.forward`` is shared: the caller passes ``y`` as a ``(B,)`` long tensor
+    of class ids and a ``(B,)`` bool ``drop_ids`` mask. CFG dropout maps the
+    dropped rows to the null index. The dropout probability itself is drawn by
+    ``DiT._draw_drop_ids`` (same as the text path), so this module is stateless
+    w.r.t. dropout.
+    """
+
+    def __init__(self, num_classes, hidden_size):
+        super().__init__()
+        self.num_classes = int(num_classes)
+        self.embedding_table = nn.Embedding(self.num_classes + 1, hidden_size)
+
+    def forward(self, y, drop_ids=None):
+        """y: (B,) long class ids; drop_ids: (B,) bool or None."""
+        y = y.long()
+        if drop_ids is not None:
+            y = torch.where(drop_ids, self.num_classes, y)
+        return self.embedding_table(y)
+
+
 #################################################################################
 #                                 Core JiT Model                                #
 #################################################################################
@@ -376,6 +402,7 @@ class DiT(nn.Module):
         mlp_ratio=4.0,
         class_dropout_prob=0.1,
         text_dim=768,
+        num_classes=None,
         learn_sigma=False,
         gradient_checkpointing=True,
         bottleneck_dim=128,
@@ -423,7 +450,13 @@ class DiT(nn.Module):
             )
         self.t_embedder = TimestepEmbedder(hidden_size)
         self.class_dropout_prob = class_dropout_prob
-        self.y_embedder = TextEmbedder(text_dim, hidden_size)
+        # Conditioning head: a learnable per-class AdaLN vector (LabelEmbedder)
+        # when ``num_classes`` is given, else the CLIP-pooled text projector.
+        self.num_classes = num_classes
+        if num_classes is not None:
+            self.y_embedder = LabelEmbedder(num_classes, hidden_size)
+        else:
+            self.y_embedder = TextEmbedder(text_dim, hidden_size)
         num_patches = self.x_embedder.num_patches
         # Will use fixed sin-cos embedding:
         self.pos_embed = nn.Parameter(torch.zeros(1, num_patches, hidden_size), requires_grad=False)
@@ -473,6 +506,12 @@ class DiT(nn.Module):
         # Initialize text-cond projection MLP (standard xavier from _basic_init
         # already ran; null_emb stays at zero by design).
 
+        # Initialize the per-class AdaLN embedding table (LabelEmbedder), if used.
+        # std=0.02 matches the DiT label-embedding convention (and the t_embedder
+        # init below) so the class signal starts on the same scale as time.
+        if isinstance(self.y_embedder, LabelEmbedder):
+            nn.init.normal_(self.y_embedder.embedding_table.weight, std=0.02)
+
         # Initialize timestep embedding MLP:
         nn.init.normal_(self.t_embedder.mlp[0].weight, std=0.02)
         nn.init.normal_(self.t_embedder.mlp[2].weight, std=0.02)
@@ -514,7 +553,12 @@ class DiT(nn.Module):
         ``null_token``: (1, text_dim) or (text_dim,) tensor — the EOS-position
         token of the penultimate-normed empty-string CLIP encoding (i.e. the
         contents of `null_text_token.npz['null_token']`).
+
+        No-op for class conditioning: LabelEmbedder carries its own learnable
+        null row (index ``num_classes``), so there is nothing to load.
         """
+        if not isinstance(self.y_embedder, TextEmbedder):
+            return
         nt = null_token.detach().to(self.y_embedder.null_emb.dtype).reshape(-1)
         if nt.numel() != self.y_embedder.null_emb.numel():
             raise ValueError(

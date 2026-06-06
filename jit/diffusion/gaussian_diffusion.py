@@ -149,7 +149,7 @@ def _resolve_sinkhorn(compiled: bool):
 def _chamfer_recon_loss(pred, target, mode, channel_loss_weights=None, weight=1.0,
                         subsample=0, patch_size=8, rev_weight=1.0,
                         sinkhorn_eps=0.05, sinkhorn_iters=50, return_diag=False,
-                        compile_sinkhorn=False):
+                        compile_sinkhorn=False, huber_delta=0.0, residual_mad=False):
     """Permutation-invariant reconstruction loss over the per-Gaussian point set.
 
     ``pred`` / ``target`` are atlas tensors ``(B, C, H, W)``. Chamfer/kNN matching is
@@ -197,11 +197,28 @@ def _chamfer_recon_loss(pred, target, mode, channel_loss_weights=None, weight=1.
     ``rev_weight=1`` is the symmetric Chamfer; ``>1`` upweights coverage (fights
     mode-collapse, pushes the model to represent every GT Gaussian somewhere).
 
+    ``huber_delta`` (>0) robustifies the within-patch ground cost (``chamfer_patch`` /
+    ``sinkhorn_patch`` / ``sinkhorn_patch_hard``) with a pseudo-Huber on the pair radius
+    ``r=‖x−y‖``: ``cost = 2δ²(√(1+r²/δ²)−1)`` — quadratic (= squared-L2) for inliers,
+    linear (``2δr``) for outliers, so a few large-residual pairs stop dominating the
+    assignment and the gradient. ``δ`` is the residual radius where quad bends to linear;
+    the ``2δ²`` scaling fixes the inlier scale to the squared cost (so ``weight`` stays
+    calibrated) and ``δ→∞`` recovers the exact squared cost. ``0`` (default) = off
+    (bit-identical squared-L2). No-op for the ``feature``/``geometric`` modes.
+
+    ``residual_mad`` (diagnostic, ``return_diag`` only): when set, report the robust scale
+    of the matched-residual radius ``r=‖pred−tgt_σ(i)‖`` for the ``sinkhorn`` modes —
+    ``median``, ``MAD = median(|r−median r|)``, ``p90`` and ``p99`` of ``r`` — measured on
+    the RAW (pre-huber) cost so the numbers are the natural residual scale, in the same
+    units as ``huber_delta``. Lets a ``huber_delta=0`` run inform a principled ``δ`` (e.g.
+    ``δ ≈ median + k·MAD``). No-op for the ``feature``/``geometric``/``chamfer_patch`` modes.
+
     Returns a per-sample tensor ``(B,)`` (un-reduced over batch so downstream
     t-bucketing / logging still works), already scaled by ``weight``. When
     ``return_diag=True`` returns ``(loss, diag)`` instead, where ``diag`` is a dict of
-    scalar tensors (currently ``sinkhorn_marginal_resid`` for ``sinkhorn_patch`` — the
-    Sinkhorn convergence monitor); empty for the other modes.
+    scalar tensors (``sinkhorn_marginal_resid`` for ``sinkhorn_patch`` — the Sinkhorn
+    convergence monitor — and ``recon_residual_{median,mad,p90,p99}`` when
+    ``residual_mad``); empty for the other modes.
     """
     def _ret(loss, diag=None):
         return (loss, diag or {}) if return_diag else loss
@@ -316,6 +333,29 @@ def _chamfer_recon_loss(pred, target, mode, channel_loss_weights=None, weight=1.
         bb = yp.pow(2).sum(-1)                       # (B, nP, M)
         ab = xp @ yp.transpose(-1, -2)              # (B, nP, M, M)
         sq = (aa.unsqueeze(-1) + bb.unsqueeze(-2) - 2 * ab).clamp_min(0)  # (B, nP, M, M)
+        # Keep a handle on the RAW (pre-huber) squared distances so the residual-MAD
+        # diagnostic always reports the natural residual radius r=√sq, in the same units
+        # as `huber_delta`, regardless of whether the huber transform is applied below.
+        # When huber_delta==0 (the intended diagnostic run) the transform is a no-op, so
+        # sq_raw is exactly the matched cost. (Just a tensor reference — no copy; the huber
+        # block rebinds `sq` to a new tensor, leaving sq_raw pointing at the original.)
+        sq_raw = sq
+        if huber_delta and huber_delta > 0.0:
+            # Pseudo-Huber on the per-pair radius r=‖x−y‖ (r²=sq): robustifies the ground
+            # cost so a few large-residual pairs (bad matches / high-noise outliers) stop
+            # dominating both the OT assignment AND (via the hard gather / soft <P,sq>) the
+            # gradient. Reusing the name `sq` makes every downstream consumer use the robust
+            # cost. A single elementwise map of the (B,nP,M,M) sq tensor — keeps the Gram-form
+            # memory trick (no (B,nP,M,M,C) broadcast) and stays outside the compiled Sinkhorn
+            # loop (changing δ never recompiles). The 2δ² scaling fixes the INLIER scale to sq:
+            #   small r → sq (= MSE cost, so chamfer_loss_weight stays calibrated)
+            #   large r → 2δ·r (linear ⇒ bounded gradient δ/√sq)
+            #   δ → ∞ recovers sq exactly. grad d/dsq = 1/√(1+sq/δ²) ∈ (0,1], smooth at r=0.
+            # Use the rationalized form 2δ²(√(1+u)−1) = 2·sq/(√(1+u)+1), u=sq/δ², which is
+            # algebraically identical but free of the √(1+u)−1 catastrophic cancellation that
+            # underflows to 0 (instead of → sq) for large δ in fp32.
+            d2 = huber_delta * huber_delta
+            sq = 2.0 * sq / ((1.0 + sq / d2).sqrt() + 1.0)
         patch_diag = {}
         if mode == "chamfer_patch":
             fwd = sq.min(dim=-1).values              # pred  -> nearest in-patch target
@@ -351,6 +391,21 @@ def _chamfer_recon_loss(pred, target, mode, channel_loss_weights=None, weight=1.
                         col_counts.scatter_add_(-1, sigma, th.ones_like(row))
                         extra = (col_counts - 1.0).clamp_min(0).sum(dim=-1)  # duplicate picks per patch
                         patch_diag["sinkhorn_collision_frac"] = (extra / M).mean()
+                    if residual_mad:
+                        # Robust scale of the matched-residual RADIUS r=‖pred−tgt_σ(i)‖ (r²=sq_raw
+                        # at the assigned target) — the exact quantity huber_delta thresholds. Use
+                        # the hard argmax assignment in BOTH sinkhorn modes (the soft plan has no
+                        # single match) and gather from the RAW (pre-huber) cost so the number is
+                        # the natural residual scale regardless of huber_delta. median/MAD/p90/p99
+                        # over the whole micro-batch point set; the window mean is taken upstream.
+                        sig = sigma if mode == "sinkhorn_patch_hard" else P.argmax(dim=-1)
+                        r = sq_raw.gather(-1, sig.unsqueeze(-1)).squeeze(-1).clamp_min(0).sqrt().reshape(-1)
+                        med = r.median()
+                        patch_diag["recon_residual_median"] = med
+                        patch_diag["recon_residual_mad"] = (r - med).abs().median()
+                        qs = th.quantile(r, th.tensor([0.9, 0.99], device=r.device, dtype=r.dtype))
+                        patch_diag["recon_residual_p90"] = qs[0]
+                        patch_diag["recon_residual_p99"] = qs[1]
             if mode == "sinkhorn_patch_hard":
                 # HARD assignment: MSE to the single argmax-matched target (DETR-style hard
                 # matching). σ is detached, so the gradient is a crisp per-pred MSE toward
@@ -665,6 +720,8 @@ class GaussianDiffusion:
         sinkhorn_eps=0.05,
         sinkhorn_iters=50,
         compile_sinkhorn=False,
+        huber_delta=0.0,
+        residual_mad_diag=False,
         permute_mode="none",
         permute_patch_size=8,
         skip_recon=False,
@@ -783,6 +840,8 @@ class GaussianDiffusion:
                 sinkhorn_eps=sinkhorn_eps,
                 sinkhorn_iters=sinkhorn_iters,
                 compile_sinkhorn=compile_sinkhorn,
+                huber_delta=huber_delta,
+                residual_mad=residual_mad_diag,
                 return_diag=True,
             )
             # Optional Chamfer+MSE hybrid: add an index-aligned MSE term. Chamfer's
@@ -827,6 +886,11 @@ class GaussianDiffusion:
         if "sinkhorn_collision_frac" in recon_diag:
             # Scalar bijection monitor for sinkhorn_patch_hard (argmax collision fraction).
             terms["sinkhorn_collision_frac"] = recon_diag["sinkhorn_collision_frac"]
+        # Residual-radius diagnostics (opt-in via --log_residual_mad) for choosing huber_delta.
+        for _k in ("recon_residual_median", "recon_residual_mad",
+                   "recon_residual_p90", "recon_residual_p99"):
+            if _k in recon_diag:
+                terms[_k] = recon_diag[_k]
         return terms
 
     def q_posterior_mean_variance(self, x_start, x_t, t):

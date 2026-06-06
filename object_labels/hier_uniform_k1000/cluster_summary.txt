@@ -1,0 +1,1006 @@
+Hierarchical dual-coherent taxonomy: 999 real classes + misc, N=254,337
+real-class sizes: {'k': 999, 'total': 241620, 'min': 128, 'max': 449, 'mean': 241.86186186186185, 'median': 235.0, 'std': 59.89965697600262, 'cv': 0.24766061302469422, 'p10': 165, 'p90': 325}
+misc size: 12,717 (5.0%)
+coherence (mean over real classes): visual=0.724 caption=0.779
+
+   cid  size  vcoh  tcoh  name                     ~imagenet          examples
+  --------------------------------------------------------------------------------------------------------------------
+     0   449 0.762 0.822  sword                    scabbard           A set of six sleek and polished black kitc | A traditional Japanese samurai sword with 
+     1   418 0.696 0.671  table                    dining table       A red and white checkered tablecloth on a  | A small round table with a brown cloth cov
+     2   382 0.793 0.763  humanoid robot           sulphur-crested co A small yellow Lego figure with a blocky a | A humanoid figure with a tall, narrow, yel
+     3   382 0.819 0.806  moss covered             rock beauty        A rocky outcrop with patches of vegetation | A rocky cliff face with moss and vegetatio
+     4   381 0.858 0.758  spider man               red-breasted merga A 3D model of a man in a red and black str | A realistic 3D model of a man wearing a re
+     5   379 0.611 0.736  robot                    red wine           A small red and white spaceship or jet, re | A red pair of headphones.
+     6   379 0.801 0.862  table#2                  dining table       A versatile and functional rectangular woo | A well-crafted and sturdy wooden table wit
+     7   378 0.800 0.805  bust                     mask               A white bust sculpture of a man with a mus | A unique, white sculpture of a human head 
+     8   377 0.662 0.660  base                     green snake        A green and white striped umbrella with a  | A white tennis racket with a long handle, 
+     9   375 0.868 0.900  irregularly shaped       rock beauty        A brownish fossilized leaf with a distinct | A large, irregularly shaped gray rock with
+    10   375 0.821 0.690  pickup truck             passenger car      A weathered brown pickup truck with a red  | A white and brown semi-truck with a box-li
+    11   374 0.687 0.859  box                      crate              A white rectangular box with a fan and gri | A white wooden crate or box with a rectang
+    12   373 0.863 0.900  rock                     rock beauty        A grayish, rough-textured rock with an irr | A smooth, rounded gray stone with natural 
+    13   371 0.724 0.684  girl                     gown               A realistic and detailed representation of | A realistic and detailed white plastic fem
+    14   370 0.668 0.782  cube                     honeycomb          A gray polyhedron with five irregular pent | A wireframe of a cube within a cube, conne
+    15   370 0.712 0.800  tree                     broccoli           A detailed and realistic green pine tree w | A small, ornamental 3D object of a white t
+    16   369 0.657 0.777  skyscraper               water tower        A tall, cylindrical water tower. | Monochrome, simplistic representation of a
+    17   369 0.655 0.747  nintendo wii             joystick           A white Sony PlayStation controller with t | A video game controller with two grips, bu
+    18   368 0.718 0.740  bulldozer                tow truck          Yellow Lego construction truck with wheels | A yellow and black diesel locomotive with 
+    19   368 0.828 0.779  world war                warplane           A German Stuka dive bomber from World War  | A white single-engine propeller plane with
+    20   367 0.784 0.707  character                bonnet             Animated character resembling a monkey wit | A small, cute, and colorful cartoon charac
+    21   366 0.745 0.851  plank                    crate              A flat and rectangular wooden plank with a | A rectangular brown wooden plank with a na
+    22   366 0.733 0.882  sword#2                  file               A sword. | A sword with a small yellow button.
+    23   366 0.784 0.864  table#3                  dining table       A rectangular table with a flat top surfac | A visually appealing and modern wooden cof
+    24   366 0.696 0.768  sailboat                 schooner           A small white and blue sailboat with a sle | A detailed and realistic blue and white sa
+    25   364 0.769 0.738  stuffed animal           flamingo           A small, cute, cartoon-like pink pig with  | A pink pig figurine with hand-drawn facial
+    26   361 0.673 0.742  tower                    water tower        A clock tower with a clock face and a bird | A tall, cylindrical stone tower with a fla
+    27   361 0.769 0.678  cat                      wood rabbit        A stylized white rabbit character with bla | A cartoon wolf wearing a Hawaiian shirt.
+    28   360 0.759 0.801  building                 church             A multi-story modern building with extensi | A small, rectangular building with a flat 
+    29   359 0.659 0.734  sculpture                white wolf         A small, white dog figurine with a distinc | A realistic and detailed white wolf sculpt
+    30   359 0.824 0.853  gun                      rifle              A handgun. | A white gun and a knife.
+    31   358 0.887 0.860  rifle                    rifle              A black and red assault rifle with a red d | A black AR-15 rifle (M4 Carbine).
+    32   358 0.737 0.729  lifelike                 brown bear         A detailed, realistic 3D representation of | A lifelike representation of a small brown
+    33   358 0.609 0.732  cylindrical              barrel             A black camera with a cylindrical lens and | A sleek, metallic toy rocket launcher with
+    34   358 0.799 0.679  silhouette               abaya              A woman with long hair wearing a black dre | A small white hoodie with a black "P" logo
+    35   358 0.695 0.824  rock#2                   white wolf         White soccer ball. | White mushroom
+    36   356 0.777 0.705  lifelike#2               upright            A small plastic figure of a man in a dynam | A detailed and realistic representation of
+    37   356 0.790 0.772  irregularly shaped#2     stone wall         A rough, irregularly shaped terrain patch  | A ground surface area featuring gravel and
+    38   355 0.859 0.687  man                      military uniform   A male figure wearing a red long-sleeve sh | A person in a red suit with a backpack and
+    39   355 0.691 0.780  chessboard               crossword puzzle   A miniature wooden chessboard with a grid  | A black-and-white checkered chessboard.
+    40   354 0.718 0.819  bench                    park bench         A wooden bench with a rectangular shape, b | A long bench with eight connected seats fe
+    41   353 0.764 0.862  irregularly shaped#3     rock beauty        Rough-textured, curved object with a weath | A large, rectangular brown rock with a fla
+    42   353 0.622 0.774  sports car               lemon              Yellow Volkswagen Beetle. | A small, yellow electric bike.
+    43   352 0.769 0.720  weathered                stone wall         A unique and organic stone sculpture with  | A moss-covered stone head monument with a 
+    44   352 0.840 0.832  rifle#2                  rifle              A detailed and realistic brown and green r | A pair of well-crafted and detailed rifles
+    45   352 0.636 0.779  cylindrical#2            missile            An industrial pump system with a curved pi | A camouflaged portable rocket launcher wit
+    46   351 0.815 0.845  tree stump               pedestal           A wooden tree stump with a flat top and ho | A brown tree stump, partially buried in th
+    47   350 0.841 0.858  rifle#3                  rifle              A gun. | Black silhouettes of a gun and a knife.
+    48   350 0.750 0.846  base#2                   file               A set of flat, angled shapes including a l | A rectangular electronic device with multi
+    49   349 0.803 0.793  rock formation           rock beauty        A visually appealing and eye-catching gray | A unique and visually appealing rock forma
+    50   348 0.751 0.849  house                    barn               A creatively designed wooden structure res | A small rectangular wooden building with a
+    51   348 0.781 0.824  fossilized bone          mushroom           A weathered, curved bone with a rough and  | A long, curved, white bone with a rough te
+    52   347 0.684 0.775  spaceship                space shuttle      A pair of futuristic, streamlined spacecra | A large white and silver airship, resembli
+    53   347 0.738 0.757  dinosaur toy             green lizard       A detailed and realistic human skeleton mo | A small, realistic and vibrant green parro
+    54   346 0.667 0.816  bookshelf                bookcase           A wooden display stand with a black base,  | A rectangular wooden shelf with multiple s
+    55   346 0.621 0.750  bicycle                  white wolf         Monochromatic white key with a distinct ja | White acoustic guitar
+    56   346 0.756 0.735  rubber duck              banana             A cartoon-like chicken with a yellow body  | A small, round, yellow rubber duck with a 
+    57   346 0.673 0.758  box#2                    crate              A white rectangular box with a protruding  | A small white house-shaped object with a u
+    58   345 0.799 0.833  weathered#2              wooden spoon       A visually striking and unique sculpture o | A brown, rough-textured log or piece of wo
+    59   344 0.731 0.752  cylindrical container    barrel             A yellow plastic bucket with a cylindrical | A large yellow cylindrical jar with a text
+    60   344 0.644 0.777  banana                   lemon              A detailed and realistic representation of | A large, bright yellow pumpkin with a roun
+    61   344 0.759 0.767  teddy bear               brown bear         A small, brown stuffed animal with a round | A brown teddy bear with a stuffed appearan
+    62   342 0.615 0.747  ball                     tennis ball        A green circular base with a black abstrac | A small, round, green-colored mushroom wit
+    63   342 0.674 0.806  chair                    rocking chair      A red leather chair with a curved backrest | A large, round, gray bean bag chair design
+    64   341 0.673 0.773  cannon                   cannon             A rustic wooden cart with two large spoked | A historical wooden cannon with a brown co
+    65   341 0.678 0.837  box#3                    crate              A rectangular wooden block with a brown co | A set of three rectangular wooden crates, 
+    66   341 0.759 0.848  cabinet                  wardrobe           A sleek and modern wooden cabinet with a g | A four-door wooden wardrobe with two centr
+    67   340 0.705 0.766  cardboard box            crate              A simple matte brown cardboard box with fl | A small brown leather ottoman with a woode
+    68   340 0.688 0.830  bottle                   toilet tissue      White balloon. | A glass of white wine.
+    69   339 0.730 0.762  slim                     remote control     A sleek and modern black keyboard with a s | A handheld black and white calculator with
+    70   339 0.851 0.910  well crafted             scabbard           A well-crafted and detailed fantasy sword  | Sword icon in black and white
+    71   338 0.787 0.762  mural                    stone wall         Segment of a concrete barrier with graffit | An urban street structure featuring graffi
+    72   337 0.708 0.837  box#4                    crate              Two wooden crates on a checkered floor. | A rectangular wooden tray with raised edge
+    73   337 0.813 0.766  statue                   pedestal           A bronze statue of a woman holding a sword | A weathered stone statue of a robed figure
+    74   336 0.774 0.869  axe                      hatchet            A brown wooden stick with a pointed tip, s | A wooden hammer with a brown color, rectan
+    75   336 0.841 0.908  well crafted#2           scabbard           A sword with an orange handle. | A medieval sword with a long, curved blade
+    76   336 0.817 0.690  woman                    miniskirt          A cute, cartoon-style girl with long pink  | A stylized female character with long dark
+    77   336 0.818 0.861  irregularly shaped#4     rock beauty        A small, light-colored sandstone rock with | A large, unique-shaped rock with a pointed
+    78   335 0.637 0.719  traffic cone             orange             A damaged yellow and orange traffic cone w | A traffic cone with an orange and white st
+    79   335 0.775 0.839  sword#3                  scabbard           A medieval sword with a long, curved blade | A metallic sword with a long, straight bla
+    80   335 0.725 0.785  vase                     vase               A decorative ceramic vase covered with num | A white, intricately patterned ceramic gob
+    81   333 0.604 0.723  visually appealing       confectionery      A small, colorful woven wicker basket with | A colorful puzzle-like cup with a grid pat
+    82   333 0.633 0.723  rusty                    cannon             A dark brown cylindrical pipe with a curve | A mechanical contraption featuring a ruste
+    83   333 0.721 0.682  snowman                  red-breasted merga A low-poly snowman with two white snowball | A small, chubby hamster with a round body,
+    84   333 0.680 0.750  frame                    screen             A rectangular wooden frame with a natural  | A rectangular blackboard or chalkboard wit
+    85   333 0.891 0.773  woman#2                  miniskirt          A slender, curvy female character with lon | A 3D model of a woman wearing a straw hat,
+    86   332 0.802 0.862  military tank            tank               A detailed and accurate representation of  | A green, armored tank with a boxy shape, a
+    87   332 0.602 0.764  vase#2                   vase               A vase with daisies in it. | A blue glass vase with a unique and intric
+    88   331 0.741 0.820  house#2                  church             A small house with a tree. | A small house with a pitched roof, chimney
+    89   330 0.795 0.822  human skull              football helmet    Stylized, roughly textured skull with pron | A white, detailed and realistic human skul
+    90   330 0.723 0.723  circular                 manhole cover      A round wooden shield with alternating red | A round shield made of wood or stone-like 
+    91   330 0.690 0.719  pair                     black swan         A sleek and modern black leather jacket wi | A sleek and modern black leather jacket wi
+    92   329 0.599 0.849  irregularly shaped#5     file               An irregularly shaped object with a draped | Abstract object with a broad base that nar
+    93   327 0.710 0.782  human head               mask               A white, intricately detailed and realisti | A detailed and textured 3D object of a hea
+    94   326 0.756 0.748  toy car                  go-kart            A small, pink and black toy car with a sku | A small green and brown military-inspired 
+    95   326 0.849 0.903  irregularly shaped#6     rock beauty        A large, irregularly shaped rock with a ro | A pair of small, pink rocks with a distinc
+    96   326 0.652 0.726  box#5                    crate              A unique and intricate house model made of | A partially opened matchbox with several w
+    97   325 0.837 0.806  statue#2                 pedestal           Marble statue of a cherub with intricately | A detailed and intricate white plaster sta
+    98   325 0.702 0.761  table#4                  dining table       A table featuring a bottle of wine and two | A small wooden kitchen table with a rectan
+    99   325 0.782 0.799  house#3                  barn               A small white building with a rectangular  | A small white rectangular building with a 
+   100   325 0.723 0.669  box#6                    crate              An open, brown hardcover book with a red c | A rectangular cardboard Vans shoe box with
+   101   324 0.734 0.735  tree#2                   pineapple          A low-poly snowman with a top hat and a ye | A low poly green and yellow cactus with fl
+   102   324 0.748 0.845  cabinet#2                entertainment cent A wooden rectangular sideboard with a slid | A sleek and modern black rectangular woode
+   103   323 0.713 0.787  slim#2                   television         A compact remote control with rounded edge | A sleek and slim black laptop with an inte
+   104   323 0.607 0.721  circular#2               car wheel          A small, round, gray clock with a white fa | A wristwatch with a round face and a wide 
+   105   323 0.700 0.760  computer tower           desktop computer   A white desktop computer with a rectangula | A rectangular computer monitor with a blac
+   106   322 0.855 0.841  rifle#4                  rifle              Military-style bolt-action rifle with a wo | A green and brown military-style rifle wit
+   107   322 0.633 0.811  cylindrical#3            file               A modular assembly consisting of a curved  | Two small objects featuring a rectangular 
+   108   322 0.752 0.722  character#2              wood rabbit        A simple, stylized panda figure with a whi | A small green cartoon-like frog with a smi
+   109   321 0.754 0.809  table#5                  desk               A black and white desk with two legs and a | A rectangular wooden table with a brown wo
+   110   320 0.809 0.872  block                    stone wall         A small, white, rectangular-shaped rock ma | A small, solid gray rectangular stone with
+   111   320 0.677 0.827  toilet                   toilet tissue      White toilet | White tombstone-shaped object.
+   112   320 0.760 0.766  military truck           trailer truck      An ambulance compatible with various anima | A red double-decker bus with two levels, a
+   113   320 0.795 0.863  chair#2                  rocking chair      A small wooden chair with a brown seat. | A wooden rocking chair with a curved backr
+   114   319 0.672 0.808  box#7                    crate              A dark brown rectangular toolbox with a fl | A vintage wooden cabinet with a rectangula
+   115   318 0.650 0.713  crab                     rock crab          A detailed and realistic brown crab with l | A red and black crab-like creature with a 
+   116   318 0.599 0.816  crate                    crate              A wooden wagon with wheels and a handle. | A wooden wagon with wheels and a wooden cr
+   117   318 0.711 0.780  collection               web site           A group of grass-like elements resembling  | Composed of several small, irregularly sha
+   118   318 0.664 0.742  arcade game              desktop computer   A rectangular Nintendo Game Boy box with a | A yellow rectangular arcade game machine w
+   119   318 0.709 0.808  pair#2                   sunglass           A pair of black rectangular sunglasses wit | A pair of yellow eyeglasses.
+   120   318 0.780 0.805  fossilized bone#2        mushroom           A white curved finger bone with a rough te | A unique and weathered fossilized object w
+   121   317 0.731 0.835  chair#3                  rocking chair      A sleek and modern blue chair with a curve | A black leather chair with a curved backre
+   122   317 0.761 0.707  character#3              green snake        A stylized, muscular humanoid figure with  | A small, green cartoon-like character with
+   123   316 0.744 0.743  creature                 ice bear           A small blue dinosaur with a unique shape, | Stylized digital fantasy creature with sim
+   124   316 0.748 0.777  sphere                   ping-pong ball     A detailed, blue and white spherical model | A blue and white miniature globe with a de
+   125   315 0.871 0.761  man#2                    military uniform   A detailed and realistic 3D model of a man | A colorful and detailed 3D model of a youn
+   126   315 0.640 0.668  cylindrical hand         green snake        A cylindrical hand grenade with a green an | A small orange pumpkin with a white skull 
+   127   315 0.784 0.758  sculpture#2              mask               A bust sculpture of a person with an afro  | A weathered bust of a man's head made of b
+   128   315 0.800 0.835  weathered#3              wooden spoon       A small, round, hollowed-out piece of wood | A unique, brown and black object with a cu
+   129   314 0.672 0.757  staircase                bannister          A steel scaffolding tower structure with s | A visually appealing, small-scale pink and
+   130   313 0.761 0.796  sports car#2             fire engine        A red and black vintage car. | A red train.
+   131   313 0.621 0.788  ladder                   wooden spoon       A pipe with a wooden handle. | Wooden stick
+   132   313 0.778 0.782  fish                     goldfish           A slender fish with a broad, flat head, sm | A dark-colored fish with a broad, flattene
+   133   313 0.690 0.718  mask                     mask               A stylized, round animal head resembling a | A decorative eye mask with pointed edges a
+   134   313 0.705 0.772  helmet                   football helmet    A red Star Wars helmet. | A detailed and realistic representation of
+   135   313 0.730 0.856  base#3                   file               A flat, rectangular base with a smaller re | A complex, irregularly shaped block struct
+   136   313 0.790 0.811  humanoid robot#2         desktop computer   A small white and gray robotic dog with a  | A small red and black robot with a unique 
+   137   313 0.802 0.749  humanoid robot#3         brown bear         A dark humanoid animatronic figure with re | A detailed and realistic representation of
+   138   312 0.578 0.777  acoustic guitar          file               A Celtic stone cross. | Black metal cross
+   139   312 0.764 0.818  couch                    studio couch       A sleek and modern gray sectional sofa wit | A unique shaped brown leather couch with a
+   140   311 0.581 0.830  cylindrical#4            barrel             A smooth, rounded, slightly flattened cyli | A pair of white rings with curved surfaces
+   141   311 0.773 0.720  sphere#2                 soccer ball        A large, yellow sphere with a unique textu | A large round ball with a unique design th
+   142   311 0.631 0.736  pair#3                   radio              A sleek and sophisticated black wristwatch | A black camera with a cylindrical shape an
+   143   310 0.709 0.696  character#4              sulphur-crested co A round, cartoonish character with large p | A cartoonish blue car with red wheels and 
+   144   310 0.724 0.780  fish#2                   tiger shark        A detailed and realistic 3D representation | A realistic and detailed 3D model of a gra
+   145   310 0.737 0.794  building#2               church             A small, intricately designed gingerbread  | A small enclosed room with colorful coats 
+   146   309 0.618 0.716  vase#3                   brass              A golden top hat with a tall, curved top a | A black cylindrical hand grenade with a go
+   147   309 0.773 0.816  house#4                  barn               A unique wooden house with a distinctive d | A rustic wooden gazebo with a rectangular 
+   148   309 0.709 0.798  brick wall               stone wall         An architectural ruin featuring fragmented | A sturdy and durable rectangular stone or 
+   149   309 0.798 0.807  skull                    mask               White skull with prominent eye sockets, na | A cream-colored skull, possibly canine, fe
+   150   309 0.680 0.721  figurine                 pedestal           A small detailed figurine of a soldier sit | A small figurine of a man holding a detail
+   151   309 0.827 0.816  sonic                    echidna            A cute and friendly white and blue cartoon | A blue hedgehog with a spiky back, round b
+   152   309 0.824 0.845  office chair             rocking chair      A sleek and modern black office chair with | A sleek and modern gray recliner chair wit
+   153   309 0.818 0.858  human skull#2            mask               A stylized animal skull with prominent eye | A white human skull.
+   154   308 0.642 0.715  visually appealing#2     confectionery      A decorative stained glass window, likely  | A colorful, trapezoidal handbag with two d
+   155   308 0.730 0.803  desk                     desk               A wooden table with a rectangular shape, b | A brown rectangular wooden table with a fl
+   156   308 0.771 0.681  plate                    pizza              A rectangular slice of pizza with a thin,  | A large, well-cooked steak, covered in bro
+   157   308 0.776 0.776  car                      passenger car      A sleek and modern black police car with a | A sleek and modern white and blue police c
+   158   307 0.608 0.777  ball#2                   ping-pong ball     A small, round, white sphere sitting on a  | A visually appealing, small, round, black 
+   159   307 0.654 0.741  pair#4                   brown bear         A unique brown leather bracelet with a cur | A torn and crumpled white piece of paper w
+   160   307 0.906 0.780  man#3                    groom              A realistic and detailed 3D representation | A detailed and realistic 3D model of a sli
+   161   307 0.809 0.799  irregularly shaped#7     rock beauty        A unique and interesting brown rock with a | A roughly spherical stone with a multiface
+   162   307 0.729 0.795  brick building           barn               A small, rectangular red brick house with  | A small, old-fashioned brick house with a 
+   163   306 0.743 0.643  weathered#4              street sign        A large, colorful rectangular promotional  | A narrow outdoor alley with concrete pavem
+   164   306 0.696 0.785  spaceship#2              space shuttle      A white race car with a sleek and aerodyna | A steampunk-inspired airship with a large 
+   165   306 0.748 0.831  castle                   castle             A beige castle-like structure with multipl | A detailed and accurate model of a castle 
+   166   305 0.830 0.857  bowl                     pot                A large, round brown bowl with a curved sh | A brown handmade clay bowl with a unique c
+   167   305 0.723 0.812  chair#4                  rocking chair      A simple wooden chair with a minimalist de | A wooden chair with a unique and intricate
+   168   305 0.737 0.804  door                     sliding door       A metallic futuristic door with a sleek, m | A weathered and aged wooden door with a re
+   169   305 0.637 0.756  robot#2                  file               A small white and blue toy airplane. | A low-poly blue amphibian or reptile, poss
+   170   305 0.756 0.792  brick building#2         barn               An old, abandoned factory with a distincti | A distinctive brown brick building with a 
+   171   304 0.713 0.723  figurine#2               military uniform   A small yellow and blue Lego minifigure in | A small, round-headed robot or toy soldier
+   172   304 0.762 0.845  building#3               church             A white metal building with a roof. | A detailed and accurate representation of 
+   173   304 0.761 0.752  sculpture#3              white wolf         A small white stuffed rabbit toy with a cu | A delicate and detailed white angel figuri
+   174   304 0.759 0.806  humanoid robot#4         desktop computer   A white humanoid robot with a cylindrical  | A blue humanoid robot toy with a unique an
+   175   304 0.696 0.743  cart                     trailer truck      Three miniature buses positioned on small  | Two black police SUVs with emergency light
+   176   304 0.642 0.767  box#8                    file               A large, sleek and modern white rectangula | A small white rectangular box with a green
+   177   303 0.732 0.750  statue#3                 pedestal           A detailed and intricate stone statue of a | A detailed and intricate statue or sculptu
+   178   303 0.728 0.753  mug                      coffee mug         A cute white teddy bear mug with a round s | A white mug with a unique shape and a colo
+   179   303 0.737 0.827  sword#4                  scabbard           A sword with a blue and yellow handle and  | A blue and gold Legend of Zelda: Breath of
+   180   303 0.679 0.764  creature#2               green lizard       A green lizard with a distinctive green co | A green, cartoon lizard or crocodile with 
+   181   303 0.709 0.777  figurine#3               pedestal           A small figurine of a man in a suit and ti | A detailed and intricately designed statue
+   182   303 0.629 0.795  cylindrical container#2  pot                A large white cylindrical tank with a blac | A large metallic cylindrical container wit
+   183   303 0.720 0.821  bed frame                crib               A sleek and modern white bed with a silver | A rectangular wooden bed with a dark brown
+   184   303 0.776 0.857  dog                      white wolf         A white elephant with tusks. | White cartoon pig.
+   185   302 0.709 0.778  robotic arm              tank               A four-legged mechanical walker with a box | A small, brown robotic arm with a rectangu
+   186   302 0.667 0.773  shield                   shield             A wooden medieval shield with a circular s | A wooden medieval shield with a central em
+   187   302 0.635 0.719  bird                     crane bird         A decorative golden bird with a unique sha | A yellow and white bird-shaped object made
+   188   302 0.647 0.733  box#9                    television         A black leather pouch or bag with a unique | A black rectangular box made of durable ma
+   189   302 0.709 0.694  visually appealing#3     trifle             A rectangular chocolate cake with a layere | A small white dessert cup filled with a sc
+   190   302 0.758 0.802  humanoid                 upright            A simplified solid silhouette of a human f | A cartoonish character with a large head, 
+   191   301 0.740 0.865  axe#2                    hatchet            A large, red and black axe with a curved b | A large, rugged cleaver with a bloodstaine
+   192   301 0.768 0.866  shed                     barn               A rustic wooden birdhouse designed to rese | A small red wooden cabin with a rustic app
+   193   301 0.721 0.808  statue#4                 pedestal           A white marble statue of a woman, depictin | Sculpture of a humanoid figure poised dyna
+   194   301 0.702 0.760  toy car#2                go-kart            A wooden toy train with a red caboose, sle | A detailed, brown toy truck made of clay o
+   195   301 0.665 0.771  star wars                plane              A gray bird with black markings and spread | A Star Wars X-Wing fighter.
+   196   301 0.750 0.831  cabinet#3                crate              A sleek and modern gray metal cabinet with | A brown wooden cabinet with a rectangular 
+   197   301 0.695 0.816  irregularly shaped#8     rock beauty        A visually appealing and unique decorative | A black, irregularly shaped rock with a ro
+   198   301 0.797 0.803  bird skull               ear                A dog skull with a distinct jaw structure  | A white bird skull.
+   199   300 0.713 0.813  surface                  file               A large, white cylindrical container or wa | A small, round, white object with a smooth
+   200   299 0.752 0.725  house#5                  boathouse          A red and blue building with a cylindrical | A gray multi-story hospital building with 
+   201   299 0.663 0.802  star trek                plane              A crane. | An oil pump on a stand, royalty-free.
+   202   299 0.706 0.732  creature#3               triceratops        A purple and blue octopus toy with eight t | A small quadrupedal creature with green an
+   203   298 0.674 0.808  sword#5                  scabbard           A futuristic mechanical wrench with a blue | A blue slender sword with a long, slender 
+   204   298 0.762 0.759  friendly                 brown bear         A small black stuffed animal or toy, resem | A small, round-headed and body, plush toy 
+   205   297 0.806 0.764  statue#5                 pedestal           A detailed and intricate stone statue of a | A stone Buddha head with a distinctive elo
+   206   297 0.703 0.772  building#4               mosque             A unique and modern white structure resemb | A mosque with four minarets, a central lar
+   207   297 0.639 0.709  shark                    tiger shark        A realistic and detailed 3D model of a mus | A detailed and realistic white starfish mo
+   208   296 0.771 0.885  irregularly shaped#9     rock beauty        A natural, irregularly shaped rock with a  | A small, jagged rock with a natural, irreg
+   209   296 0.660 0.788  column                   obelisk            A tall, white stone monument with a pointe | A white marble rectangular sculpture with 
+   210   296 0.739 0.830  fossilized shell         snail              A large, unique and intricate white snail  | A brown fossilized shell with a curved and
+   211   296 0.628 0.732  car#2                    sports car         A detailed and realistic representation of | A large blue Ferris wheel with multiple go
+   212   295 0.827 0.789  sphere#3                 ping-pong ball     A small, round pink and gray sphere with a | A small, round, gray sphere with a smooth 
+   213   295 0.690 0.769  rock#3                   rule               A pastry on a plate with a cup of coffee. | Abstract of a fragmented landscape with co
+   214   295 0.653 0.751  fence                    chainlink fence    A rectangular barrier or fence with vertic | A long, rectangular chain-link fence panel
+   215   295 0.707 0.784  humanoid#2               upright            A stylized humanoid figure with a rounded  | A rectangular flat sculpture with four sho
+   216   295 0.785 0.764  statue#6                 pedestal           A small, unique wooden statue of a man wit | A detailed and weathered stone sculpture o
+   217   295 0.647 0.698  woman#3                  ballpoint          A unique and intricate bouquet of purple f | A colorful and vibrant Mickey Mouse head w
+   218   294 0.691 0.852  gun#2                    file               White violin and bow. | White plastic sword.
+   219   293 0.812 0.721  room                     desk               A minimalist room layout with wooden floor | A small office room with blue walls, a lar
+   220   293 0.763 0.693  blocky                   military uniform   A pixelated black and white penguin model  | A black and white pixelated representation
+   221   293 0.757 0.810  building#5               church             A mid-rise commercial building with a curv | A multi-level urban building featuring neo
+   222   292 0.631 0.756  ball#3                   ping-pong ball     A small, white, round object with a unique | A small, round, white decorative item with
+   223   292 0.702 0.668  collection#2             altar              Clothing pieces separated into individual  | A set of ten round, slightly irregularly s
+   224   292 0.801 0.821  bust#2                   pedestal           A bearded man's bust with a hat on a stand | A bearded man's bust with curly hair on a 
+   225   292 0.746 0.833  vase#4                   vase               A rounded vase with a narrow opening and t | A small blue and white ceramic vase with a
+   226   291 0.795 0.812  house#6                  mobile home        A modern two-story house with flat roofs,  | A white modern house with a rectangular sh
+   227   290 0.699 0.810  tank                     tank               A tank. | A black and purple robot.
+   228   290 0.707 0.746  tree#3                   broccoli           A stylized bare tree with a lantern hangin | A small green plastic tree with a base and
+   229   290 0.761 0.846  box#10                   packet             A crumpled, small rectangular candy wrappe | A torn rectangular paper or cardboard obje
+   230   289 0.666 0.630  dog#2                    wood rabbit        A small, black and white paper sculpture o | A small black and white dog with a simple 
+   231   289 0.746 0.731  man#4                    groom              A 3D model of a man lying on the ground, w | A detailed and realistic 3D representation
+   232   289 0.712 0.785  character#5              file               Cartoon tiger wearing a red shirt with out | A hand making a thumbs-up gesture.
+   233   289 0.709 0.792  lantern                  table lamp         A rustic, brown and green metal lantern wi | A small, white lantern with a curved top a
+   234   289 0.722 0.763  statue#7                 pedestal           A small black statue of a man wearing a to | A detailed and realistic gray stone statue
+   235   288 0.728 0.800  house#7                  church             A small building or church made of dark ma | A small house with a roof, positioned on t
+   236   288 0.828 0.862  box#11                   crate              A weathered wooden crate reinforced with b | A wooden cube with a natural wooden textur
+   237   288 0.681 0.778  bowl#2                   soup bowl          A round wicker basket filled with golden c | A visually appealing and functional white 
+   238   288 0.692 0.797  building#6               church             A modern and sleek train station with a gl | A large, black, rectangular barbecue grill
+   239   288 0.769 0.851  box#12                   file               A small rectangular piece of paper or card | A small, rectangular cardboard box with a 
+   240   287 0.650 0.867  irregularly shaped#10    file               A simple, irregularly shaped geometric sol | A complex, irregularly shaped object with 
+   241   287 0.625 0.778  ice cream                rule               Ice cream cone | A snowman with a top hat and a stick.
+   242   287 0.604 0.793  fish#3                   rule               A shark with big teeth. | Fish.
+   243   287 0.747 0.735  cityscape                mosque             A small detailed model of a road with a gr | A detailed model of a multi-story school b
+   244   286 0.780 0.739  sculpture#4              pedestal           A stone sculpture of a mermaid-like figure | A small, white stone statue of a woman sit
+   245   286 0.685 0.765  box#13                   crate              A green metal box with a rectangular shape | A large, rectangular wooden box with a fla
+   246   286 0.789 0.783  mountain                 volcano            A small white triangular-shaped structure  | A detailed and realistic 3D representation
+   247   286 0.698 0.773  building#7               dome               A visually striking and intricately design | White, hexagonal, low-poly style platform 
+   248   286 0.829 0.714  man#5                    green mamba        A girl in a green and white dress with a h | Stylized humanoid figure composed of beige
+   249   286 0.706 0.714  character#6              rifle              A girl with a sword standing on a rock. | A horned, dragon-like monster character ho
+   250   285 0.769 0.847  spaceship#3              warplane           A sleek black and white fighter jet with a | A sleek, futuristic spaceship with dual cy
+   251   285 0.745 0.757  friendly#2               teddy              A small gray stuffed animal or toy, resemb | A cute and friendly brown teddy bear with 
+   252   284 0.819 0.899  barrel                   barrel             A large brown wooden barrel with a cylindr | A wooden cylindrical barrel with a rustic 
+   253   284 0.733 0.759  weathered#5              stone wall         A stone wall section features a carved fou | A white rectangular stone or marble sculpt
+   254   284 0.877 0.849  sports car#3             sports car         A yellow sports car with a sleek and aerod | A white Nissan GT-R with a sleek and aerod
+   255   283 0.746 0.706  character#7              sulphur-crested co A stylized character with pink hair and a  | A girl in a purple and white outfit, holdi
+   256   283 0.834 0.901  axe#3                    hatchet            A large wooden-handled metal hammer, suita | A traditional hammer with a wooden handle 
+   257   282 0.795 0.870  bookshelf#2              bookcase           A rectangular wooden bookshelf with two ro | A brown wooden bookshelf with a rectangula
+   258   282 0.701 0.703  sculpture#5              brown bear         A small brown and white owl with a realist | A detailed and realistic 3D object of a br
+   259   282 0.702 0.774  platform                 prison             A simple structure elevated on stilts with | A three-tiered gray rectangular structure 
+   260   282 0.763 0.747  friendly#3               piggy bank         A small, cute and colorful representation  | A small blue robotic dog with a round head
+   261   282 0.736 0.710  figurine#4               pedestal           A stylized wooden figurine resembling a ho | A small, brown owl statue made of ceramic 
+   262   282 0.648 0.704  birdhouse                birdhouse          A small, conical shelter made of verticall | A tall and slender wooden pole with a cros
+   263   281 0.686 0.761  handheld device          radio              A gray and black quadcopter drone with fou | A sleek and modern black virtual reality h
+   264   281 0.823 0.899  irregularly shaped#11    rock beauty        A rough and uneven rock or piece of stone  | A small, rough and textured rock or piece 
+   265   281 0.769 0.768  bottle#2                 wine bottle        A gray cylindrical bottle with a narrow ne | A clear green cylindrical bottle with a fl
+   266   281 0.594 0.740  cylindrical#5            milk can           A blue bag-shaped container with a folded  | A large round blue glass bottle with a woo
+   267   281 0.850 0.689  person                   military uniform   A computer-generated representation of a s | A slender and graceful female character fr
+   268   281 0.757 0.749  man#6                    rifle              A figure stands on a round base, wearing a | A detailed and realistic representation of
+   269   280 0.728 0.819  bowl#3                   pot                A small, round, brown clay bowl with a fla | Irregularly shaped earthenware fragment wi
+   270   280 0.690 0.834  geometric                prison             Arrangement of five distinct geometric sha | A symmetrical six-pointed star shape with 
+   271   280 0.818 0.869  pottery vase             vase               A small, brown, wooden triangular box or v | A large, brown, ancient-looking clay jug o
+   272   280 0.708 0.792  fence#2                  picket fence       A rectangular wooden fence made of old and | A wooden pier structure with two elevated 
+   273   280 0.658 0.803  circular#3               file               A small wooden violin with a curved body,  | A small white curved bathtub or basin made
+   274   280 0.729 0.750  computer keyboard        computer keyboard  A white and gray vintage computer keyboard | A computer keyboard with a light blue base
+   275   280 0.663 0.728  pair#5                   iron               Black lamp post silhouette | Black plane flying in front of an orange s
+   276   279 0.619 0.774  door#2                   file               A white railing. | A white building.
+   277   279 0.747 0.704  house#8                  boathouse          A small wooden house with a red roof, ston | A small Japanese-style house with a red ro
+   278   279 0.815 0.827  sports car#4             sports car         A red sports car with a sleek and aerodyna | A sleek and curvy red classic muscle car w
+   279   279 0.763 0.806  house#9                  barn               A small brown wooden shed with a rectangul | A small wooden birdhouse with a green roof
+   280   279 0.630 0.823  cylindrical#6            dome               A stylized mushroom with a large, smooth c | A coiled helical spring with consistent th
+   281   279 0.712 0.746  cat figurine             white wolf         A realistic and detailed representation of | A realistic, white plastic pig model stand
+   282   279 0.689 0.778  humanoid robot#5         desktop computer   A robot with a red and white ring, helmet, | A small, yellow humanoid robot with a rect
+   283   279 0.714 0.836  cabinet#4                wardrobe           A rectangular white vintage television wit | A white and wooden chest of drawers cabine
+   284   278 0.672 0.696  table#6                  dining table       A realistic representation of a coffee set | A unique and rustic round wooden stool or 
+   285   278 0.900 0.937  barrel#2                 barrel             A brown wooden barrel with a cylindrical s | A brown wooden barrel with a cylindrical s
+   286   278 0.766 0.775  statue#8                 pedestal           A white marble sculpture of a man riding a | A sculpture of an ancient warrior with a r
+   287   278 0.679 0.767  vending machine          vending machine    A sleek, modern rectangular vending machin | A sleek and modern rectangular vending mac
+   288   278 0.726 0.684  character#8              military uniform   A stylized humanoid figure with a bright b | A detailed and realistic plastic skeleton,
+   289   277 0.748 0.721  deer                     lion               A brown and white striped horse with a whi | Black elephant with tusks.
+   290   277 0.871 0.850  man#7                    suit               A man in a white shirt with his arms outst | A white flying cartoon character with outs
+   291   277 0.865 0.780  man head                 wig                A detailed and realistic representation of | A realistic representation of a light-colo
+   292   277 0.732 0.833  rock#4                   rock beauty        A rough, uneven surface rock or stone with | A large, white, round rock with a rough an
+   293   277 0.761 0.685  landscape                seashore           A detailed and realistic representation of | A green triangular mountain covered in lus
+   294   276 0.772 0.886  well crafted#3           scabbard           A black and yellow Japanese samurai sword, | A long, curved samurai sword with a brown 
+   295   276 0.764 0.856  building#8               church             A small, white stone building with a recta | A small, rectangular white building with a
+   296   276 0.733 0.815  sword#6                  scabbard           A purple and black sword with a long, slen | A stylized fantasy sword with a broad, orn
+   297   276 0.824 0.857  irregularly shaped#12    rock beauty        A large, dark, irregularly shaped rock wit | A rough and uneven rock with an irregular 
+   298   275 0.760 0.826  table#7                  dining table       A wooden rectangular coffee table with a s | A wooden table with a rectangular shape, f
+   299   275 0.685 0.758  plant                    pot                A small green fern plant with long, lush a | A set of three distinct flowers: a cluster
+   300   275 0.802 0.740  figurine#5               pedestal           A small, yellow cartoon-like character wit | A small detailed figurine of a man, standi
+   301   274 0.664 0.771  star wars#2              church             A windmill on a platform. | A flaming Olympic torch.
+   302   274 0.673 0.732  lantern#2                table lamp         A brown lantern with a unique shape and de | A small, round, gray-colored lantern with 
+   303   273 0.807 0.799  ring                     loupe              A unique green stone bracelet with a curve | A ring featuring a large central gemstone 
+   304   273 0.713 0.739  baseball cap             cowboy hat         A black baseball cap with a curved brim an | A unique and creative cone-shaped hat made
+   305   272 0.761 0.842  tree stump#2             pedestal           A realistic, brown tree trunk with a rough | A weathered tree stump with rough bark, ro
+   306   272 0.791 0.887  treasure chest           chest              A rectangular vintage wooden trunk with a  | A rustic and antique wooden treasure chest
+   307   272 0.697 0.792  vase#5                   vase               A visually appealing and unique dark vase  | A greenish-gray metal decorative piece, po
+   308   271 0.767 0.833  pot                      pot                A small, handmade brown pottery bowl with  | A large, brown, handmade clay bowl with a 
+   309   271 0.759 0.772  plaque                   stone wall         A decorative flower-shaped wall hanging or | Ancient clay tablet with cuneiform inscrip
+   310   271 0.648 0.755  box#14                   crate              A black rectangular speaker with a front-f | A sleek and modern black metal box with a 
+   311   271 0.697 0.824  box#15                   crate              A rectangular metal plate with a raised de | A rectangular metal box with a rusty appea
+   312   270 0.787 0.845  bowl#4                   pot                A set of three small, dark brown bowls wit | A small, round brown clay bowl with a uniq
+   313   270 0.680 0.823  lizard                   amphibian          A bipedal reptilian creature with a long,  | A lizard with an elongated tail and a dist
+   314   270 0.680 0.733  girl#2                   flamingo           A small pink pig flying. | A woman in pink and white attire.
+   315   269 0.749 0.866  bench#2                  park bench         A wooden and metal bench with a metal hand | A blue wooden bench with two attached chai
+   316   269 0.771 0.804  gravestone               obelisk            A small white rectangular gravestone with  | A rectangular rock with a plaque on top, p
+   317   269 0.670 0.703  birdhouse#2              birdhouse          A small, rectangular birdhouse made of dar | A stylized wooden birdhouse with a shingle
+   318   269 0.675 0.776  bird#2                   wing               A white and brown bald eagle with spread w | White eagle flying in the air.
+   319   269 0.837 0.867  sports car#5             sports car         A yellow plastic race car with a sleek and | A silver luxury sedan with sporty wheels a
+   320   269 0.804 0.773  boeing airplane          airliner           A sleek and modern blue and white Boeing 7 | A white and blue Boeing 747 airplane with 
+   321   268 0.852 0.733  man#8                    sulphur-crested co A detailed and realistic 3D model of a fir | A realistic black and white mannequin wear
+   322   268 0.702 0.734  sculpture#6              iron               A small, detailed and realistic gray metal | A detailed and intricately designed metal 
+   323   268 0.827 0.840  couch#2                  studio couch       A brown leather couch with a distressed an | A sleek and modern gray sectional sofa wit
+   324   268 0.819 0.753  humanoid#3               military uniform   A muscular, armored warrior with a distinc | A large, muscular character from a video g
+   325   268 0.728 0.773  toy airplane             warplane           Star Wars Rebel Alliance X-wing Starfighte | A small, white propeller with a curved bla
+   326   267 0.725 0.704  figurine#6               sulphur-crested co A lifelike mannequin wearing a yellow and  | A simplified person with black hair in pig
+   327   267 0.868 0.783  man#9                    groom              A 3D representation of a man in a yoga pos | A 3D model of a confident and professional
+   328   267 0.665 0.763  display stand            entertainment cent A large rectangular frame made of wood or  | Red metal display stand with a blue screen
+   329   267 0.773 0.811  mannequin head           wig                A white ruffled dress on a mannequin. | A white female mannequin torso.
+   330   267 0.622 0.737  banana#2                 banana             A small, lightweight skateboard with a gra | A three-segmented yellow banana peel with 
+   331   267 0.762 0.667  car#3                    trailer truck      A silver vintage car with a boxy shape and | A blue car in a heavily damaged state, wit
+   332   266 0.722 0.769  bird#3                   crane bird         A stylized bird figure with a curved body, | A round, stylized bird-like figure with la
+   333   266 0.660 0.805  chair#5                  rocking chair      Wooden chair with armrests and a slightly  | A unique wooden chair with a rectangular s
+   334   265 0.665 0.782  aerodynamic              sports car         A sleek and aerodynamic yellow and red toy | A small red and yellow toy rocket or space
+   335   265 0.674 0.858  irregularly shaped#13    file               A smooth, irregularly shaped, rounded form | A solid, abstract shape resembling a styli
+   336   265 0.692 0.815  tree stump#3             pedestal           A detailed gnarled tree stump with exposed | A brown hollow tree stump with a rough tex
+   337   265 0.697 0.858  box#16                   crate              A sleek, modern white rectangular box with | A white rectangular piece of furniture, li
+   338   265 0.694 0.773  computer desk            desktop computer   A modern office setup with a light wooden  | A black rectangular computer monitor with 
+   339   264 0.646 0.807  creature#4               amphibian          A starfish with multiple arms extending fr | A monstrous, beast-like creature with a la
+   340   264 0.658 0.738  robot#3                  lemon              A blue robot with a yellow face, sitting o | A yellow rubber duck with steampunk elemen
+   341   264 0.710 0.776  platform#2               prison             A unique bridge with a curved arch and a f | A sturdy concrete bridge with a distinctiv
+   342   264 0.698 0.779  bed                      pillow             A cozy and inviting bed with a blue blanke | A rectangular queen-sized bed with a black
+   343   264 0.633 0.687  pair#6                   red wine           A turtle-shaped object with a rounded shel | A black and red robotic spider-like object
+   344   263 0.875 0.857  rifle#5                  rifle              A black rifle with a long, slender barrel  | A stylized assault rifle with a wooden sto
+   345   263 0.724 0.642  weathered#6              street sign        A gray metal pipe with a hole in it is ben | A life-sized wooden stand displaying a lar
+   346   263 0.759 0.757  helmet#2                 football helmet    A red motorcycle helmet with a dark visor. | A small, round, black figurine with a silv
+   347   263 0.634 0.737  cauldron                 pot                A black cauldron filled with glowing gold  | A detailed and realistic black Batman mask
+   348   262 0.696 0.753  tower#2                  water tower        A traditional Dutch-style wooden windmill  | A traditional Dutch windmill with a tall c
+   349   262 0.669 0.697  figurine#7               white wolf         A small white and blue figurine of a girl  | A unique and interesting white wooden mann
+   350   262 0.676 0.843  knife                    letter opener      A serrated knife blade with a tapered edge | A kitchen spatula with a flat, slightly an
+   351   262 0.811 0.813  house#10                 mobile home        A small house with a pyramid-shaped roof o | A small white single-story house with a re
+   352   261 0.709 0.739  pair#7                   cowboy boot        A pair of brown leather boots with intrica | A rustic round metal bell with a leather s
+   353   261 0.656 0.725  box#17                   crate              A red and white geometric-designed tote ba | A rectangular book with a dark cover featu
+   354   261 0.741 0.837  irregularly shaped#14    file               A small, symmetrical and visually appealin | Abstract lavender-colored forms resembling
+   355   261 0.659 0.725  creature#5               crane bird         A small box-shaped robot with a smiling sc | Artistic representation of a dragonfly-lik
+   356   260 0.746 0.677  frame#2                  fire screen        A rectangular wooden picture frame with a  | A framed forest scene painting on a wooden
+   357   260 0.757 0.811  building#9               church             A modern, sleek, and contemporary two-stor | A modern multi-story building with a flat 
+   358   260 0.622 0.714  sword#7                  flamingo           A green beer bottle with a pink label. | A pink rose with green leaves.
+   359   260 0.711 0.759  sink                     washbasin          A white sink with a faucet. | A white marble countertop bathroom vanity 
+   360   259 0.827 0.802  statue#9                 pedestal           A white stone statue of a man and a woman  | A detailed and realistic white stone statu
+   361   259 0.683 0.818  spaceship#4              airliner           A sleek black Star Wars TIE fighter with a | A sleek and futuristic Star Wars spaceship
+   362   259 0.772 0.844  seashell                 snail              A labeled clam shell with a ruler next to  | A large, white and brown seashell with a d
+   363   259 0.740 0.775  slender                  pole               A tall, decorative street lamp post with b | A tall cylindrical street light pole with 
+   364   259 0.823 0.772  highly                   military uniform   A detailed and realistic 3D model of a med | A realistic and detailed 3D model of a mil
+   365   258 0.738 0.826  ball#4                   lemon              A round, smooth, ripe peach with a vibrant | A realistic, slightly irregular apple with
+   366   258 0.668 0.851  complex irregularly      file               A detailed curved pipe or elbow joint with | A sleek, metallic key with a long, slender
+   367   258 0.782 0.724  figurine#8               miniature schnauze A small, detailed figurine of a video game | A small, detailed and colorful fairy figur
+   368   258 0.642 0.702  pair#8                   banana             A yellow and black crane-shaped lamp on a  | A yellow key with a long, thin body and a 
+   369   258 0.772 0.850  rock#5                   stone wall         A rectangular rock or stone with a smooth  | A small rectangular rock or stone with a r
+   370   258 0.664 0.799  pumpkin                  file               A small, white, round ball with a smooth a | A round, doughy bread product with a hole 
+   371   258 0.782 0.802  gun#3                    rifle              A sleek and futuristic gun with a metallic | A detailed and realistic representation of
+   372   258 0.721 0.788  city                     church             A city featuring buildings, trees, and a p | A small village with simple houses, surrou
+   373   257 0.667 0.766  stick                    wooden spoon       A freshly baked, golden brown baguette sli | A brown wooden walking stick with a long, 
+   374   257 0.729 0.799  cylindrical#7            pole               A small, slender, cylindrical pencil made  | A sleek and modern black cylindrical rod m
+   375   257 0.655 0.762  pendant                  table lamp         Matte white designer floor lamp with two a | A billiard table with a lamp and a ball.
+   376   257 0.753 0.869  box#18                   file               A solid object combining a cylindrical bas | A complex geometric shape with a rectangul
+   377   256 0.674 0.733  cup                      coffee mug         A blocky, pixelated goblet with a wide bow | A unique black and white cup filled with b
+   378   256 0.775 0.693  humanoid#4               military uniform   A small toy-like figure of a character fro | A stylized character wearing sunglasses, a
+   379   256 0.752 0.764  fragment                 rock beauty        A carved stone tablet featuring engraved d | An Egyptian sarcophagus with a small mummy
+   380   256 0.804 0.862  building#10              church             A small rectangular building with a flat r | A white, small building with a rectangular
+   381   256 0.766 0.837  lion statue              lion               A detailed and realistic stone sculpture o | A small bronze lion sculpture mounted on a
+   382   256 0.793 0.811  gun#4                    rifle              A detailed metallic handgun with a futuris | A yellow and gray toy handgun with a disti
+   383   256 0.836 0.798  teddy bear#2             brown bear         A brown teddy bear standing on a white bac | A stylized teddy bear character with a bro
+   384   255 0.676 0.717  collection#3             confectionery      A set of six small, colorful, abstract ani | A set of five robotic figures each carryin
+   385   255 0.784 0.887  well crafted#4           scabbard           A strong and durable medieval sword made o | A medieval weapon, likely used for combat 
+   386   255 0.762 0.768  sculpture#7              wood rabbit        A small brown wooden Buddha statue, with i | A carved wooden sculpture resembling an ol
+   387   255 0.687 0.784  humanoid robot#6         green lizard       A black and green humanoid robot with a fu | A brown and green robot with a complex and
+   388   255 0.646 0.722  box#19                   crate              A yellow rectangular metal box with a blac | A small, yellow device with a round shape,
+   389   255 0.771 0.820  church                   church             A small detailed plastic model of a stone  | A small white church with a steeple, situa
+   390   255 0.715 0.849  block#2                  prison             A large rectangular tile made of concrete  | A large gray rectangular block made of con
+   391   255 0.647 0.835  airplane                 white wolf         A white sailboat with a sail. | White robot
+   392   254 0.788 0.826  humanoid creature        file               A small, creepy-looking creature with a lo | A humanoid figure equipped with three larg
+   393   254 0.755 0.702  character#9              military uniform   A stylized character with long white hair, | A cartoon character of a man with a bald h
+   394   254 0.875 0.871  handgun                  holster            A realistic, sleek and modern metallic han | A semi-automatic pistol, matte white, with
+   395   254 0.718 0.819  castle#2                 castle             A large, intricate wooden structure resemb | A multi-level castle-like structure with b
+   396   254 0.616 0.762  house#11                 file               Blue square tile resembling a water surfac | A blue police box, known as the TARDIS fro
+   397   253 0.643 0.752  robotic arm#2            tripod             A collection of interconnected mechanical  | A small droid with a spherical body, a rou
+   398   253 0.642 0.751  slice                    file               A rectangular object with a reddish frame  | A long blue rectangular prism and a small 
+   399   253 0.675 0.716  car#4                    school bus         A detailed and realistic yellow and black  | A small yellow toy bulldozer with caterpil
+   400   253 0.670 0.710  mushroom                 mushroom           A brown snail with a spiral-shaped shell,  | A detailed and realistic, brown and white 
+   401   252 0.844 0.868  handgun#2                holster            A gray and black handgun with a distinct s | A sleek and modern white and black handgun
+   402   252 0.638 0.754  cylindrical bottle       pop bottle         A unique bottle-shaped object made of glas | A red bottle or vase filled with liquid, p
+   403   251 0.664 0.763  dome shaped              dome               A buoy with a large faceted base, a tapere | A large, round, white and gray dome-shaped
+   404   251 0.650 0.691  arabic calligraphy       orange             A set of three pumpkins, including one who | Orange text reading "Harry Potter" with ad
+   405   251 0.681 0.858  box#20                   file               A small, yellow rectangular box with a fla | A rectangular metal box or frame with a fl
+   406   250 0.712 0.814  surface#2                ping-pong ball     A small, white, round sphere with a smooth | A small, round, and brown freshly baked br
+   407   250 0.799 0.842  rifle#6                  rifle              A white and black toy gun resembling a sni | A rifle with a red barrel, two barrels, an
+   408   250 0.750 0.857  rock#6                   rock beauty        A large, irregularly shaped gray rock with | A gray, rough and uneven surface rock with
+   409   250 0.761 0.806  structural framework     viaduct            A multi-level rectangular structural frame | A multi-story structural framework with fo
+   410   250 0.680 0.774  bowl#5                   soup bowl          A weathered, elongated stone basin with a  | A bowl with a patterned exterior contains 
+   411   250 0.758 0.855  well crafted#5           letter opener      A pair of silver metal scissors with open  | A silver metal knife with a sharp blade, p
+   412   250 0.679 0.751  fountain                 fountain           A rustic stone well with a wooden frame, p | A large concrete water fountain.
+   413   250 0.661 0.741  cylindrical container#3  milk can           A large white cylinder with hexagons. | A cylindrical object with a light gray mid
+   414   250 0.728 0.747  top hat                  cowboy hat         A black fedora hat with a flat crown, wide | A brown straw hat with a wide brim and cur
+   415   250 0.683 0.727  sculpture#8              green lizard       A stylized, cartoon-like green seahorse fi | A small, detailed representation of a gree
+   416   249 0.836 0.799  human head#2             mask               A bearded man's face in the shape of a she | A detailed and realistic representation of
+   417   249 0.795 0.792  mountain#2               volcano            A realistic 3D representation of a mountai | A detailed and realistic 3D representation
+   418   249 0.751 0.739  stuffed animal#2         giant panda        A black, detailed and realistic gorilla mo | A small, cute and adorable stuffed toy pan
+   419   249 0.726 0.880  well crafted#6           scabbard           A well-crafted, metallic sword with a long | A sword with a long blade and a red handle
+   420   249 0.640 0.743  cylindrical#8            torch              A red and white windsock, shaped like a co | A black, cylindrical-shaped microphone wit
+   421   249 0.644 0.818  irregularly shaped#15    cup                A rough, uneven ring-shaped object with an | A stylized, flowing sculpture with a round
+   422   249 0.645 0.790  trash can                barrel             A cylindrical metal trash can with a flat  | A rectangular metal trash can with a flat 
+   423   249 0.854 0.821  car#5                    sports car         A sleek and modern black sedan with a spor | A black vintage-style car with white accen
+   424   248 0.700 0.831  rifle#7                  rifle              A realistic brown and orange toy gun with  | A realistic and detailed 3D model of a bro
+   425   248 0.638 0.750  sculpture#9              wood rabbit        A small, brown, round figurine with a uniq | A small, detailed, and intricate sculpture
+   426   248 0.738 0.728  cityscape#2              mosque             A miniature gray race track model with a c | A large, detailed and intricate wooden mod
+   427   248 0.673 0.762  fish#4                   goldfish           A small, stylized fish with a dark reddish | A dolphin with a streamlined body, dorsal 
+   428   248 0.714 0.776  mushroom#2               mushroom           A realistic representation of a brown and  | A red and white mushroom with a cube-shape
+   429   248 0.707 0.719  mask#2                   mask               Colorful jaguar head sculpture with intric | A stylized theatrical mask with exaggerate
+   430   248 0.706 0.746  box#21                   envelope           A small, white rectangular box with a simp | A small white square-shaped cube with a sm
+   431   248 0.651 0.686  pair#9                   dial telephone     A vintage brown radio with an extended ant | A vintage black and silver camera with a c
+   432   248 0.681 0.726  lifelike#3               brown bear         A detailed and realistic 3D model of a sma | A lifelike, realistic 3D model of a small 
+   433   248 0.645 0.728  donut                    flamingo           A small, round pink bow tie with a distinc | A pink cylindrical rubber band with a slig
+   434   247 0.693 0.754  pair#10                  hatchet            A keychain featuring a small pickaxe attac | A pair of metal pliers with long handles a
+   435   247 0.701 0.716  box#22                   crate              A wooden rectangular box with a red table  | A small, round, red container with a cylin
+   436   247 0.666 0.727  birdhouse#3              birdhouse          A unique wooden birdhouse with a slanted r | A tall, slender brown wooden clock tower w
+   437   247 0.712 0.833  pillar                   obelisk            A tall and imposing stack of rocks, made o | A large, tall, gray stone pillar with a cy
+   438   247 0.708 0.705  cake                     trifle             A festive cake with icing and eggs on top, | A birthday cake with a lollipop on top and
+   439   247 0.777 0.851  irregularly shaped#16    rock beauty        A textured, irregularly shaped object rese | Textured boulder with natural patterns and
+   440   246 0.808 0.848  accurate                 castle             A detailed 3D representation of a well-mai | A detailed 3D model of a busy urban inters
+   441   246 0.811 0.723  figurine#9               white wolf         A female video game character with a futur | A white and blue humanoid figure wearing a
+   442   246 0.680 0.824  box#23                   crate              A sleek and modern black rectangular box w | A small, sleek and modern black rectangula
+   443   246 0.699 0.707  box#24                   crate              A rectangular block with a white top surfa | A futuristic rectangular crate with intric
+   444   246 0.668 0.691  complex                  desktop computer   A series of magenta geometric shapes resem | Two tall white rectangular prisms of diffe
+   445   246 0.694 0.776  human skeleton           hip                A crocodile or alligator skull with an elo | A human skeleton.
+   446   245 0.838 0.865  deer skull               triceratops        A detailed and realistic white bovine skul | Glossy white horse skull with detailed tee
+   447   245 0.673 0.770  radio                    radio              A vintage wooden television set with a rec | A vintage wooden television with a rectang
+   448   244 0.666 0.734  sculpture#10             toilet tissue      A white decorative piece made of marble or | A small white rectangular object with a sl
+   449   244 0.678 0.785  sphere#4                 ping-pong ball     Black spherical speaker with a blue light  | A small, round ball with a dark color and 
+   450   244 0.716 0.803  castle#3                 castle             A small, intricately designed miniature st | A medieval castle surrounded by trees.
+   451   244 0.669 0.793  cylindrical#9            screw              White screw with a flat head and a helical | A gray metal cylindrical screw with a poin
+   452   244 0.676 0.752  tree#4                   broccoli           A realistic green metal tree sculpture wit | A silver metal tree with a unique shape an
+   453   244 0.736 0.780  dragon                   triceratops        A detailed and intricately designed yellow | A detailed and intricate white and blue dr
+   454   244 0.648 0.705  sword#8                  ballpoint          A purple sword on a white marble base, ins | A purple and black spaceship with a unique
+   455   243 0.659 0.747  frog                     green lizard       A green frog. | A small green flying frog.
+   456   243 0.757 0.822  box#25                   crate              A weathered wooden treasure chest with a r | A vintage brown wooden box or chest with a
+   457   243 0.807 0.819  humanoid robot#7         suit               A blue and silver humanoid robot in a futu | A red humanoid robot with a unique and int
+   458   242 0.818 0.733  pair#11                  running shoe       A white Chuck Taylor All Star high-top sne | A pair of white sandals with a unique desi
+   459   242 0.746 0.854  house#12                 barn               A small, simple shelter structure made wit | A charming and cozy small wooden house wit
+   460   242 0.711 0.743  sculpture#11             white wolf         A detailed and intricate representation of | A white bird's wing with intricate details
+   461   242 0.660 0.774  tank#2                   green snake        A green and yellow plastic water gun with  | A small green fighter jet.
+   462   242 0.632 0.739  cube#2                   red wine           Red dumbbell. | A red and white toy car.
+   463   242 0.815 0.867  rock#7                   rock beauty        A large, rectangular, white rock with a sm | A large round stone with a hole in the mid
+   464   242 0.678 0.819  weathered#7              wooden spoon       A versatile wooden plank with a rectangula | A brown curved wooden stick or branch with
+   465   241 0.694 0.743  key                      hatchet            A wooden baseball bat embedded with metal  | A medieval weapon, a large sharp-looking s
+   466   241 0.705 0.750  beetle                   long-horned beetle A small brown and black beetle, with a lon | A detailed and realistic yellow and black 
+   467   241 0.810 0.692  character#10             cowboy hat         A 3D object of a person wearing a gray hoo | A female character wearing a dress, skirt,
+   468   241 0.708 0.736  ball#5                   ping-pong ball     A white round soccer ball and a brown roun | A white egg-shaped toy with a red chicken 
+   469   241 0.697 0.791  leaf                     green snake        A small, round, green plant with leafy tex | A green, pixelated plant with a tall and s
+   470   240 0.628 0.731  sculpture#12             pedestal           A unique metal sculpture of a tree with a  | A unique sculpture made of metal, wood, an
+   471   240 0.782 0.858  aerodynamic#2            warplane           A white jet fighter plane with a sleek and | A sleek and aerodynamic gray fighter jet w
+   472   240 0.691 0.779  cylindrical fire         barrel             A red cylindrical fire extinguisher with a | A black cylindrical dumbbell with a flat t
+   473   240 0.714 0.665  plate#2                  pizza              A sectioned piece of layered food, possibl | A realistic 3D apple slice with detailed a
+   474   240 0.623 0.760  cylindrical#10           water bottle       A blue cylindrical pipe with a long, curve | A blue cylindrical bottle with a narrow ne
+   475   240 0.803 0.799  terrain                  valley             A complex of multiple gray buildings surro | Rugged mountain landscape featuring rocky 
+   476   239 0.699 0.789  teapot                   teapot             A white coffee pot or teapot with a jug-li | A silver tea kettle with a handle.
+   477   239 0.791 0.876  irregularly shaped#17    rock beauty        A gray, rugged and rocky mountain with an  | A narrow, elongated stone embedded in a ro
+   478   239 0.738 0.805  boat                     canoe              A sailing ship with multiple masts and lar | A small wooden boat-shaped box with a curv
+   479   239 0.749 0.787  weathered#8              triumphal arch     A large, ornate stone gate with intricate  | A stone structure featuring arched vaulted
+   480   239 0.863 0.790  man#10                   military uniform   A detailed and realistic 3D model of a man | A detailed 3D representation of a woman in
+   481   239 0.815 0.730  man#11                   rifle              A person running with a sword. | A figure of a person holding a lantern in 
+   482   239 0.673 0.793  bow                      bow                A chess rook piece with a crossbow mounted | A brown wooden violin with a curved body, 
+   483   238 0.706 0.744  cat#2                    white wolf         Royalty-free white jogging pants. | A white French bulldog.
+   484   238 0.881 0.878  rifle#8                  rifle              A blue and gray military-style assault rif | A realistic and detailed metallic rifle wi
+   485   238 0.737 0.844  spaceship#5              airliner           A sleek and futuristic metallic spaceship  | A detailed spaceship with multiple antenna
+   486   238 0.737 0.852  spaceship#6              space shuttle      A large, detailed and realistic naval vess | A sleek and futuristic spacecraft/satellit
+   487   238 0.726 0.755  woman#4                  miniskirt          A detailed 3D model of a young girl wearin | 3D model of a young woman in a blue and wh
+   488   237 0.655 0.783  sword#9                  green snake        Green propeller. | A green, thick cylindrical disk.
+   489   237 0.759 0.885  irregularly shaped#18    file               Consisting of a cylindrical shape transiti | A brain-like object with intricate, maze-l
+   490   237 0.856 0.912  irregularly shaped#19    rock beauty        A large, heavy rock with a rough and uneve | A labeled rock.
+   491   237 0.711 0.783  table#8                  desk               A white table with pillars. | A white table with legs.
+   492   237 0.774 0.870  building#11              church             A small, abandoned, square-shaped concrete | A small white rectangular building with a 
+   493   237 0.769 0.805  dragon#2                 dragonfly          A stylized dragon with large, angular wing | A small, intricate and detailed figurine o
+   494   237 0.735 0.825  church#2                 church             A small, brown and white church with a red | A brown and gray miniature church building
+   495   237 0.725 0.775  sculpture#13             pedestal           A realistic sculpture of a woman's head ma | A dark brown bronze bust of a woman with a
+   496   236 0.803 0.827  castle#4                 castle             A rectangular ancient ruin with thick ston | A visually appealing small stone-like cast
+   497   236 0.687 0.740  plant#2                  pot                A realistic and detailed 3D representation | A detailed, realistic, and eye-catching gr
+   498   236 0.614 0.702  cylindrical#11           banana             Black and yellow abstract skull with headp | A yellow, smooth and round egg-shaped obje
+   499   235 0.708 0.824  bookshelf#3              bookcase           A wooden console table with a shelf. | A green rectangular metal shelf, designed 
+   500   235 0.727 0.850  house#13                 barn               A small wooden structure with a rustic and | A small wooden structure resembling a mini
+   501   235 0.753 0.861  house#14                 barn               A wooden structural framework of a single- | A small wooden building with a rectangular
+   502   235 0.816 0.794  topographical map        valley             A detailed, accurate, and three-dimensiona | Yellow topographic map with raised relief 
+   503   235 0.689 0.733  penguin                  giant panda        A small, cute and detailed plastic penguin | A small, realistic and detailed black and 
+   504   235 0.706 0.749  sculpture#14             wood rabbit        A wooden football sculpture displayed on a | A unique, weathered 3D sculpture made of w
+   505   235 0.689 0.736  bird#4                   crane bird         A detailed and realistic 3D object resembl | A small, cute, and adorable white owl with
+   506   235 0.651 0.810  cylindrical#12           obelisk            A tall, rectangular-shaped pillar or colum | A tall, cylindrical brick chimney with a r
+   507   235 0.822 0.812  terrain#2                valley             A detailed terrain featuring rolling hills | Fragmented landscape exhibiting variations
+   508   234 0.741 0.726  rabbit                   lion               Deer head with antlers. | A rat with visible body shape, limbs, tail
+   509   234 0.665 0.747  box#26                   green snake        A rectangular wooden chalkboard with a gre | A rectangular metal mailbox with a green c
+   510   234 0.657 0.721  birdhouse#4              birdhouse          A brown wooden globe representing the Eart | A large wooden wheel mounted on a wooden s
+   511   234 0.746 0.766  boat#2                   speedboat          A small, lightweight, brightly colored boa | Colorful patterned sailboat with patterned
+   512   233 0.786 0.795  humanoid robot#8         tank               A humanoid robot with a bulky torso, broad | Transformers' Optimus Prime robot holding 
+   513   233 0.851 0.891  irregularly shaped#20    rock beauty        A rough and uneven brown rock with a natur | A small, crumpled piece of paper with a to
+   514   233 0.722 0.744  tree#5                   broccoli           A stylized tree with an orange, irregularl | A small green tree with a slender trunk an
+   515   233 0.794 0.724  room#2                   desk               A small room with a wooden desk, two woode | Matte white monochromatic bedroom featurin
+   516   233 0.665 0.828  knife#2                  cleaver            A metal wrench or spanner with a long, thi | A floral-patterned kitchen knife with a cu
+   517   233 0.682 0.725  sports car#6             orange             An orange chain hoist with an attached cha | A large, bulky, orange bulldozer with a lo
+   518   233 0.733 0.768  airplane#2               airliner           Simplified aircraft with an elongated fuse | Single-engine monoplane with fixed landing
+   519   233 0.682 0.770  cylindrical container#4  milk can           A blue wine glass with a curved shape, ste | A white and blue cylindrical bottle of Ens
+   520   232 0.640 0.729  hammer                   hatchet            A pair of metal ski poles with a curved sh | A clamp-style corkscrew with a lever arm a
+   521   232 0.766 0.893  rock#8                   rock beauty        A rock. | A rock.
+   522   232 0.669 0.719  motorcycle               tricycle           A sleek and modern black and blue bicycle  | A sleek and modern silver single-speed bic
+   523   232 0.667 0.767  dragon#3                 dragonfly          A dragon-like creature with large wings, s | A colorful and intricate dragon with a lon
+   524   232 0.813 0.771  woman#5                  gown               A child with dreadlocks wearing a white sh | A white woman with long hair in a bikini.
+   525   232 0.697 0.724  robot#4                  llama              A small white unicorn with a purple mane a | A small, colorful unicorn with a blue and 
+   526   232 0.755 0.671  floating island          mountain tent      A floating island with grass, three trees, | Pixelated cartoon illustration of a small 
+   527   231 0.769 0.830  creature#6               amphibian          A small, brown and yellow creature resembl | A four-legged animal with a mane and a tai
+   528   231 0.698 0.783  chair#6                  rocking chair      A vintage wooden chair with a curved backr | A modern pink chair with white metal legs.
+   529   231 0.670 0.642  visually appealing#4     altar              A fiery Metallica-themed 3D object with a  | A unique, curved and folded patchwork quil
+   530   231 0.868 0.881  rifle#9                  rifle              A bolt-action rifle with a wooden stock an | A lever-action rifle with a wooden stock a
+   531   231 0.737 0.834  table#9                  dining table       A wooden table with a rectangular shape, w | A simple rectangular table with four strai
+   532   231 0.740 0.777  humanoid creature#2      green lizard       A small, green turtle with a spear, realis | A green, wood-textured bear-like figure wi
+   533   231 0.751 0.859  monument                 stone wall         A small gray rectangular object resembling | A small, white rectangular stone structure
+   534   231 0.741 0.782  coin                     bottlecap          A small, round metal coin with a unique sh | A circular copper coin with a flat and smo
+   535   231 0.721 0.776  gun#5                    rifle              A pixelated toy gun with a wooden handle a | A black, sleek and realistic AK-47 toy gun
+   536   230 0.734 0.774  island                   seashore           A castle on a small island with trees, gra | A small island featuring a house, trees, a
+   537   229 0.748 0.828  box#27                   crate              A rectangular silver metal box with a hing | A sturdy, large gray metal box designed fo
+   538   229 0.731 0.721  woman head               wig                A highly detailed and realistic 3D model o | A set of three realistic and detailed 3D h
+   539   229 0.612 0.762  airplane#3               plane              A blue and white plastic bottle. | A white and blue airplane.
+   540   229 0.815 0.875  rock#9                   rock beauty        A white and gray rock with writing on it. | A large white, rough-looking rock with a u
+   541   229 0.590 0.772  sphere#5                 bubble             A blue rectangular block with a hole in th | A blue rectangular shield with a raised ed
+   542   228 0.736 0.783  house#15                 barn               A rustic blue wooden house with a brown sh | A small wooden house with a unique shape, 
+   543   228 0.680 0.812  box#28                   crate              A blue metal toolbox or storage box on whe | A small, rectangular gray metal box with a
+   544   228 0.811 0.858  irregularly shaped#21    rock beauty        A curved rock slab with an irregular, jagg | A rough, irregularly shaped rock fragment 
+   545   227 0.864 0.747  pair#12                  running shoe       A pair of brown leather boots with an intr | A pair of gray and black sneakers with a u
+   546   227 0.597 0.706  cylindrical#13           green snake        Two blue cylindrical tubes, one positioned | A large, round, metallic-looking structure
+   547   227 0.676 0.768  leather bound            wallet             A black hardcover book with a brown leathe | A well-used brown leather-bound book with 
+   548   227 0.674 0.733  plant#3                  pot                A small, green fern with a slender stem an | A small plant with elongated, curved green
+   549   227 0.729 0.682  room#3                   desk               A large, rectangular office space with var | A cozy living room setup featuring a light
+   550   227 0.773 0.777  dog#3                    lion               Low poly deer with antlers. | Low Poly Giraffe – Royalty-Free
+   551   227 0.735 0.715  figurine#10              red-breasted merga A detailed 3D object of a girl in a red sh | A 3D figure of a woman in a long, flowing 
+   552   227 0.705 0.768  cylindrical street       pole               A gray metal cylindrical street light pole | A tall, cylindrical metal street light wit
+   553   227 0.713 0.795  car#6                    sports car         A blue tank. | A blue toy car with wheels.
+   554   227 0.660 0.784  toy gun                  rifle              A brightly colored plastic toy gun with a  | A unique, orange toy gun with a realistic 
+   555   227 0.695 0.812  cart#2                   horse cart         A small wooden wagon or cart with a flat b | A wireframe shopping cart with four wheels
+   556   226 0.742 0.847  house#16                 barn               A small, white wooden cabin with a rectang | A small wooden cabin with a sloping roof a
+   557   226 0.765 0.835  creature#7               amphibian          A large, menacing bat-like creature with a | A detailed mechanical or robotic creature 
+   558   226 0.837 0.795  mountain#3               volcano            A small, snow-covered mountain with a dist | A large, white mountain with a snow-covere
+   559   226 0.832 0.886  irregularly shaped#22    rock beauty        A rough and uneven rock with a dark, earth | A small, round and irregular-shaped rock w
+   560   226 0.707 0.689  weathered#9              stone wall         A weathered stone brick column with a roun | A rectangular ruined stone structure surro
+   561   226 0.771 0.787  humanoid robot#9         green lizard       A unique and colorful purple and green hum | A detailed and intricately designed green 
+   562   226 0.703 0.793  bowl#6                   soup bowl          A small, round brown bowl with a matching  | A white round bowl filled with steaming ho
+   563   226 0.838 0.822  female mannequin         suit               A white bodysuit on a mannequin. | White mannequin of a person floating in th
+   564   226 0.677 0.768  sink#2                   washbasin          White ceramic toilet with a tank and bowl, | A white round toilet with a bowl and a tan
+   565   225 0.752 0.824  house#17                 church             An ancient structure with a tiled gable ro | A small stone building with a rectangular 
+   566   225 0.771 0.791  house#18                 boathouse          A small white wooden building with a recta | A small rectangular white wooden structure
+   567   225 0.672 0.772  rock#10                  tennis ball        A unique and interesting green and purple  | A light green cylindrical object with unev
+   568   225 0.820 0.767  woman#6                  abaya              A 3D rendering of a woman in a black dress | A small, detailed and realistic 3D figurin
+   569   225 0.647 0.768  rubber duck#2            lemon              A yellow duck with blue eyes. | Yellow plastic duck with a red beak.
+   570   225 0.683 0.764  skateboard ramp          picket fence       A wooden skateboard ramp with a curved sha | A weathered rectangular wooden plank with 
+   571   225 0.738 0.781  brick building#3         barn               A small, detailed model of a coffee shop w | A multi-story brick building with a unique
+   572   225 0.677 0.785  tree#6                   broccoli           A large, realistic and intricate 3D model  | A tree with a thick trunk and irregular br
+   573   225 0.756 0.735  statue#10                pedestal           A statue featuring a man and a woman on a  | A well-crafted, white statue of a man hold
+   574   224 0.627 0.760  pair#13                  remote control     Bose wireless gray earbuds. | A sleek and modern pair of white earbuds w
+   575   224 0.721 0.785  human heart              rule               A small elephant. | A human heart.
+   576   224 0.730 0.826  cityscape#3              castle             A detailed 3D model of a miniature city bl | A small, round decorative model of a citys
+   577   224 0.693 0.753  box#29                   crate              A weathered green rectangular prism with a | A small rectangular birdhouse made of wood
+   578   224 0.705 0.769  sphere#6                 tennis ball        A green wooden globe with a wooden base, m | A detailed 3D representation of Earth, a b
+   579   224 0.760 0.721  figurine#11              pedestal           A small pink clay statue of a man with a l | A detailed skeleton figurine wearing a bla
+   580   224 0.608 0.736  ring#2                   buckle             A ring-shaped gear with multiple evenly sp | A pair of silver circular earrings with a 
+   581   224 0.665 0.817  box#30                   crate              A large, rectangular gray metal box with a | A large, rectangular gray metal box with a
+   582   224 0.848 0.724  man#12                   suit               A man in a white suit. | A maroon soccer uniform.
+   583   224 0.732 0.827  tire                     car wheel          A black round rubber tire commonly used fo | A black wheel.
+   584   224 0.757 0.836  chair#7                  rocking chair      A chair with a wide, slightly angled backr | A wooden chair with a sleek and minimalist
+   585   223 0.663 0.761  apple                    strawberry         A grey and red T-shirt. | Red tomato on a gray background.
+   586   223 0.671 0.776  box#31                   crate              A large, rectangular, green and brown mili | A green rectangular plastic container with
+   587   223 0.750 0.774  house#19                 greenhouse         A single-story house with multiple roof se | A unique and picturesque small stone house
+   588   223 0.605 0.768  cube#3                   lemon              A yellow, plastic, translucent crown with  | A yellow rectangular shield with a smooth,
+   589   223 0.673 0.714  character#11             jack-o'-lantern    A stylized round, white object with simpli | A stylized cartoon skeleton with a large, 
+   590   223 0.869 0.816  humanoid#5               upright            A humanoid figure attached to a long, slen | A humanoid skeleton figure with defined ri
+   591   222 0.716 0.744  pair#14                  hatchet            A flat-head screwdriver with a rounded han | A brown wooden baseball bat with a curved 
+   592   222 0.813 0.848  spherical                ping-pong ball     A shallow, round bowl with a smooth surfac | A small, round, brown ball with a smooth s
+   593   222 0.739 0.696  house#20                 boathouse          A small white house with a red roof, situa | A small single-story house with a red gabl
+   594   222 0.688 0.789  door#3                   sliding door       A unique and creative wooden door with a c | A rectangular wooden door with a handle on
+   595   222 0.722 0.828  spaceship#7              airliner           Monochromatic and featureless, resembling  | A large, sleek and modern silver airplane 
+   596   222 0.863 0.786  woman#7                  miniskirt          3D model of a woman in a lifelike pose, st | A realistic 3D model of a slender woman in
+   597   222 0.650 0.691  box#32                   banana             A tall, rectangular-shaped concrete column | A yellow pixelated object resembling a cha
+   598   222 0.727 0.784  building#12              prison             A complex, multi-level architectural struc | A small white rectangular box with a black
+   599   221 0.664 0.777  sword#10                 red wine           A skateboard with red wheels. | A pair of red scissors.
+   600   221 0.759 0.760  sculpture#15             pedestal           A detailed stone sculpture of a man sittin | A detailed and realistic stone frog sculpt
+   601   221 0.625 0.812  barrel#3                 barrel             A small, old-fashioned brown wooden carria | A tall, cylindrical woven bamboo basket wi
+   602   221 0.655 0.706  bowl#7                   pot                A unique-shaped blue and white porcelain b | A round blue and white ceramic bowl with a
+   603   221 0.710 0.811  vase#6                   vase               A visually appealing brown vase filled wit | A unique, brown and white vase or bowl wit
+   604   221 0.703 0.725  row                      soccer ball        An orange sphere adjacent to a complex whi | A visually appealing cluster of small, rou
+   605   220 0.818 0.907  axe#4                    hatchet            A large wooden axe with a long curved hand | A well-made, versatile hammer with a woode
+   606   220 0.607 0.770  camera                   radio              A compact and portable black Canon camera  | A medical or industrial device comprising 
+   607   220 0.698 0.746  sculpture#16             wood rabbit        A detailed and realistic wooden horse's he | A small, intricately designed golden frog 
+   608   220 0.834 0.930  barrel#4                 barrel             A wooden barrel. | A wooden barrel with metal rivets.
+   609   220 0.719 0.725  mural#2                  stone wall         A large graffiti-covered delivery truck wi | A large, colorful and intricately designed
+   610   220 0.639 0.697  stack                    bookcase           A neat and orderly stack of books with dif | A rectangular pencil holder made of light-
+   611   220 0.656 0.762  irregularly shaped#23    bubble             Blue shield with a tapered bottom and rein | A geometric flat square plane with a small
+   612   219 0.684 0.672  table#10                 dining table       A small round gray stone table with a lamp | A small wooden cart with a striped awning,
+   613   219 0.802 0.800  island#2                 seashore           Cartoon of a small island with trees, a bo | A water surface with five small islands, e
+   614   219 0.741 0.796  bed#2                    desk               A large white wooden bed with a pink bedsp | A sleek and modern white rectangular bed o
+   615   219 0.724 0.822  sword#11                 scabbard           A stylized dagger with a golden blade, a s | A realistic representation of a red handle
+   616   219 0.734 0.751  box#33                   television         A large black rectangular box with a uniqu | A black cube with a rectangular shape, pos
+   617   219 0.686 0.757  sculpture#17             mask               A unique and artistic white ceramic sculpt | A detailed and intricate sculpture of a ma
+   618   218 0.833 0.833  car#7                    sports car         White Volkswagen Jetta | A white Audi A8 car.
+   619   218 0.746 0.780  statue#11                pedestal           A unique white sculpture of a bird-like fi | A white bird statue made of marble, with i
+   620   218 0.766 0.788  sonic#2                  rule               A witch with a hat and a cauldron. | A teddy bear in a suit.
+   621   218 0.750 0.803  robot#5                  black and gold gar A white and yellow robot with a yellow hel | A blue and yellow humanoid toy robot with 
+   622   218 0.693 0.733  plant#4                  pot                A decorative pot containing a tall segment | Groot planter with a green plastic plant i
+   623   218 0.744 0.772  rock formation#2         rock beauty        A small rocky terrain with a person standi | A rough, irregular shaped rock with dirt a
+   624   218 0.642 0.701  box#34                   orange             A small orange toy car. | A retro-style television set with a rectan
+   625   218 0.742 0.825  cabinet#5                refrigerator       A sleek and modern white rectangular cabin | A sleek and modern white and black cabinet
+   626   218 0.639 0.766  spherical#2              bubble             A unique blue decorative item or model, re | A creature resembling a round, fluffy anim
+   627   218 0.629 0.737  flower                   vase               A unique and intricate purple 3D sculpture | A plant with purple flowers and a swirling
+   628   217 0.757 0.837  table#11                 dining table       A rectangular wooden bench or coffee table | A dining table and chairs.
+   629   217 0.741 0.792  fountain#2               fountain           Stone drinking fountain with a round basin | A weathered stone monument features a robe
+   630   217 0.699 0.824  cylindrical#14           obelisk            A beige column. | A tall, cylindrical brick chimney or smoke
+   631   216 0.702 0.805  toy tank                 tank               A small gray metal tank with a rectangular | A gray and red pixelated tank-like object,
+   632   216 0.709 0.804  humanoid robot#10        harvester          A humanoid robot with a large head or helm | A metallic robotic hand resembling a human
+   633   216 0.720 0.811  complex#2                maze               A geometric abstract sculpture composed of | A vertical tower structure featuring stack
+   634   216 0.707 0.738  frog#2                   green lizard       A green and brown snake made of blocky mat | A detailed and realistic representation of
+   635   216 0.728 0.703  character#12             green snake        A small, cute, cartoon-like deer with a wh | A small, cute, cartoon-like representation
+   636   215 0.733 0.772  slender#2                wooden spoon       A long, slender wooden tool with a cylindr | A brown wooden stick or cane with a long, 
+   637   215 0.614 0.764  bottle#3                 green snake        A green cocktail with a straw and a slice  | A blue planet with a green ring.
+   638   215 0.665 0.670  box#35                   flamingo           A compact sewing machine with a spool of p | A light pink rectangular box with a lid, a
+   639   215 0.643 0.647  visually appealing#5     green snake        A green broccoli with a tree-like shape, a | A pair of gray and green shorts designed f
+   640   215 0.706 0.815  box#36                   crate              A vintage brown leather suitcase with a re | A vintage wooden box with a rectangular sh
+   641   215 0.668 0.768  creature#8               green lizard       A mythical creature's head with greenish-b | A small, round, green monster with one lar
+   642   215 0.751 0.691  hamburger                cheeseburger       A golden brown croissant, with a flaky and | A cheeseburger with a sesame bun, lettuce,
+   643   215 0.633 0.692  house#21                 ballpoint          A durable purple smartphone case designed  | Low-poly purple handheld gaming device wit
+   644   214 0.733 0.868  box#37                   crate              A large, brown wooden crate with a rectang | A rectangular wooden box or crate with a h
+   645   214 0.665 0.671  box#38                   crate              A white basketball hoop with a red rim and | A rectangular cardboard cigarette pack wit
+   646   214 0.646 0.761  chair#8                  rocking chair      A plush, tufted armchair with rolled arms  | Ornate wooden sleigh with red cushioning, 
+   647   214 0.598 0.772  skyscraper#2             file               A laptop computer | A tall skyscraper.
+   648   214 0.699 0.724  sculpture#18             pedestal           A large and visually striking metal sculpt | Intricate metallic knot sculpture with a s
+   649   214 0.718 0.873  well crafted#7           scabbard           A well-crafted medieval weapon, resembling | A sword with a long handle.
+   650   214 0.629 0.769  cylindrical#15           missile            A small, sleek and modern cylindrical devi | A mechanical or electronic device featurin
+   651   214 0.822 0.792  humanoid#6               upright            A humanoid skeleton wearing a long robe or | Abstract humanoid sculpture with exaggerat
+   652   214 0.642 0.715  house#22                 flamingo           A pink gas can with a black handle. | A worn pink book with blue text on the cov
+   653   213 0.627 0.781  sphere#7                 soccer ball        A small, detailed and realistic sphere rep | Soccer ball with a black and white pentago
+   654   213 0.689 0.837  irregularly shaped#24    pot                A round base with numerous irregular, shar | A mitten with a rounded top and slight ind
+   655   213 0.778 0.761  triceratops              triceratops        A group of three lifelike dinosaurs, inclu | A black T-Rex dinosaur with red eyes.
+   656   213 0.674 0.732  dinosaur                 triceratops        A weathered and worn dinosaur head replica | A group of detailed and realistic dinosaur
+   657   213 0.725 0.752  humanoid robot#11        military uniform   A purple and black humanoid robot with a d | A diving suit with a helmet and attached h
+   658   213 0.657 0.803  seashell#2               snail              A small, white seashell with a curved, spi | A realistic and lifelike sand dune made of
+   659   213 0.702 0.804  archway                  triumphal arch     A large ornate building with a stone facad | A sturdy and durable stone archway with a 
+   660   213 0.673 0.787  tree#7                   broccoli           A small lifelike bonsai tree with green le | A light-colored tree branch made of plasti
+   661   213 0.764 0.808  building#13              restaurant         A multi-story building with distinct balco | A multi-story rectangular brick building w
+   662   212 0.767 0.796  house#23                 barn               A small brown wooden cabin with a thatched | A small, unique and whimsical house made o
+   663   212 0.702 0.777  block#3                  file               A simple brown rectangular prism with shar | A rectangular black plate with two paralle
+   664   212 0.667 0.782  archway#2                triumphal arch     A circular stone archway with a curved sha | A tall, gray rectangular stone archway wit
+   665   212 0.695 0.781  arrowhead                projectile         A brown wooden arrow with a long, slender  | A carved wooden spear with a pointed tip, 
+   666   212 0.636 0.805  cylindrical#16           barrel             A cylindrical wooden log with a rough and  | A wooden surfboard with a curved shape, po
+   667   212 0.714 0.860  box#39                   carton             A white rectangular cardboard box, folded  | A rectangular box with a flat top and bott
+   668   211 0.684 0.771  chair#9                  rocking chair      A brown upholstered armchair with a red cu | A simple chair with a green seat and backr
+   669   211 0.619 0.768  spaceship#8              space shuttle      A large spacecraft with a distinctive roun | A symmetrical spacecraft with two large he
+   670   211 0.572 0.792  tire#2                   file               An orange juice bottle. | Corn on the cob.
+   671   211 0.735 0.874  rock#11                  rock beauty        A large, gray rock with a rough and uneven | A rough, irregularly shaped mineral or roc
+   672   211 0.742 0.760  cylindrical bottle#2     pop bottle         A clear, transparent bottle of pink lemona | A tall and slender red wine bottle with a 
+   673   211 0.782 0.804  boat#3                   canoe              A sleek wooden boat with a small cabin, tr | A small wooden boat with a curved shape an
+   674   211 0.706 0.776  collection#4             web site           A small, multi-room interior space with fu | A tall metal pole or telecommunications to
+   675   210 0.696 0.794  robotic spider           tripod             A mechanical spider-like structure with a  | A steampunk robot with a diving helmet and
+   676   210 0.659 0.643  box#40                   flamingo           A pink rectangular base with rounded corne | A series of connected rectangular platform
+   677   210 0.737 0.752  statue#12                pedestal           A dark stone sculpture of a bird perched o | Statue of a woman in a dress with horns on
+   678   210 0.824 0.846  irregularly shaped#25    rock beauty        Paleolithic stone tool with a pointed tip  | A unique and distinct brownish fossilized 
+   679   209 0.648 0.709  key#2                    brass              A red and gold leather book with gold deta | A golden-colored brass trumpet with a curv
+   680   209 0.689 0.773  table lamp               table lamp         A sleek and modern white cylindrical table | Yellow lamp with a white cord and a plasti
+   681   209 0.752 0.781  helmet#3                 football helmet    A medieval-style iron helmet with a rounde | A military-style helmet in olive green, ad
+   682   209 0.727 0.817  vase#7                   vase               A large brown vase with a curved body and  | A ceramic vase with a narrow base, wide bo
+   683   209 0.691 0.858  box#41                   file               A rectangular enclosure with ventilation g | A tapered rectangular container or box wit
+   684   208 0.770 0.799  bowl#8                   soup bowl          Two bowls in a set. | A concrete bowl or pot with a purple strip
+   685   208 0.709 0.861  box#42                   crate              A large white rectangular box with a rough | A small rectangular box with a light-color
+   686   208 0.674 0.664  silhouette#2             black swan         A black figure in a cloak or robe, lying d | Black silhouette of a person with a rifle.
+   687   208 0.675 0.777  building#14              dome               A small white gazebo with a roof and raili | A small, portable blue tent with a triangu
+   688   208 0.674 0.774  desk lamp                table lamp         A brown wooden table lamp with a cylindric | A cylindrical lamp with a light-colored ba
+   689   207 0.662 0.823  spherical#3              ping-pong ball     An apple with a visible stem and a natural | A small, round, white candle with a wax-li
+   690   207 0.669 0.686  character#13             cowboy hat         A small green and white character with a s | A small, cute, cartoon-like raccoon wearin
+   691   207 0.790 0.789  man#13                   rule               A running tiger. | A man.
+   692   207 0.717 0.822  gravestone#2             obelisk            A gray, stone-like gravestone with a flat  | A gray rectangular gravestone with a flat 
+   693   207 0.696 0.762  airplane#4               airliner           A small, sleek white and green airplane mo | A weathered small aircraft or glider fusel
+   694   207 0.761 0.651  landscape#2              mountain tent      A blocky area with green grass, three brow | A large rectangular swimming pool with a d
+   695   206 0.705 0.784  military tank#2          tank               A large, armored military vehicle with a d | A small, detailed green and red tank model
+   696   206 0.744 0.822  bowl#9                   pot                A large, brown, cracked bowl with a unique | A small, round, brown clay pot with a uniq
+   697   206 0.733 0.784  car#8                    sports car         A pair of white earphones. | White Back to the Future DeLorean car.
+   698   206 0.768 0.802  humanoid robot#12        suit               A visually appealing, blue humanoid robot  | A sleek and modern humanoid robotic figure
+   699   206 0.750 0.762  island#3                 seashore           A small island with blue and orange featur | A small sandy hill with an irregular and u
+   700   206 0.783 0.873  knife#3                  cleaver            A well-crafted red and silver knife with a | A sleek and modern, sharp kitchen knife wi
+   701   206 0.647 0.697  cylindrical#17           banana             Set of simplistic white structures with bl | A compact, futuristic blue and yellow devi
+   702   205 0.641 0.722  pair#15                  hatchet            An open padlock with a rectangular body an | A small wooden paddle with a rectangular s
+   703   205 0.744 0.842  man head#2               rule               A woman with long hair. | A human brain.
+   704   205 0.663 0.643  visually appealing#6     vase               A colorful, ornate handle with wing and he | A colorful necklace with a unique design, 
+   705   205 0.771 0.735  friendly#4               banana             A yellow bird-like toy or model with a lon | A small, red and yellow Pokémon figurine r
+   706   204 0.726 0.771  staircase#2              bannister          A large gray rectangular block with a flat | A unique and visually appealing wooden spi
+   707   204 0.725 0.759  bottle#4                 pop bottle         Monochrome views of a slender cylindrical  | A round brown bottle, possibly handmade or
+   708   204 0.629 0.794  complex abstract         spider web         A cylindrical, open lattice structure with | A complex molecular structure featuring in
+   709   204 0.614 0.693  complex abstract#2       drum               A slender abstract structure with a cluste | A molecule with red, yellow, blue, and whi
+   710   203 0.738 0.848  well crafted#8           hatchet            A well-crafted wooden hammer with a metal  | A well-crafted wooden weapon with a long h
+   711   203 0.698 0.705  human hand               hand-held computer A lifelike and realistic representation of | A realistic and detailed representation of
+   712   203 0.656 0.668  visually appealing#7     vase               A pair of blue and white socks with a uniq | A translucent blue letter "I" shaped objec
+   713   203 0.625 0.743  cylindrical#18           banana             A yellow and black handheld cordless drill | A yellow metal fire hydrant with a cylindr
+   714   203 0.668 0.729  car#9                    plane              Low-poly green and white castle-shaped wed | A low poly flying dragon resembling a purp
+   715   203 0.646 0.746  furry creature           brown bear         A large, gray teddy bear with a realistic  | A small stuffed animal or doll with a roun
+   716   202 0.769 0.777  rusty#2                  barrel             A large, rusty metal drum with a cylindric | A red and black metal oil drum with a cyli
+   717   202 0.759 0.706  room#4                   entertainment cent A wooden L-shaped sofa set with white cush | A realistic representation of a tabby cat 
+   718   202 0.794 0.699  room#5                   desk               A small room featuring a bed with a red bl | A small, dilapidated pink classroom with a
+   719   202 0.733 0.775  knight                   cuirass            A small, detailed and intricate 3D object  | A highly detailed and realistic 3D model o
+   720   202 0.673 0.718  flag                     flagpole           Small Argentine flag waving in the wind. | A black and white flag with a red dragon, 
+   721   201 0.761 0.813  military tank#3          tank               A large, armored military tank with a dist | A sleek and futuristic metallic tank-like 
+   722   201 0.747 0.738  pair#16                  running shoe       A unique and detailed green cowboy boot wi | A pair of brown wooden shoes with a unique
+   723   201 0.781 0.862  irregularly shaped#26    file               A slender, curved wing-like structure with | A rounded, irregular shape composed of mul
+   724   201 0.796 0.883  rock#12                  rock beauty        Rough-textured stone with a central circul | A collection of six irregularly shaped sto
+   725   201 0.812 0.850  seashell#3               snail              A small, delicate white and brown seashell | A large, white snail shell with a curved, 
+   726   201 0.661 0.712  box#43                   crate              A white and blue rectangular milk carton w | A gray cube-shaped container with a blue d
+   727   201 0.684 0.602  character#14             wood rabbit        A small gray and black raccoon with a dist | A small black and white penguin with a dis
+   728   201 0.731 0.774  off road                 trailer truck      A vintage, old-fashioned car with wheels. | A medical ultrasound machine on a wheeled 
+   729   200 0.675 0.782  leather                  purse              A tan medical bag with zippers. | A brown vintage car with a red stripe and 
+   730   200 0.772 0.876  irregularly shaped#27    rock beauty        A brown and gray irregularly shaped shell  | A brown rock.
+   731   200 0.724 0.703  plaque#2                 fire screen        A white ornate picture frame with intricat | A rectangular, ornate religious altarpiece
+   732   200 0.622 0.707  cylindrical#19           lemon              A boy wearing a blue or yellow shirt and b | A large, rusty, and old metal drum with a 
+   733   200 0.656 0.727  creature#9               snail              A blue head with white spikes, resembling  | A whimsical and colorful creature with a r
+   734   199 0.719 0.705  snowman#2                lion               A toy soldier and a bunny from Five Nights | A tiger with distinctive black stripes, a 
+   735   199 0.730 0.788  building#15              mosque             An old, crumbling white stone building wit | A unique and distinctive white building or
+   736   199 0.706 0.805  cylindrical container#5  barrel             A small, pink plastic trash can with a cyl | A weathered and rusty gray metal cylindric
+   737   199 0.734 0.781  ring#3                   bagel              A men's wedding ring featuring a braided d | White plastic ring with holes.
+   738   199 0.656 0.772  handheld device#2        banana             A yellow and black handheld power drill wi | A yellow bulldozer with a distinctive shap
+   739   199 0.702 0.739  motorcycle#2             motor scooter      A red and white tractor with large rear wh | Stylized miniature racing car, primarily r
+   740   199 0.784 0.797  lower jawbone            ear                A thin, irregularly shaped, white bone wit | A white jawbone with a long, curved shape,
+   741   198 0.789 0.728  pair#17                  running shoe       A small, unique-shaped shoe made of clay o | A black and gray hiking boot with a sleek 
+   742   198 0.745 0.875  rock#13                  rock beauty        A small, round rock with a dark color and  | A brown round rock with a rough and uneven
+   743   198 0.647 0.838  spaceship#9              airliner           A realistic and detailed metal model of a  | A sleek and futuristic spaceship or rocket
+   744   198 0.809 0.762  building#16              castle             A detailed top-down view of a city map, sh | A small detailed model of an ancient ruin 
+   745   198 0.667 0.797  sword#12                 scabbard           A gray metallic sword with a curved blade  | A stylized war hammer with a long handle, 
+   746   198 0.712 0.826  chair#10                 rocking chair      A round, cushioned stool with four curved  | A rustic chair with a rounded backrest and
+   747   197 0.710 0.740  toy car#3                go-kart            A small white plastic toy car with a sleek | A toy train set with cars on the track, in
+   748   197 0.622 0.813  complex geometric        prison             A series of interconnected geometric shape | Abstract black-and-white representation of
+   749   197 0.621 0.808  complex geometric#2      spider web         A tall, intricately patterned lattice stru | A complex geometric structure with a centr
+   750   197 0.694 0.826  sports car#7             sports car         A silver BMW sedan with a sleek and modern | Matte white driver-side interior dashboard
+   751   197 0.700 0.758  humanoid robot#13        steam locomotive   A small, brown robot-like figure with a cy | A large, muscular humanoid robot with a br
+   752   197 0.667 0.726  visually appealing#8     ballpoint          A purple wig with blonde tint, curly and w | A stylized purple and blue spiked organic 
+   753   196 0.650 0.752  tower#3                  water tower        A tall, white clock tower with a cylindric | A tall, slender stone tower with a cylindr
+   754   196 0.701 0.779  frame#3                  screen             A rectangular wooden mirror frame with a b | A sleek and modern blue Dell monitor with 
+   755   196 0.749 0.755  prism                    file               A rectangular LEGO brick with eight studs  | A square plate with evenly spaced, rounded
+   756   196 0.647 0.692  box#44                   crate              A medical box with a blue cross, a white a | A blue and green rectangular object with a
+   757   196 0.599 0.752  cylindrical container#6  milk can           A red lipstick with a cylindrical shape, f | A small white cylindrical tank with a flat
+   758   196 0.830 0.883  gun#6                    rifle              A handgun. | Glock 19
+   759   196 0.804 0.758  humanoid robot#14        wood rabbit        A purple Venom character in a suit. | A distinctive purple monkey with a long ta
+   760   195 0.631 0.725  matte                    white wolf         Glossy white abstract sculpture composed o | Matte white, stylized feline sculpture wit
+   761   195 0.805 0.878  building#17              church             A white rectangular building with a simple | A white rectangular two-story house with a
+   762   195 0.816 0.823  house#24                 mobile home        A small, single-story green and white hous | A modern one-story house with large window
+   763   195 0.581 0.806  cylindrical#20           web site           A small round boat or spaceship with a dis | A Dalek, a fictional extraterrestrial race
+   764   195 0.777 0.836  bone like                rifle              A realistic white dog bone with a long, cu | A white curved bone model or replica, rese
+   765   194 0.792 0.773  crab#2                   rock crab          A small brown crab with a puzzle piece in  | A detailed, brown and white crab with a di
+   766   194 0.682 0.731  abstract                 white wolf         Abstract geometric horse sculpture compose | Abstract white skeletal structure resembli
+   767   194 0.729 0.800  spacecraft               space shuttle      A detailed naval ship or battleship, featu | A small, sleek, futuristic-looking gray an
+   768   194 0.708 0.770  building#18              mosque             A well-maintained, white circular building | A complex architectural design featuring g
+   769   194 0.631 0.789  cylindrical#21           missile            A sleek and modern gray cylindrical tube,  | A multi-tiered, cylindrical chess piece wi
+   770   194 0.684 0.715  circular#4               car wheel          A wooden puzzle piece with a unique circul | A circular arrangement of irregularly spac
+   771   194 0.719 0.725  book                     envelope           A small, intricate, triangle-shaped object | A rectangular brown chocolate bar displaye
+   772   193 0.732 0.785  house#25                 boathouse          A miniature traditional thatched-roof hous | A rustic wooden cabin with blue-tiled roof
+   773   193 0.820 0.778  man#14                   suit               A man in a suit. | A man in a suit.
+   774   193 0.696 0.778  skull#2                  football helmet    A horse skull displayed on a wooden circul | A large, realistic and detailed skull made
+   775   193 0.815 0.864  handgun#3                rifle              A sleek and detailed blue metallic handgun | A futuristic handgun with a textured grip,
+   776   193 0.659 0.755  fish#5                   goldfish           Simplified monochromatic representation of | A unique and intricately designed paper sc
+   777   193 0.705 0.852  block#4                  stone wall         A small rectangular stone or brick with a  | A gray rectangular shield with a lion desi
+   778   193 0.613 0.715  spherical#4              soccer ball        A whimsical collection of stylized objects | A cluster of colorful spheres arranged in 
+   779   193 0.676 0.766  robot#6                  banana             Yellow plastic crown. | A yellow and white fighter jet spaceship.
+   780   192 0.849 0.718  character#15             maillot tank suit  A lifelike representation of a blue and pu | A slim and curvy woman in a purple and bla
+   781   192 0.851 0.870  rifle#10                 rifle              A detailed and realistic 3D model of a bro | A brown wooden stocked rifle with a long b
+   782   192 0.650 0.781  cylindrical#22           torch              A tall, slender white candle with a pointe | A red cylindrical pipe with a curved end, 
+   783   192 0.691 0.803  skyscraper#3             water tower        A tall, slender blue skyscraper with a mod | A tall, modern skyscraper with a unique an
+   784   192 0.689 0.827  cylindrical container#7  pot                A small, round, metal container with a cyl | A large, round, metallic container with a 
+   785   192 0.694 0.629  silhouette#3             abaya              A black and gold dress with a unique and i | A detailed and intricately designed Lego B
+   786   192 0.661 0.766  vending machine#2        vending machine    Yellow vending machine with candy brand lo | A red and white rectangular ATM machine wi
+   787   191 0.740 0.874  hammer#2                 hammer             A long-handled broom with a wooden handle  | A large wooden hammer with a rectangular s
+   788   191 0.718 0.844  bench#3                  park bench         A small wooden wagon with a rectangular sh | A wooden rectangular bench with a flat top
+   789   191 0.677 0.748  ball#6                   ping-pong ball     A light-colored piggy bank with a round sh | A close-up view of a red apple with a roun
+   790   191 0.650 0.661  visually appealing#9     flamingo           A pink heart-shaped object with intricate  | A small pink and white mushroom with a rou
+   791   191 0.673 0.730  playful                  flamingo           A pink cartoon character, likely a dinosau | A pixelated representation of a small, cut
+   792   190 0.861 0.788  pair#18                  running shoe       A sleek and modern white and orange Adidas | Grey Converse Chuck Taylor All Star Ox sne
+   793   190 0.777 0.881  axe#5                    hatchet            A large, green, wooden axe with a curved b | A medieval war hammer with a large, sharp-
+   794   190 0.707 0.730  box#45                   crate              A red fire hydrant placed inside a rectang | A weathered wooden crate with a rectangula
+   795   190 0.846 0.896  knife#4                  cleaver            A sleek and modern black kitchen knife wit | A black tactical knife with a serrated edg
+   796   190 0.645 0.689  box#46                   envelope           A blue and white striped popcorn box with  | A wooden sign with a blue and white design
+   797   190 0.620 0.855  block#5                  file               A rounded container with a wide base taper | The numbers '2', '0', '2', and '3' arrange
+   798   190 0.844 0.865  arrowhead#2              missile            A white stone arrowhead with a pointed tip | A white, pointed shark's tooth with a tria
+   799   190 0.738 0.833  stick#2                  wooden spoon       A unique, rustic brown wooden wand or staf | A long and slender wooden tree trunk with 
+   800   189 0.815 0.877  well crafted#9           scabbard           A well-crafted metal sword with a long, cu | A long, slender metal sword with a curved 
+   801   189 0.650 0.785  sword#13                 banana             A yellow acoustic guitar. | A white and yellow sword with a heart on i
+   802   188 0.664 0.707  box#47                   crate              A colorful rectangular rug with a checkerb | A colorful and abstract 3D object in the s
+   803   188 0.709 0.698  fire truck               fire engine        A red Santa Claus sleigh with a white body | A red and white vintage-style trolley with
+   804   188 0.692 0.756  statue#13                pedestal           A bronze sculpture of two men working toge | A realistic and detailed black crow statue
+   805   187 0.695 0.664  character#16             flamingo           A three-layered abstract sculpture with a  | A small, soft pink tree with a round base 
+   806   187 0.714 0.857  well crafted#10          scabbard           A row of six metal swords of varying sizes | A set of three white lightsabers, modeled 
+   807   187 0.675 0.650  snowman#3                jack-o'-lantern    A red and white toy helicopter with propel | A small snowy landscape featuring a centra
+   808   187 0.673 0.764  gramophone               dial telephone     A unique vintage-style clock and radio com | A black vintage rotary phone with a curved
+   809   187 0.734 0.685  car#10                   trailer truck      A small green vintage car with a boxy shap | Simplified representation of a semi-traile
+   810   187 0.750 0.690  female character         military uniform   A small, detailed and realistic-looking do | A futuristic female character wearing a ha
+   811   186 0.641 0.679  dog#4                    lion               A teddy bear in various settings. | A small, realistic representation of a dog
+   812   186 0.714 0.835  fence#3                  picket fence       A wooden pallet with three gray foot-like  | A wooden ruler with a rectangular shape, f
+   813   186 0.682 0.719  human hand#2             organ              A realistic and detailed 3D model of a hum | A well-crafted and realistic 3D representa
+   814   185 0.722 0.785  house#26                 castle             A small, colorful, cartoonish house-shaped | A pagoda-style building situated on a roun
+   815   185 0.683 0.783  microwave oven           television         A four-burner stove with an oven and contr | A rear panel, a cooling fan, a graphics ca
+   816   184 0.686 0.661  vibrant                  coral reef         A vibrant, abstract structure with neon gr | A group of stylized, abstract humanoid fig
+   817   184 0.777 0.904  uneven surface           rock beauty        A black, rough and uneven surface stone wi | A small, round rock or stone with a natura
+   818   184 0.665 0.749  fountain#3               fountain           A terracotta flower pot containing a succu | A unique stone fountain featuring a large 
+   819   184 0.669 0.738  helmet#4                 football helmet    Protective helmet with an adjustable strap | A camouflage military helmet with a visor,
+   820   184 0.591 0.753  wheel                    car wheel          A circular dartboard with concentric rings | A detailed circular medallion with a relie
+   821   183 0.785 0.790  topographical map#2      valley             A detailed and intricate topographical map | A small rectangular map displaying a topog
+   822   183 0.792 0.791  weathered#10             obelisk            A weathered stone sculpture or gravestone  | A weathered, rectangular stone gravestone 
+   823   183 0.695 0.669  stack#2                  altar              A visually appealing rectangular sushi pla | A neat and organized stack of rectangular 
+   824   183 0.732 0.749  motorcycle#3             motor scooter      A blue bicycle with brown handles, seat, a | A set of five bicycles, including a green 
+   825   183 0.670 0.705  hat                      cowboy hat         A unique and intricate decorative hat with | A small red plastic cowboy hat with a wide
+   826   183 0.728 0.800  building#19              barn               A brick building with a wall and door, fea | A vintage brick building with a red awning
+   827   182 0.607 0.702  pair#19                  brass              A well-crafted, detailed golden key with a | A gold tiara with turquoise-blue stones.
+   828   182 0.688 0.752  rock#14                  rock beauty        A brown rough rock with an uneven surface, | A beige cylindrical base with a small gray
+   829   182 0.717 0.691  box#48                   envelope           A solid blue cuboid with a smaller white r | A black rectangular object with a blue bor
+   830   182 0.665 0.753  camera#2                 reflex camera      A vintage-style wooden radio with a rectan | A vintage-style camera with a weathered bl
+   831   182 0.700 0.793  sculpture#19             lion               A white stone lion figurine, intricately c | A visually appealing and unique stone scul
+   832   182 0.813 0.691  van                      police van         A small, pixelated, vintage-style camper v | A large green rectangular box truck, desig
+   833   182 0.803 0.797  handgun#4                revolver           Gun with a yellow handle and gray body. | Futuristic blaster with a red and silver c
+   834   181 0.652 0.822  ball#7                   ping-pong ball     A round, brown walnut with a smooth surfac | A small, brown, round ball made of clay-li
+   835   181 0.733 0.773  fence#4                  grille             A gray metal rectangular railing with mult | A rectangular metal fence or cage with a g
+   836   181 0.711 0.789  dragon#4                 triceratops        A large, red dragon sculpture with a long  | A red demon with blue wings, resembling a 
+   837   181 0.707 0.833  cabinet#6                china cabinet      A wooden rectangular dresser or chest of d | A wooden desk with a rectangular shape, br
+   838   181 0.682 0.784  rubik cube               crossword puzzle   A visually appealing and unique wooden cub | A set of neutral-colored polyhedral dice, 
+   839   180 0.653 0.721  figurine#12              piggy bank         A cream-colored rabbit figurine with elong | A detailed and realistic blue horse model 
+   840   179 0.867 0.774  woman#8                  miniskirt          A detailed and realistic 3D model of a fem | A life-sized, light-colored woman's torso 
+   841   179 0.653 0.733  cube#4                   crate              A purple diary-shaped book with a rectangu | A purple, star-patterned vending machine.
+   842   178 0.684 0.828  box#49                   crate              An old, small rectangular wooden box with  | A stack of rectangular wooden boxes, made 
+   843   178 0.668 0.777  cylindrical#23           missile            A cylindrical object with graduation marki | A black cylindrical key with a small loop 
+   844   178 0.725 0.778  boat#4                   speedboat          A low-poly brown sailing ship with white s | A boat with a flat hull, a cabin, and a ta
+   845   178 0.696 0.748  dragon#5                 triceratops        A brown spider-like creature with a human  | A unique and intricate purple and black ro
+   846   177 0.687 0.789  car#11                   white wolf         A small white robot with a gun and a canno | A white truck.
+   847   177 0.708 0.844  slender#3                file               A narrow, elongated bone with uneven ends  | A long, slender object with a pointed tip 
+   848   177 0.838 0.769  cylindrical can          milk can           A red and white cylindrical can of soda wi | Cylindrical blue can with a printed label 
+   849   177 0.628 0.739  cylindrical#24           pole               A rectangular solar panel with a white fra | A weathered, brown metal streetlight pole 
+   850   176 0.688 0.764  pair#20                  hatchet            A pair of needle-nose pliers with teal han | A long, slender metal wrench with a handle
+   851   176 0.686 0.844  irregularly shaped#28    file               A smooth, intertwined, ribbon-like structu | A complex, abstract structure composed of 
+   852   176 0.651 0.705  sponge character         banana             A white toy duck with a green head and a y | A pixelated yellow dinosaur with small arm
+   853   176 0.651 0.751  table#12                 table lamp         White tableware set, including a plate, bo | A small white gazebo with pillars.
+   854   176 0.755 0.848  building#20              barn               A small rectangular white brick structure  | A large white greenhouse structure with a 
+   855   176 0.685 0.792  geometric#2              prison             A triangular pyramid with a unique and int | A geometric object composed of a faceted s
+   856   176 0.680 0.676  frame#4                  fire screen        A rectangular decorative wooden tray with  | A decorative wooden photo frame with intri
+   857   176 0.765 0.715  cylindrical container#8  milk can           A green cylindrical can of soda with a yel | A labeled can of Del Monte cut green beans
+   858   176 0.769 0.706  forest                   seashore           A landscape featuring a long stone bridge  | A forest scene featuring trees, rocks, and
+   859   176 0.776 0.784  terrain#3                valley             A prominent snow-capped mountain is surrou | A terrain featuring a central elevated hil
+   860   175 0.723 0.800  shield#2                 shield             A circular wooden Viking shield with a lea | A wooden Viking shield with a brown color 
+   861   175 0.738 0.695  house#27                 yurt               A small stone house with a red roof and ch | A small detailed model of a house with a d
+   862   175 0.709 0.742  sculpture#20             pedestal           A realistic and detailed black metal horse | A visually striking and artistically desig
+   863   175 0.788 0.777  humanoid#7               military uniform   A dark figure wearing gloves and a futuris | A male figure in tactical gear, featuring 
+   864   175 0.742 0.833  story apartment          church             A weathered, multi-story concrete building | A large, rectangular neoclassical building
+   865   174 0.723 0.746  toy car#4                go-kart            A small toy rocket ship with a star on top | A blue and green toy truck, possibly a con
+   866   174 0.707 0.703  circular#5               stone wall         A circular stone gazebo surrounded by pink | Aged monolithic stone pillar with weathere
+   867   174 0.870 0.841  couch#3                  studio couch       A tan-colored rectangular couch with a lea | A minimalist, modern sectional sofa with a
+   868   174 0.855 0.830  sports car#8             sports car         A sleek and modern black sedan with a red  | A silver DeLorean car with a sleek and fut
+   869   174 0.769 0.722  character#17             ice bear           A stylized snowman-shaped figure with a wh | A standing cartoon bear-like character wit
+   870   173 0.819 0.841  topographical map#3      valley             A colorful and detailed topographical map  | A circular topographical representation fe
+   871   173 0.664 0.775  toy car#5                sports car         A red toy car with a sleek and modern desi | A sleek and modern gray and red warship wi
+   872   173 0.745 0.766  table#13                 dining table       A small wooden tray adorned with a colorfu | A wooden desk with a green top and a brown
+   873   173 0.697 0.661  cat#3                    West Highland whit A small, rounded, cartoon-style cat figuri | A realistic and detailed gray and white wo
+   874   173 0.694 0.751  sphere#8                 basketball         A small purple egg-shaped object with a sm | A purple pumpkin-shaped object with a roun
+   875   172 0.709 0.775  chair#11                 rocking chair      A unique, broken chair with a damaged and  | A unique purple chair with a curved backre
+   876   172 0.702 0.836  table#14                 dining table       A small wooden vanity table with a chair,  | A rustic wooden table is adorned with a co
+   877   172 0.764 0.764  carved                   stone wall         A visually striking pair of stone faces, w | A small white rectangular stone plaque wit
+   878   171 0.714 0.812  brick wall#2             stone wall         A large, rectangular brick wall made of st | A weathered rectangular brick wall with a 
+   879   171 0.769 0.888  well crafted#11          scabbard           A long, slender silver and red sword with  | A well-crafted, dark metal sword with a lo
+   880   171 0.715 0.665  floating island#2        mountain tent      A floating island structure featuring a Fe | A whimsical wooden bridge with a unique cu
+   881   170 0.701 0.716  group                    confectionery      A colorful toy cannon on wheels. | A group of stylized, colorful animal and c
+   882   170 0.676 0.682  cylindrical#25           green snake        A green sphere positioned adjacent to a co | A group of people arranged in a semi-circu
+   883   170 0.728 0.771  box#50                   crate              A black rectangular box with a handle on t | A rectangular black box with a lid, featur
+   884   170 0.726 0.831  bust#3                   pedestal           A detailed and realistic stone bust of a m | A white marble bust of a woman with a ster
+   885   170 0.621 0.822  cylindrical container#9  pot                A small, round pocket watch with a brown l | A small round container made of plastic or
+   886   169 0.736 0.821  teapot#2                 teapot             A red metal teapot with a cylindrical shap | A white teapot with a cylindrical shape, c
+   887   169 0.729 0.814  brick wall#3             stone wall         A small, detailed rectangular brick wall w | A gray rectangular decorative brick that r
+   888   169 0.644 0.682  cylindrical#26           green snake        A cylindrical wooden bat with dark green m | A green and gray helicopter with a distinc
+   889   168 0.671 0.776  chair#12                 folding chair      A white pillow with ruffled edges. | A unique white chair with a curved backres
+   890   168 0.803 0.798  irregularly shaped#29    rock beauty        A small, round, muddy rock with a rough an | A patch of ground featuring clustered brac
+   891   167 0.611 0.804  rounded                  ping-pong ball     A small, round, and flat cookie-shaped obj | A white circular ring with a smooth and po
+   892   167 0.777 0.869  block#6                  crate              A wooden cube with a rectangular shape, ma | A brown rectangular wooden box with a simp
+   893   167 0.761 0.738  house#28                 boathouse          A small, detailed model of a two-story hou | A building facade with a pink exterior, fe
+   894   167 0.795 0.862  handgun#5                rifle              A sleek and modern black handgun with a lo | A realistic and detailed green handgun wit
+   895   167 0.644 0.707  cube#5                   honeycomb          A compound geometric shape composed of int | A vertical assembly of cubes connected by 
+   896   166 0.639 0.737  cactus                   broccoli           A brown and green leaf with a curved shape | A detailed and realistic green broccoli wi
+   897   166 0.732 0.832  column#2                 obelisk            A tall, thin, and cylindrical stone sculpt | A tall, gray stone pillar with a cylindric
+   898   165 0.796 0.884  knife#5                  cleaver            A well-made, sharp-edged knife with a gree | A large, heavy-duty knife with a long, cur
+   899   165 0.727 0.821  bow#2                    bow                A detailed and realistic wooden bow and ar | A realistic and detailed bow and arrow wit
+   900   164 0.652 0.804  fire hydrant             red wine           Red fire hydrant | Red fire hydrant.
+   901   164 0.723 0.755  friendly#5               wood rabbit        A unique blue and white robotic figure wit | A small stuffed cat toy with a detailed an
+   902   164 0.706 0.774  sculpture#21             stone wall         A unique and intricately designed decorati | A weathered rectangular stone pillar with 
+   903   164 0.809 0.874  knife#6                  cleaver            A sleek and modern silver knife with a sha | A curved karambit knife with a blade featu
+   904   164 0.694 0.690  motorcycle#4             motor scooter      A realistic 3D object of a black and white | A gray and black longboard skateboard with
+   905   164 0.745 0.776  helicopter               warplane           White helicopter with a single main rotor  | A quadcopter drone with a central body, fo
+   906   163 0.761 0.804  sculpture#22             pedestal           A white plaster sculpture of a man and a w | A white marble sculpture with a rectangula
+   907   163 0.678 0.707  matte#2                  white wolf         Matte white zipper with a linear toothed t | Matte white, intricate lattice structure w
+   908   163 0.857 0.856  compact submachine       rifle              A detailed, futuristic assault rifle with  | A black light machine gun with a bipod, a 
+   909   163 0.628 0.681  box#51                   red wine           A long rectangular prism with a red exit d | A red and white rectangular warning sign w
+   910   163 0.716 0.848  handgun#6                holster            A sleek and modern gray metal gun with a r | A black revolver with a cylindrical shape,
+   911   163 0.804 0.820  leg bone                 crutch             A white, long, thin, and curved human bone | A curved, hollow horn with a flared openin
+   912   162 0.783 0.805  fish#6                   goldfish           A visually appealing blue and yellow fish  | A blue and yellow inflatable fish with a d
+   913   161 0.701 0.761  rock#15                  rock beauty        A group of large rocks and shrubs arranged | A white smooth egg-shaped rock sitting on 
+   914   161 0.647 0.769  humanoid robot#15        desktop computer   A small blue and white robot with a spheri | A group of five small robots featuring dif
+   915   161 0.828 0.804  urban area               valley             An urban area with multiple buildings, roa | A small, sparsely populated desert settlem
+   916   160 0.700 0.791  chandelier               lampshade          An ornate chandelier with multiple arms, l | An ornate chandelier with five arms, each 
+   917   160 0.647 0.812  gun#7                    rifle              A purple and yellow toy gun. | Transformers' Optimus Prime robot holding 
+   918   160 0.595 0.813  cylindrical#27           file               A small, white, round stone with a smooth  | A silver trophy with a globe on top, repre
+   919   159 0.645 0.747  christmas tree           green lizard       A small green crocodile. | A green, irregularly shaped object with an
+   920   159 0.791 0.846  cabinet#7                chiffonier         A wooden rectangular cabinet with a hinged | A classic and elegant brown wooden wardrob
+   921   158 0.747 0.788  house#29                 barn               A large, modern building model with a rect | A small wooden Japanese-style house with a
+   922   158 0.659 0.745  bird#5                   plane              A detailed and realistic representation of | A gold winged eagle with spread out wings,
+   923   158 0.724 0.784  computer monitor         desktop computer   A flat-screen computer monitor on a stand. | A computer monitor with a white screen and
+   924   158 0.655 0.670  japanese torii           fire engine        A tall, rectangular metal utility cart wit | A red and black traditional Japanese gate,
+   925   157 0.777 0.812  lifelike#4               African crocodile  A detailed and realistic 3D model of a Vel | A detailed and realistic 3D model of a T-R
+   926   157 0.665 0.747  car#12                   flamingo           A Lego man wearing a pink shirt and blue p | A pink Santa sleigh with presents.
+   927   156 0.736 0.834  table#15                 dining table       A simple brown octagonal table with three  | A round wooden table with a smooth, polish
+   928   156 0.816 0.867  rock#16                  rock beauty        A unique, small white stone structure with | A small, white rock with a rough texture a
+   929   155 0.729 0.794  deer skull#2             triceratops        Matte white deer skull with branching antl | A lifelike and detailed brown deer head wi
+   930   154 0.819 0.830  human head#3             mask               A human head displaying varied hair and a  | A human face profile with detailed contour
+   931   154 0.676 0.763  ring#4                   bagel              A unique gold ring with intricate and deta | Matte white ring with a plain band and a s
+   932   154 0.696 0.670  cluster                  desktop computer   Geometric structure consisting of red line | A jagged, curved blue ring-like structure 
+   933   153 0.695 0.793  door#4                   sliding door       An old wooden door with a keyhole and a lo | A rectangular wooden window frame with a c
+   934   153 0.855 0.883  barrel#5                 barrel             A wooden barrel with metal bands, a tap, a | A stack of wooden barrels arranged in a py
+   935   153 0.702 0.679  woman#9                  gown               A long-sleeve shirt with a collar and butt | A sleeveless dress with thin straps and a 
+   936   153 0.751 0.754  woman#10                 green mamba        A detailed and realistic 3D model of a sma | A 3D model of two children, one with a gre
+   937   152 0.790 0.898  well crafted#12          scabbard           A well-crafted and detailed yellow and gol | A well-crafted, long, curved sword with a 
+   938   152 0.741 0.844  vase#8                   vase               A unique, handmade brown pottery sculpture | A unique, handmade brown clay pot or vase 
+   939   152 0.645 0.727  sphere#9                 soccer ball        A unique metallic robotic ball with a roun | A steampunk-style mechanical device featur
+   940   151 0.775 0.805  structural framework#2   prison             A multi-level rectangular frame structure  | A steel warehouse building with a roof, be
+   941   151 0.721 0.749  bird#6                   crane bird         A colorful green parrot in flying position | A small, brown owl with a realistic and de
+   942   150 0.685 0.767  mug#2                    coffee mug         A unique wooden mug with a distinctive sha | A faceted trophy cup with a wide bowl, nar
+   943   150 0.819 0.693  frame#5                  fire screen        A rectangular piece of stone or tile with  | A wooden framed painting featuring a man a
+   944   149 0.811 0.880  city#2                   castle             A detailed and accurate miniature model of | A miniature model of a natural landscape w
+   945   149 0.723 0.844  sports car#9             sports car         A compact SUV with a hatchback design and  | A three-wheeled vehicle with a low chassis
+   946   148 0.704 0.787  coin#2                   brass              A stack of neatly arranged gold coins, wit | A small golden coin with a unique shape an
+   947   148 0.742 0.744  city#3                   castle             A small white castle model with intricate  | A miniature diorama featuring a quaint vil
+   948   148 0.755 0.789  rubik cube#2             crossword puzzle   A 3x3 Rubik's Cube puzzle with rounded col | Four interlocked cubes of different colors
+   949   147 0.760 0.838  rifle#11                 rifle              Monochrome shotgun with a simplistic desig | A rocket launcher with a bipod stand and s
+   950   147 0.802 0.835  pottery vase#2           vase               A brown clay vase with a Greek-style desig | A small, brown and white ceramic vase with
+   951   147 0.719 0.832  church#3                 church             A small, detailed stone church model with  | A historic stone church with a distinctive
+   952   147 0.714 0.823  boat#5                   file               A white triangle. | A white ship or boat.
+   953   146 0.700 0.761  complex#3                viaduct            A parallel double-row structure consisting | A rectangular metal-framed structure resem
+   954   146 0.616 0.682  circular#6               drum               A blue and white surfboard with a curved s | A dark blue mechanical object with a verti
+   955   145 0.774 0.834  freshly baked            French loaf        A chocolate-frosted donut with sprinkles. | A golden brown crescent-shaped pastry with
+   956   145 0.678 0.659  sign                     street sign        A rectangular metal sign with a wooden fra | A wooden rectangular sign with a green dra
+   957   145 0.846 0.782  man#15                   suit               A woman in a trench coat with her arms out | Cartoon girl in a dress with arms outstret
+   958   145 0.732 0.653  damaged                  passenger car      A blue steam locomotive with a smiling fac | A small, brown and white train car with a 
+   959   144 0.593 0.818  spherical#5              dome               A cylindrical base with multiple branching | A dark, oval-shaped central body wrapped w
+   960   144 0.759 0.851  barrel#6                 barrel             A versatile and practical round woven bask | A large, brown, cylindrical container with
+   961   144 0.755 0.837  pumpkin#2                jack-o'-lantern    A brightly colored, round and smooth peach | Ripe peach with a textured surface exhibit
+   962   144 0.741 0.842  cabinet#8                refrigerator       A white, three-drawer cabinet with handles | A large white rectangular storage unit wit
+   963   143 0.676 0.617  humanoid#8               abaya              A cartoon-like girl wearing a red jacket a | A small, cute, round character of a young 
+   964   142 0.722 0.681  girl#3                   flamingo           A pink and white robot with a bird-like he | A stylized pink vehicle with large yellow 
+   965   142 0.697 0.851  panel                    file               A rectangular solid structure with a recta | A tall, narrow, multi-level structure with
+   966   141 0.665 0.788  guitar                   acoustic guitar    A wooden acoustic guitar with a distinct s | A brown wooden dental model or mold, with 
+   967   141 0.701 0.771  aerodynamic#3            sports car         A sleek and aerodynamic blue and yellow to | A small blue and white golf cart with a un
+   968   140 0.782 0.847  house#30                 thatch             A small, charming and well-built wooden ho | A small wooden house with a thatched roof,
+   969   140 0.726 0.748  box#52                   crate              A small rectangular cardboard box with a l | A white rectangular paper with a black and
+   970   139 0.708 0.645  visually appealing#10    desktop computer   A visually appealing and vibrant bouquet o | A collection of colorful and intricately d
+   971   139 0.848 0.833  chair#13                 rocking chair      A small, lightweight and portable yellow b | A yellow bean bag chair with a curved and 
+   972   138 0.821 0.894  rifle#12                 rifle              A black, sleek and modern rifle scope or b | A sleek and modern black rifle with a long
+   973   138 0.648 0.767  ceiling fan              lampshade          A multi-bladed ceiling fan with a light fi | A small light bulb fixture hanging from th
+   974   137 0.713 0.818  vase#9                   vase               A large, brown, brick-like container with  | A large black and green metal pot or vase 
+   975   136 0.768 0.725  lifelike#5               brown bear         A unique and humorous figurine of a brown  | A unique and intricate brown paper sculptu
+   976   136 0.686 0.640  snowman#4                jack-o'-lantern    A well-crafted and detailed snowman made o | A set of five stylized figures on circular
+   977   136 0.714 0.793  couch#4                  studio couch       A red wooden couch with a rectangular shap | A sleek black leather ottoman with a recta
+   978   136 0.844 0.901  rugged                   rock beauty        A rough and uneven textured rock formation | A unique rock formation with a jagged and 
+   979   136 0.735 0.812  faucet                   washbasin          Minimalist representation of a faucet with | A small, brown, old-fashioned metal faucet
+   980   135 0.704 0.736  man#16                   groom              A realistic 3D model of a person standing  | A small, brown and blue 3D model of a monk
+   981   135 0.794 0.830  sculpture#23             lion               A detailed and intricate stone sculpture o | A realistic and detailed stone statue of a
+   982   135 0.905 0.740  flag#2                   flagpole           A flag representing Uganda, with a distinc | A small British flag with a blue backgroun
+   983   134 0.700 0.776  cylindrical#28           rifle              A unique and decorative long, curved metal | A long cylindrical object with black tips 
+   984   134 0.848 0.840  revolver                 revolver           A sleek, blue metallic futuristic gun with | A black revolver with a silver handle, cyl
+   985   133 0.819 0.887  sword#14                 scabbard           A long, slender spear with a pointed trian | A sharp, pointed metal dagger with a long,
+   986   132 0.628 0.809  cylindrical#29           barrel             A large brown wooden wheel with a round sh | A small, cylindrical brown container with 
+   987   132 0.740 0.732  apple#2                  orange             A realistic red apple with a round body, s | A small, round brown nut with a distinct s
+   988   131 0.638 0.767  teapot#3                 teapot             A vintage-style copper teapot with a curve | A set of three metal pots and a pan with d
+   989   131 0.771 0.849  cylindrical fire#2       fire engine        A red, metal fire hydrant with a cylindric | A yellow and red fire hydrant with a cylin
+   990   131 0.685 0.732  tree#8                   broccoli           Three stylized trees with brown trunks, wh | A tall, slender green tree with a rectangu
+   991   131 0.724 0.721  slice#2                  pizza              A brownish, slightly burnt piece of cooked | A white and yellow slice of bread, slightl
+   992   130 0.643 0.759  pair#21                  vase               A black and white hose connector plug. | Black jar with a white lid.
+   993   129 0.724 0.726  pair#22                  running shoe       A pair of white stone boots, designed to r | A black and brown hiking shoe, designed fo
+   994   129 0.808 0.811  handgun#7                revolver           White monochromatic semi-automatic pistol  | A gold-colored handgun with a zebra-like p
+   995   128 0.790 0.771  man#17                   red wine           Harley Quinn is wearing a red and blue out | A sleek and modern red hooded jacket with 
+   996   128 0.661 0.687  character#18             military uniform   A red shirt with a unique and creative pat | A small red insect-like creature with ante
+   997   128 0.732 0.896  irregularly shaped#30    rock beauty        A rough, uneven surface rock or stone with | Irregularly shaped object resembling a rou
+   998   128 0.677 0.768  humanoid#9               upright            A stylized anthropomorphic character with  | A white ghostly figure with a slender, elo

@@ -1,0 +1,43 @@
+{
+  "lower_pct": 1.0,
+  "upper_pct": 99.0,
+  "samples_per_channel": 16231168,
+  "exclude_keys_file": "data/outlier_keys_8sigma.json",
+  "thresholds": {
+    "3": {
+      "label": "opacity",
+      "lower": -2.8096790313720703,
+      "upper": 17.218313217163086
+    },
+    "4": {
+      "label": "sh_dc_r",
+      "lower": -1.767011046409607,
+      "upper": 1.1723179817199707
+    },
+    "20": {
+      "label": "sh_dc_g",
+      "lower": -1.7422020435333252,
+      "upper": 1.1470823287963867
+    },
+    "36": {
+      "label": "sh_dc_b",
+      "lower": -1.7364418506622314,
+      "upper": 1.1491966247558594
+    },
+    "52": {
+      "label": "scale_x",
+      "lower": -18.462902069091797,
+      "upper": -3.4796793460845947
+    },
+    "53": {
+      "label": "scale_y",
+      "lower": -18.64064598083496,
+      "upper": -3.5092833042144775
+    },
+    "54": {
+      "label": "scale_z",
+      "lower": -18.753162384033203,
+      "upper": -3.526911735534668
+    }
+  }
+}

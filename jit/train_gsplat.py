@@ -38,8 +38,9 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from PIL import Image
 
+from datetime import timedelta
 from accelerate import Accelerator, DistributedDataParallelKwargs
-from accelerate.utils import set_seed
+from accelerate.utils import set_seed, InitProcessGroupKwargs
 
 # Add repo root to path for imports
 REPO_ROOT = str(Path(__file__).resolve().parent.parent)
@@ -241,6 +242,23 @@ def _load_val_prompts(
     prompts = prompts[:n_tiles]
     logger.info(f"Encoding {len(prompts)} validation prompts (CLIP-L/14, penultimate+LN) …")
     return _encode_clip_penultimate(prompts, device)
+
+
+def _load_val_classes(
+    n_tiles: int,
+    num_classes: int,
+    device: torch.device,
+) -> torch.Tensor:
+    """Class-conditioning analogue of ``_load_val_prompts``: a ``(n_tiles,)`` long
+    tensor of class ids for the validation grid + cond-signal probe. Uses ids
+    ``0..n-1`` (the largest classes, since the taxonomy is size-sorted), wrapping
+    if there are fewer classes than tiles."""
+    base = min(n_tiles, num_classes)
+    ids = torch.arange(base, dtype=torch.long)
+    if ids.numel() < n_tiles:
+        reps = (n_tiles + ids.numel() - 1) // ids.numel()
+        ids = ids.repeat(reps)[:n_tiles]
+    return ids.to(device)
 
 
 #################################################################################
@@ -728,7 +746,9 @@ def _measure_conditioning_signal(
     eps = 1e-8
 
     def _expand(idx: int):
-        return pooled_pool[idx:idx + 1].expand(batch_size, -1).to(device)
+        v = pooled_pool[idx:idx + 1].to(device)
+        # class ids: (1,) -> (B,); pooled vectors: (1, D) -> (B, D)
+        return v.expand(batch_size) if v.ndim == 1 else v.expand(batch_size, -1)
 
     # Null forward: pooled vector replaced with cached null via force_drop_ids=1.
     p0 = _expand(0)
@@ -1153,6 +1173,75 @@ def _wandb_log(run, payload: dict, step: int) -> None:
         logger.warning("[wandb] log failed at step %d: %s", step, exc)
 
 
+@torch.no_grad()
+def _eval_split_losses(eval_loader, model, diffusion, *, device, runtime, args,
+                       norm_mean, norm_std, norm_mean_full, norm_std_full,
+                       plane_to_sphere, rank_transform_tables, channel_loss_weights,
+                       renderer_tuple, train_cameras, lpips_fn, dc_only,
+                       class_conditioned, max_samples=0):
+    """Replay the training step's loss path (recon + render) on a held-out / probe loader,
+    no backprop. Returns mean recon (training-t) and render L1/alpha/LPIPS (t>=cutoff). Mirrors
+    the loss computation at the train step so held-out vs train numbers are directly comparable.
+
+    Kept in TRAIN mode on purpose: avoids a torch.compile eval-mode recompile that would stall the
+    rank-0 barrier past the NCCL timeout, and matches the dropout regime of the logged train loss so
+    the held-out vs train-probe GAP is apples-to-apples. no_grad (decorator) still prevents backward."""
+    T = diffusion.num_timesteps
+    cutoff = float(args.render_loss_noise_cutoff)
+    do_render = (renderer_tuple is not None and train_cameras is not None
+                 and _any_render_loss_weight(runtime))
+    _cps = int(args.chamfer_patch_size) or int(model.patch_size)
+    _ppz = (_cps if args.recon_loss in ("chamfer_patch", "sinkhorn_patch", "sinkhorn_patch_hard")
+            else int(model.patch_size))
+    recon_sum, recon_n = 0.0, 0
+    rl1 = ral = rlp = 0.0
+    rn = 0
+    for batch in eval_loader:
+        if len(batch) == 4:
+            x, y_pooled, x_full, _ = batch
+            x_full = x_full.to(device).float()
+        else:
+            x, y_pooled, _ = batch
+            x_full = None
+        x = x.to(device).float()
+        y_pooled = y_pooled.long().to(device) if class_conditioned else y_pooled.float().to(device)
+        B = x.shape[0]
+        t_value, t = _sample_jit_timesteps(B, T, device, runtime.P_mean, args.P_std, dist=args.timestep_dist)
+        ld = diffusion.flow_matching_training_losses(
+            model, x, t_value, t, model_kwargs=dict(y_pooled=y_pooled), noise=torch.randn_like(x),
+            channel_loss_weights=channel_loss_weights, recon_loss=args.recon_loss,
+            chamfer_loss_weight=float(runtime.chamfer_loss_weight), chamfer_subsample=int(args.chamfer_subsample),
+            chamfer_patch_size=_cps, chamfer_rev_weight=float(runtime.chamfer_rev_weight),
+            mse_hybrid_weight=0.0, mse_hybrid_lownoise_mult=float(args.mse_hybrid_lownoise_mult),
+            sinkhorn_eps=float(runtime.sinkhorn_epsilon), sinkhorn_iters=int(args.sinkhorn_iters),
+            compile_sinkhorn=bool(args.compile_sinkhorn), huber_delta=float(args.huber_delta),
+            residual_mad_diag=False, permute_mode=args.permute_atlas, permute_patch_size=_ppz,
+            skip_recon=False)
+        recon_sum += float(ld["loss"].sum()); recon_n += B
+        x0_pred = ld.get("pred_xstart")
+        if do_render and x0_pred is not None:
+            x0_pred = x0_pred.float()
+            x_gt = x_full if x_full is not None else x
+            keep = (t_value >= cutoff)
+            k = int(keep.sum())
+            if k > 0:
+                a, b, c = _compute_render_loss_for_batch(
+                    x0_pred=x0_pred[keep], x_gt_full=x_gt[keep],
+                    norm_mean_pred=norm_mean, norm_std_pred=norm_std,
+                    norm_mean_full=norm_mean_full if x_full is not None else norm_mean,
+                    norm_std_full=norm_std_full if x_full is not None else norm_std,
+                    train_cameras=train_cameras, renderer_tuple=renderer_tuple, lpips_fn=lpips_fn,
+                    num_cam=args.render_loss_num_cam, device=device, dc_only=dc_only,
+                    plane_to_sphere=plane_to_sphere, sample_weights=None,
+                    rank_transform_tables=rank_transform_tables, per_sample_cam_zooms=None)
+                rl1 += float(a) * k; ral += float(b) * k; rlp += float(c) * k; rn += k
+        if max_samples and recon_n >= max_samples:
+            break
+    return dict(recon=recon_sum / max(recon_n, 1), render_l1=rl1 / max(rn, 1),
+                render_alpha=ral / max(rn, 1), render_lpips=rlp / max(rn, 1),
+                n=int(recon_n), render_n=int(rn))
+
+
 #################################################################################
 #                             EMA Utilities                                     #
 #################################################################################
@@ -1235,11 +1324,14 @@ def main(args):
     # channels-last grads for 1×1 Conv2d weights. Restores comm/compute
     # overlap on those layers.
     ddp_kwargs = DistributedDataParallelKwargs(gradient_as_bucket_view=True)
+    # Raise the collective timeout (default 10 min) so a periodic rank-0-only held-out eval can't
+    # trip the NCCL watchdog while the other ranks wait at the surrounding barrier.
+    pg_kwargs = InitProcessGroupKwargs(timeout=timedelta(minutes=60))
     accelerator = Accelerator(
         mixed_precision="no" if args.mixed_precision == "none" else args.mixed_precision,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         log_with=None,
-        kwargs_handlers=[ddp_kwargs],
+        kwargs_handlers=[ddp_kwargs, pg_kwargs],
     )
     device = accelerator.device
     is_main = accelerator.is_main_process
@@ -1257,11 +1349,40 @@ def main(args):
         os.makedirs(args.results_dir, exist_ok=True)
     accelerator.wait_for_everyone()
 
-    # Create base dataset (Standard, with text embeddings attached)
+    # Conditioning mode: discrete class (learnable per-class AdaLN vector via
+    # --class_map_path) or text (CLIP-pooled AdaLN via --text_embed_path).
+    class_conditioned = bool(args.class_map_path)
+    if class_conditioned and (args.text_embed_path or args.null_text_token_path):
+        # --class_map_path wins so the existing text-conditioning config can be
+        # reused by just adding the flag (no need to strip text_embed_path).
+        if is_main:
+            logger.warning(
+                "[class] --class_map_path set; ignoring text_embed_path/null_text_token_path "
+                "(class conditioning overrides text conditioning)."
+            )
+        args.text_embed_path = None
+        args.null_text_token_path = None
+    if not class_conditioned and not args.text_embed_path:
+        raise ValueError(
+            "Provide --class_map_path (class conditioning) or --text_embed_path (text conditioning)"
+        )
+
+    # Create base dataset (Standard). text_embed_path is None in class mode, so the
+    # base keeps all objects and carries no text_pooled.
     if is_main:
         logger.info("Creating base dataset...")
-    if not args.text_embed_path:
-        raise ValueError("--text_embed_path is required for text-conditioned training")
+    class_map = None
+    num_classes = None
+    text_dim = None
+    if class_conditioned:
+        with open(args.class_map_path, "r", encoding="utf-8") as f:
+            class_map = json.load(f)
+        num_classes = args.num_classes or (max(int(v) for v in class_map.values()) + 1)
+        if is_main:
+            logger.info(
+                f"Class-conditioning: learnable per-class AdaLN, num_classes={num_classes} "
+                f"({len(class_map):,} labeled objects from {args.class_map_path})"
+            )
     base_dataset = Standard3DGenDataset(
         obj_list=[args.obj_list],
         gs_path=args.gs_path,
@@ -1274,9 +1395,23 @@ def main(args):
         clip_thresholds_file=args.clip_thresholds_file,
         text_embed_path=args.text_embed_path,
     )
-    text_dim = int(base_dataset.text_pooled.shape[1])
-    if is_main:
-        logger.info(f"Text-conditioning: pooled-AdaLN, text_dim={text_dim}")
+    if class_conditioned:
+        # Keep only objects that have a class label (mirrors how text mode filters
+        # to objects with a text embedding). A handful of objects may be unlabeled.
+        before = len(base_dataset.obj_data)
+        base_dataset.obj_data = {
+            h: p for h, p in base_dataset.obj_data.items()
+            if p.split('.tar.gz')[0] in class_map
+        }
+        base_dataset.keys = list(base_dataset.obj_data.keys())
+        if is_main:
+            logger.info(
+                f"[class] {before:,} -> {len(base_dataset.obj_data):,} objects with a class label"
+            )
+    else:
+        text_dim = int(base_dataset.text_pooled.shape[1])
+        if is_main:
+            logger.info(f"Text-conditioning: pooled-AdaLN, text_dim={text_dim}")
 
     # Resolve feature indices for sh_degree0_only
     if args.sh_degree0_only:
@@ -1325,6 +1460,7 @@ def main(args):
         cache_dtype=(torch.bfloat16 if args.mixed_precision == 'bf16' else torch.float32),
         preload_max_samples=args.preload_max_samples,
         preload_workers=args.preload_workers,
+        class_map=class_map,
     )
 
     # Overfit modes: --overfit N takes the first N samples.
@@ -1351,13 +1487,47 @@ def main(args):
     if is_main:
         logger.info(f"Dataset size: {len(dataset)}, Per-GPU batch size: {args.batch_size}")
 
+    # ---- Held-out / train-probe eval loaders (overfitting monitor; eval-only, rank-0 only) ----
+    heldout_loader = None
+    trainprobe_loader = None
+    if args.heldout_every > 0 and args.heldout_obj_list and is_main:
+        _ho_full = (use_render_loss or enable_train_render_log) and feature_indices is None
+
+        def _build_eval_loader(_obj_list_path):
+            _b = Standard3DGenDataset(
+                obj_list=[_obj_list_path], gs_path=args.gs_path, caption_path=None,
+                mean_file=args.mean_file, std_file=args.std_file,
+                sphere2plane_path=args.sphere2plane_path, exclude_keys_file=None,
+                rank_transform_file=args.rank_transform_file,
+                clip_thresholds_file=args.clip_thresholds_file, text_embed_path=args.text_embed_path)
+            if class_conditioned:
+                _b.obj_data = {h: p for h, p in _b.obj_data.items() if p.split('.tar.gz')[0] in class_map}
+                _b.keys = list(_b.obj_data.keys())
+            _d = Text3DGenDataset(
+                _b, feature_indices=feature_indices, return_full_for_render=_ho_full,
+                preload_to_cpu=False, lazy_cache_to_cpu=False,
+                cache_dtype=(torch.bfloat16 if args.mixed_precision == 'bf16' else torch.float32),
+                class_map=class_map)
+            return DataLoader(_d, batch_size=args.batch_size, shuffle=True,
+                              num_workers=max(1, args.num_workers // 2), pin_memory=True, drop_last=True)
+
+        heldout_loader = _build_eval_loader(args.heldout_obj_list)
+        if args.trainprobe_obj_list:
+            trainprobe_loader = _build_eval_loader(args.trainprobe_obj_list)
+        logger.info(
+            "[heldout] overfitting monitor ON: held-out=%d trainprobe=%d | every %d steps, <=%s samples/eval",
+            len(heldout_loader.dataset),
+            len(trainprobe_loader.dataset) if trainprobe_loader else 0,
+            args.heldout_every, args.heldout_max_samples or "all")
+
     # Create model
     if is_main:
         logger.info(f"Creating model: {args.model}")
     model = JiT_3DGS_models[args.model](
         input_size=128,
         in_channels=in_channels,
-        text_dim=text_dim,
+        text_dim=(text_dim or 768),
+        num_classes=num_classes,  # None -> TextEmbedder; int -> LabelEmbedder
         class_dropout_prob=args.class_dropout_prob,
         learn_sigma=False,
         gradient_checkpointing=args.gradient_checkpointing,
@@ -1368,11 +1538,16 @@ def main(args):
     # encoding so the unconditional branch lives in the same geometry as
     # conditional inputs. Default path is the encoder's sibling output next to
     # text_embed_path's first shard.
-    null_path = args.null_text_token_path or _default_null_path(args.text_embed_path)
-    null_token_np = load_null_text_token(null_path)
-    model.load_null_embeddings(torch.from_numpy(null_token_np.astype(np.float32)))
-    if is_main:
-        logger.info(f"[null] loaded null text token from {null_path} (shape={null_token_np.shape})")
+    # Class conditioning uses LabelEmbedder's own learnable null row (index
+    # num_classes), so there is no external null token to load.
+    if not class_conditioned:
+        null_path = args.null_text_token_path or _default_null_path(args.text_embed_path)
+        null_token_np = load_null_text_token(null_path)
+        model.load_null_embeddings(torch.from_numpy(null_token_np.astype(np.float32)))
+        if is_main:
+            logger.info(f"[null] loaded null text token from {null_path} (shape={null_token_np.shape})")
+    elif is_main:
+        logger.info("[null] class conditioning: using LabelEmbedder null row (no external token)")
     if is_main:
         logger.info(
             "[patch-embed] %s",
@@ -1958,6 +2133,12 @@ def main(args):
     log_mse_hybrid = torch.zeros([], device=device)  # raw MSE component (Chamfer+MSE hybrid)
     log_sinkhorn_resid = torch.zeros([], device=device)  # sinkhorn plan marginal residual (convergence monitor)
     log_sinkhorn_coll = torch.zeros([], device=device)   # sinkhorn_patch_hard argmax collision fraction (bijection monitor)
+    # Matched-residual-radius diagnostics (opt-in via --log_residual_mad) for choosing huber_delta.
+    log_residual_med = torch.zeros([], device=device)
+    log_residual_mad = torch.zeros([], device=device)
+    log_residual_p90 = torch.zeros([], device=device)
+    log_residual_p99 = torch.zeros([], device=device)
+    log_residual_mad_steps = 0  # micro-batches that produced the residual diagnostic (own counter)
     log_render_kept = 0.0  # sum of render-kept sample counts (host int; folded into Step line)
     log_render_kept_steps = 0  # micro-batches that ran render (for averaging the kept count)
     log_render_l1 = torch.zeros([], device=device)
@@ -2071,13 +2252,23 @@ def main(args):
     # the val grid AND the cond probe (default 64 prompts).
     val_grid_n_tiles = int(args.val_grid_rows) * int(args.val_grid_cols)
     pool_size = max(val_grid_n_tiles, 64)
-    cond_pool = _load_val_prompts(args.val_prompts_file, pool_size, device)
-    if is_main:
-        logger.info(
-            "[cond-pool] %d prompts encoded, pooled_dim=%d (%s)",
-            int(cond_pool.shape[0]), int(cond_pool.shape[1]),
-            args.val_prompts_file or "default 64-prompt set",
-        )
+    if class_conditioned:
+        # cond_pool is a (pool_size,) long tensor of class ids; the grid shows
+        # one class per tile and the [cond] probe compares classes vs the null row.
+        cond_pool = _load_val_classes(pool_size, num_classes, device)
+        if is_main:
+            logger.info(
+                "[cond-pool] %d class ids (class-conditioned, num_classes=%d)",
+                int(cond_pool.shape[0]), num_classes,
+            )
+    else:
+        cond_pool = _load_val_prompts(args.val_prompts_file, pool_size, device)
+        if is_main:
+            logger.info(
+                "[cond-pool] %d prompts encoded, pooled_dim=%d (%s)",
+                int(cond_pool.shape[0]), int(cond_pool.shape[1]),
+                args.val_prompts_file or "default 64-prompt set",
+            )
 
     for epoch in range(start_epoch, args.epochs):
         for batch in loader:
@@ -2161,9 +2352,9 @@ def main(args):
             else:
                 x, y_pooled, hash_keys = batch
                 x_full = None
-            # Pooled CLIP vectors are stored fp16 on disk → fp32 here so
-            # downstream arithmetic (loss/grad) stays accurate.
-            y_pooled = y_pooled.float()
+            # Class ids stay long for the embedding lookup; pooled CLIP vectors
+            # (stored fp16 on disk) → fp32 so downstream arithmetic stays accurate.
+            y_pooled = y_pooled.long() if class_conditioned else y_pooled.float()
             hash_keys = list(hash_keys)
 
             if _prof:
@@ -2212,6 +2403,8 @@ def main(args):
                     sinkhorn_eps=float(runtime.sinkhorn_epsilon),
                     sinkhorn_iters=int(args.sinkhorn_iters),
                     compile_sinkhorn=bool(args.compile_sinkhorn),
+                    huber_delta=float(args.huber_delta),
+                    residual_mad_diag=bool(args.log_residual_mad),
                     permute_mode=args.permute_atlas,
                     # Permute must stay within chamfer patches or the per-patch target
                     # becomes non-stationary, so for chamfer_patch/sinkhorn_patch we align the
@@ -2505,6 +2698,13 @@ def main(args):
             _sc = loss_dict.get("sinkhorn_collision_frac")
             if _sc is not None:
                 log_sinkhorn_coll += _sc.detach()
+            _rmad = loss_dict.get("recon_residual_mad")
+            if _rmad is not None:
+                log_residual_mad += _rmad.detach()
+                log_residual_med += loss_dict["recon_residual_median"].detach()
+                log_residual_p90 += loss_dict["recon_residual_p90"].detach()
+                log_residual_p99 += loss_dict["recon_residual_p99"].detach()
+                log_residual_mad_steps += 1
             log_render_l1 += render_l1_loss.detach()
             log_render_alpha_l1 += render_alpha_l1_loss.detach()
             log_render_lpips += render_lpips_loss.detach()
@@ -2556,6 +2756,16 @@ def main(args):
                     log_sinkhorn_coll.item() / log_steps
                     if args.recon_loss == "sinkhorn_patch_hard" else None
                 )
+                # Matched-residual-radius diagnostics — own counter (flag- and mode-gated,
+                # independent of log_steps so the average is correct when the flag is off).
+                if log_residual_mad_steps > 0:
+                    _rn = log_residual_mad_steps
+                    avg_resid_mad = log_residual_mad.item() / _rn
+                    avg_resid_med = log_residual_med.item() / _rn
+                    avg_resid_p90 = log_residual_p90.item() / _rn
+                    avg_resid_p99 = log_residual_p99.item() / _rn
+                else:
+                    avg_resid_mad = avg_resid_med = avg_resid_p90 = avg_resid_p99 = None
                 elapsed = time.time() - start_time
                 # Optim steps / sec — log_optim_steps counts sync micro-batches
                 # only, while log_steps counts every micro-batch (used for
@@ -2582,6 +2792,11 @@ def main(args):
                     msg += f" | SinkResid: {avg_sink_resid:.2e}"
                 if avg_sink_coll is not None:
                     msg += f" | SinkColl: {avg_sink_coll*100:.2f}%"
+                if avg_resid_mad is not None:
+                    msg += (
+                        f" | ResidMAD: {avg_resid_mad:.3f} "
+                        f"(med {avg_resid_med:.3f} p90 {avg_resid_p90:.3f} p99 {avg_resid_p99:.3f})"
+                    )
                 if _any_render_loss_weight(runtime):
                     avg_rl1 = log_render_l1.item() / log_steps
                     avg_alpha_rl1 = log_render_alpha_l1.item() / log_steps
@@ -2671,6 +2886,11 @@ def main(args):
                         payload["train/sinkhorn_marginal_resid"] = avg_sink_resid
                     if avg_sink_coll is not None:
                         payload["train/sinkhorn_collision_frac"] = avg_sink_coll
+                    if avg_resid_mad is not None:
+                        payload["train/recon_residual_mad"] = avg_resid_mad
+                        payload["train/recon_residual_median"] = avg_resid_med
+                        payload["train/recon_residual_p90"] = avg_resid_p90
+                        payload["train/recon_residual_p99"] = avg_resid_p99
                     if render_active:
                         payload["train/render_l1"] = _render_l1
                         payload["train/alpha_l1"] = _alpha_l1
@@ -2690,6 +2910,11 @@ def main(args):
                 log_mse_hybrid.zero_()
                 log_sinkhorn_resid.zero_()
                 log_sinkhorn_coll.zero_()
+                log_residual_med.zero_()
+                log_residual_mad.zero_()
+                log_residual_p90.zero_()
+                log_residual_p99.zero_()
+                log_residual_mad_steps = 0
                 log_render_kept = 0.0
                 log_render_kept_steps = 0
                 log_render_l1.zero_()
@@ -2837,6 +3062,51 @@ def main(args):
                         )
                 accelerator.wait_for_everyone()
 
+            # NOTE: must be rank-INVARIANT (depends only on args + step), so every rank
+            # enters the barriers below in lockstep. Gating on heldout_loader (built on
+            # rank-0 only) would desync ranks -> mismatched NCCL collectives -> hang.
+            heldout_due = (
+                args.heldout_every > 0 and bool(args.heldout_obj_list)
+                and accelerator.sync_gradients and step > 0 and step % args.heldout_every == 0
+            )
+            if heldout_due:
+                accelerator.wait_for_everyone()
+                if is_main and heldout_loader is not None:
+                    try:
+                        _m = accelerator.unwrap_model(model)
+                        _ekw = dict(
+                            device=device, runtime=runtime, args=args,
+                            norm_mean=norm_mean, norm_std=norm_std,
+                            norm_mean_full=norm_mean_full, norm_std_full=norm_std_full,
+                            plane_to_sphere=plane_to_sphere, rank_transform_tables=rank_transform_tables,
+                            channel_loss_weights=channel_loss_weights, renderer_tuple=renderer_for_train,
+                            train_cameras=train_cameras, lpips_fn=lpips_fn_for_train, dc_only=dc_only,
+                            class_conditioned=class_conditioned, max_samples=args.heldout_max_samples,
+                        )
+                        ho = _eval_split_losses(heldout_loader, _m, diffusion, **_ekw)
+                        payload = {f"heldout/{k}": v for k, v in ho.items() if isinstance(v, (int, float))}
+                        if trainprobe_loader is not None:
+                            tp = _eval_split_losses(trainprobe_loader, _m, diffusion, **_ekw)
+                            payload.update({f"trainprobe/{k}": v for k, v in tp.items() if isinstance(v, (int, float))})
+                            payload["overfit/recon_gap"] = ho["recon"] - tp["recon"]
+                            payload["overfit/render_l1_gap"] = ho["render_l1"] - tp["render_l1"]
+                            payload["overfit/render_lpips_gap"] = ho["render_lpips"] - tp["render_lpips"]
+                            logger.info(
+                                "[heldout] step=%d | recon held=%.5f train=%.5f gap=%+.5f | "
+                                "renderL1 held=%.5f train=%.5f | LPIPS held=%.5f train=%.5f | n=%d render_n=%d",
+                                step, ho["recon"], tp["recon"], ho["recon"] - tp["recon"],
+                                ho["render_l1"], tp["render_l1"], ho["render_lpips"], tp["render_lpips"],
+                                ho["n"], ho["render_n"])
+                        else:
+                            logger.info(
+                                "[heldout] step=%d | recon=%.5f renderL1=%.5f alpha=%.5f LPIPS=%.5f (n=%d render_n=%d)",
+                                step, ho["recon"], ho["render_l1"], ho["render_alpha"], ho["render_lpips"],
+                                ho["n"], ho["render_n"])
+                        _wandb_log(wandb_run, payload, step=step)
+                    except Exception as _exc:
+                        logger.warning("[heldout] eval failed at step %d (non-fatal): %s", step, _exc)
+                accelerator.wait_for_everyone()
+
             if args.max_steps > 0 and step >= args.max_steps:
                 break
         if args.max_steps > 0 and step >= args.max_steps:
@@ -2936,6 +3206,14 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
                              '(EOS token of empty-string penultimate-norm encoding). '
                              'If omitted, defaults to null_text_token.npz next to the '
                              'first --text_embed_path shard.')
+    parser.add_argument('--class_map_path', type=str, default=None,
+                        help='Path to object_to_class.json (dict "chunk/file" -> int). '
+                             'When set, trains with DISCRETE class conditioning: a learnable '
+                             'per-class AdaLN embedding (LabelEmbedder) instead of CLIP text. '
+                             'Mutually exclusive with --text_embed_path.')
+    parser.add_argument('--num_classes', type=int, default=None,
+                        help='Number of classes for class conditioning. If omitted, '
+                             'inferred as max(class id)+1 from --class_map_path.')
     parser.add_argument('--val_prompts_file', type=str, default=None,
                         help='Optional JSON list of validation prompts to encode '
                              'with CLIP-L/14 at startup. If None, uses the built-in 64-prompt '
@@ -2974,7 +3252,7 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
                              'loss-mean. 1.6-2.0 narrows the FOV to make the object fill the frame, '
                              'boosting per-pixel signal density ~4x. Camera position unchanged; '
                              'only intrinsics narrow. Set at launch only (cameras built once).')
-    parser.add_argument('--ref_camera_tar', type=str, default='/home/tiangexiang/gen3d/ref_camera.tar.gz',
+    parser.add_argument('--ref_camera_tar', type=str, default='artifacts/ref_camera.tar.gz',
                         help='Path to reference camera tar.gz for render loss')
     parser.add_argument('--per_sample_zoom_file', type=str, default=None,
                         help='Optional .pt produced by data/build_per_sample_render_fov.py: '
@@ -3301,6 +3579,32 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
              'shapes are static (drop_last=True). No-op for non-sinkhorn recon modes.',
     )
     parser.add_argument(
+        '--huber_delta',
+        type=float,
+        default=0.0,
+        help='Pseudo-Huber radius for the within-patch ground cost (chamfer_patch / '
+             'sinkhorn_patch / sinkhorn_patch_hard). 0 (default) = off => exact squared-L2 '
+             '(bit-identical). >0 robustifies the cost: cost = 2*delta^2*(sqrt(1+r^2/delta^2)-1) '
+             'on the pair radius r=||x-y|| — quadratic (= squared-L2) for inliers, linear (2*delta*r) '
+             'beyond r~=delta, so a few large-residual pairs stop dominating BOTH the OT assignment '
+             'and the gradient. The 2*delta^2 scaling fixes the inlier scale to the squared cost '
+             '(chamfer_loss_weight stays calibrated) and delta->inf recovers it. Gradient-safe at '
+             'coincident points (no kink/blow-up). Launch-time only (set once per run via this flag '
+             'or the main config; NOT hot-reloadable via overrides.yaml). No-op for '
+             'recon_loss=mse/chamfer_feature/chamfer_geometric.',
+    )
+    parser.add_argument(
+        '--log_residual_mad',
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help='Diagnostic: log the robust scale of the matched-residual radius r=||pred-tgt|| for '
+             'the sinkhorn recon modes — median(r), MAD(r)=median(|r-median r|), p90(r), p99(r) — '
+             'as train/recon_residual_{median,mad,p90,p99}. Measured on the RAW (pre-huber) cost so '
+             'the numbers are in the SAME units as --huber_delta. Run with --huber_delta 0 to read '
+             'off a principled delta (e.g. delta ~= median + k*MAD). Adds a couple of median/quantile '
+             'sorts per logged step; off (default) => zero overhead.',
+    )
+    parser.add_argument(
         '--permute_atlas',
         type=str,
         default='none',
@@ -3322,6 +3626,16 @@ def build_train_gsplat_parser() -> argparse.ArgumentParser:
     parser.add_argument('--ckpt_every', type=int, default=10000)
     parser.add_argument('--val_every', type=int, default=0,
                         help='Steps between validation renders (0 = disabled)')
+    parser.add_argument('--heldout_obj_list', type=str, default='',
+                        help='Obj list of held-out (never-trained) objects; recon+render losses on it '
+                             'are logged every --heldout_every steps to detect overfitting.')
+    parser.add_argument('--trainprobe_obj_list', type=str, default='',
+                        help='Optional obj list of IN-training objects, evaluated identically to the '
+                             'held-out set so the train-vs-heldout gap is matched (same weights/t/mode).')
+    parser.add_argument('--heldout_every', type=int, default=0,
+                        help='Steps between held-out loss evals (0 = disabled).')
+    parser.add_argument('--heldout_max_samples', type=int, default=2048,
+                        help='Cap objects scored per held-out eval (loader is shuffled; 0 = all).')
     parser.add_argument('--val_sampling_steps', type=int, default=50,
                         help='Number of sampling steps for validation generation')
     parser.add_argument('--val_sampler', type=str, default='heun',

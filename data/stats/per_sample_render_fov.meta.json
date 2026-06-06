@@ -1,0 +1,14 @@
+{
+  "ref_camera_tar": "artifacts/ref_camera.tar.gz",
+  "train_render_size": 224,
+  "target_bbox_fill": 0.85,
+  "opacity_min": 0.05,
+  "zoom_min": 1.0,
+  "zoom_max": 5.0,
+  "num_objects": 253612,
+  "num_cameras": 52,
+  "base_fovx_rad": 0.691150367,
+  "base_fovy_rad": 0.691150367,
+  "exclude_keys_file": "data/outlier_keys_8sigma.json",
+  "built_with": "data/build_per_sample_render_fov.py"
+}

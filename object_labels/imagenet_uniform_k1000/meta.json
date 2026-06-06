@@ -1,0 +1,48 @@
+{
+  "embeddings": "object_classification/clip_image_embeddings.npz",
+  "N": 254338,
+  "dim": 768,
+  "assignment": "clip_zeroshot_image_vs_imagenet_text",
+  "classnames_source": "torchvision:ImageNet1k",
+  "num_classes_seeded": 1000,
+  "num_classes_used": 868,
+  "k_target": 1000,
+  "target": 254.338,
+  "floor": 127,
+  "cap": "A green antelope with long horns.",
+  "floor_frac": 0.5,
+  "cap_frac": 1.5,
+  "templates": [
+    "a photo of a {}.",
+    "a 3D render of a {}.",
+    "a rendering of a {}.",
+    "a 3D model of a {}.",
+    "a photo of a {} on a white background.",
+    "a {}."
+  ],
+  "seed": 42,
+  "initial_stats": {
+    "k": 868,
+    "total": 254338,
+    "min": 1,
+    "max": 10519,
+    "mean": 293.01612903225805,
+    "median": 49.0,
+    "std": 850.4600014260333,
+    "cv": 2.9024340886450193,
+    "p10": 2,
+    "p90": 700
+  },
+  "final_stats": {
+    "k": 1000,
+    "total": 254338,
+    "min": 138,
+    "max": 513,
+    "mean": 254.338,
+    "median": 250.0,
+    "std": 67.3183166456203,
+    "cv": 0.2646805300254791,
+    "p10": 165,
+    "p90": 342
+  }
+}

@@ -76,10 +76,16 @@ object_classification/cluster_inspection/
 object_classification/debug_renders/
 
 # Large embedding / token caches
-object_classification/image_embeddings*.npz
-object_classification/text_embeddings.npz
-object_classification/umap_*.npz
+object_classification/*.npz
+object_classification/debug_renders_clip/
 object_classification/text_tokens/
+
+# HuggingFace / model caches and chat exports (binaries + local paths/hostnames)
+hf_cache/
+chat_exports/
+
+# Binary tensor artifacts (stats, ranks, thresholds, per-sample tables)
+*.pt
 
 # Runtime artifacts
 *.pid

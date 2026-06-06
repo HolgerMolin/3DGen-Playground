@@ -1,0 +1,6002 @@
+{
+"0": {
+"name": "sword",
+"super_cat": 161,
+"nearest_imagenet": "scabbard",
+"is_misc": false
+},
+"1": {
+"name": "table",
+"super_cat": 44,
+"nearest_imagenet": "dining table",
+"is_misc": false
+},
+"2": {
+"name": "humanoid robot",
+"super_cat": 59,
+"nearest_imagenet": "sulphur-crested cockatoo",
+"is_misc": false
+},
+"3": {
+"name": "moss covered",
+"super_cat": 144,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"4": {
+"name": "spider man",
+"super_cat": 189,
+"nearest_imagenet": "red-breasted merganser",
+"is_misc": false
+},
+"5": {
+"name": "robot",
+"super_cat": 34,
+"nearest_imagenet": "red wine",
+"is_misc": false
+},
+"6": {
+"name": "table#2",
+"super_cat": 94,
+"nearest_imagenet": "dining table",
+"is_misc": false
+},
+"7": {
+"name": "bust",
+"super_cat": 173,
+"nearest_imagenet": "mask",
+"is_misc": false
+},
+"8": {
+"name": "base",
+"super_cat": 17,
+"nearest_imagenet": "green snake",
+"is_misc": false
+},
+"9": {
+"name": "irregularly shaped",
+"super_cat": 45,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"10": {
+"name": "pickup truck",
+"super_cat": 205,
+"nearest_imagenet": "passenger car",
+"is_misc": false
+},
+"11": {
+"name": "box",
+"super_cat": 131,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"12": {
+"name": "rock",
+"super_cat": 58,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"13": {
+"name": "girl",
+"super_cat": 105,
+"nearest_imagenet": "gown",
+"is_misc": false
+},
+"14": {
+"name": "cube",
+"super_cat": 99,
+"nearest_imagenet": "honeycomb",
+"is_misc": false
+},
+"15": {
+"name": "tree",
+"super_cat": 229,
+"nearest_imagenet": "broccoli",
+"is_misc": false
+},
+"16": {
+"name": "skyscraper",
+"super_cat": 106,
+"nearest_imagenet": "water tower",
+"is_misc": false
+},
+"17": {
+"name": "nintendo wii",
+"super_cat": 151,
+"nearest_imagenet": "joystick",
+"is_misc": false
+},
+"18": {
+"name": "bulldozer",
+"super_cat": 119,
+"nearest_imagenet": "tow truck",
+"is_misc": false
+},
+"19": {
+"name": "world war",
+"super_cat": 170,
+"nearest_imagenet": "warplane",
+"is_misc": false
+},
+"20": {
+"name": "character",
+"super_cat": 26,
+"nearest_imagenet": "bonnet",
+"is_misc": false
+},
+"21": {
+"name": "plank",
+"super_cat": 27,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"22": {
+"name": "sword#2",
+"super_cat": 50,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"23": {
+"name": "table#3",
+"super_cat": 94,
+"nearest_imagenet": "dining table",
+"is_misc": false
+},
+"24": {
+"name": "sailboat",
+"super_cat": 155,
+"nearest_imagenet": "schooner",
+"is_misc": false
+},
+"25": {
+"name": "stuffed animal",
+"super_cat": 108,
+"nearest_imagenet": "flamingo",
+"is_misc": false
+},
+"26": {
+"name": "tower",
+"super_cat": 76,
+"nearest_imagenet": "water tower",
+"is_misc": false
+},
+"27": {
+"name": "cat",
+"super_cat": 123,
+"nearest_imagenet": "wood rabbit",
+"is_misc": false
+},
+"28": {
+"name": "building",
+"super_cat": 233,
+"nearest_imagenet": "church",
+"is_misc": false
+},
+"29": {
+"name": "sculpture",
+"super_cat": 174,
+"nearest_imagenet": "white wolf",
+"is_misc": false
+},
+"30": {
+"name": "gun",
+"super_cat": 186,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"31": {
+"name": "rifle",
+"super_cat": 28,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"32": {
+"name": "lifelike",
+"super_cat": 38,
+"nearest_imagenet": "brown bear",
+"is_misc": false
+},
+"33": {
+"name": "cylindrical",
+"super_cat": 86,
+"nearest_imagenet": "barrel",
+"is_misc": false
+},
+"34": {
+"name": "silhouette",
+"super_cat": 134,
+"nearest_imagenet": "abaya",
+"is_misc": false
+},
+"35": {
+"name": "rock#2",
+"super_cat": 209,
+"nearest_imagenet": "white wolf",
+"is_misc": false
+},
+"36": {
+"name": "lifelike#2",
+"super_cat": 98,
+"nearest_imagenet": "upright",
+"is_misc": false
+},
+"37": {
+"name": "irregularly shaped#2",
+"super_cat": 144,
+"nearest_imagenet": "stone wall",
+"is_misc": false
+},
+"38": {
+"name": "man",
+"super_cat": 56,
+"nearest_imagenet": "military uniform",
+"is_misc": false
+},
+"39": {
+"name": "chessboard",
+"super_cat": 238,
+"nearest_imagenet": "crossword puzzle",
+"is_misc": false
+},
+"40": {
+"name": "bench",
+"super_cat": 10,
+"nearest_imagenet": "park bench",
+"is_misc": false
+},
+"41": {
+"name": "irregularly shaped#3",
+"super_cat": 45,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"42": {
+"name": "sports car",
+"super_cat": 182,
+"nearest_imagenet": "lemon",
+"is_misc": false
+},
+"43": {
+"name": "weathered",
+"super_cat": 67,
+"nearest_imagenet": "stone wall",
+"is_misc": false
+},
+"44": {
+"name": "rifle#2",
+"super_cat": 75,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"45": {
+"name": "cylindrical#2",
+"super_cat": 90,
+"nearest_imagenet": "missile",
+"is_misc": false
+},
+"46": {
+"name": "tree stump",
+"super_cat": 68,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"47": {
+"name": "rifle#3",
+"super_cat": 186,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"48": {
+"name": "base#2",
+"super_cat": 188,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"49": {
+"name": "rock formation",
+"super_cat": 114,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"50": {
+"name": "house",
+"super_cat": 9,
+"nearest_imagenet": "barn",
+"is_misc": false
+},
+"51": {
+"name": "fossilized bone",
+"super_cat": 225,
+"nearest_imagenet": "mushroom",
+"is_misc": false
+},
+"52": {
+"name": "spaceship",
+"super_cat": 47,
+"nearest_imagenet": "space shuttle",
+"is_misc": false
+},
+"53": {
+"name": "dinosaur toy",
+"super_cat": 201,
+"nearest_imagenet": "green lizard",
+"is_misc": false
+},
+"54": {
+"name": "bookshelf",
+"super_cat": 3,
+"nearest_imagenet": "bookcase",
+"is_misc": false
+},
+"55": {
+"name": "bicycle",
+"super_cat": 5,
+"nearest_imagenet": "white wolf",
+"is_misc": false
+},
+"56": {
+"name": "rubber duck",
+"super_cat": 115,
+"nearest_imagenet": "banana",
+"is_misc": false
+},
+"57": {
+"name": "box#2",
+"super_cat": 167,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"58": {
+"name": "weathered#2",
+"super_cat": 216,
+"nearest_imagenet": "wooden spoon",
+"is_misc": false
+},
+"59": {
+"name": "cylindrical container",
+"super_cat": 112,
+"nearest_imagenet": "barrel",
+"is_misc": false
+},
+"60": {
+"name": "banana",
+"super_cat": 180,
+"nearest_imagenet": "lemon",
+"is_misc": false
+},
+"61": {
+"name": "teddy bear",
+"super_cat": 230,
+"nearest_imagenet": "brown bear",
+"is_misc": false
+},
+"62": {
+"name": "ball",
+"super_cat": 95,
+"nearest_imagenet": "tennis ball",
+"is_misc": false
+},
+"63": {
+"name": "chair",
+"super_cat": 152,
+"nearest_imagenet": "rocking chair",
+"is_misc": false
+},
+"64": {
+"name": "cannon",
+"super_cat": 21,
+"nearest_imagenet": "cannon",
+"is_misc": false
+},
+"65": {
+"name": "box#3",
+"super_cat": 27,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"66": {
+"name": "cabinet",
+"super_cat": 208,
+"nearest_imagenet": "wardrobe",
+"is_misc": false
+},
+"67": {
+"name": "cardboard box",
+"super_cat": 197,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"68": {
+"name": "bottle",
+"super_cat": 209,
+"nearest_imagenet": "toilet tissue",
+"is_misc": false
+},
+"69": {
+"name": "slim",
+"super_cat": 14,
+"nearest_imagenet": "remote control",
+"is_misc": false
+},
+"70": {
+"name": "well crafted",
+"super_cat": 77,
+"nearest_imagenet": "scabbard",
+"is_misc": false
+},
+"71": {
+"name": "mural",
+"super_cat": 113,
+"nearest_imagenet": "stone wall",
+"is_misc": false
+},
+"72": {
+"name": "box#4",
+"super_cat": 27,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"73": {
+"name": "statue",
+"super_cat": 245,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"74": {
+"name": "axe",
+"super_cat": 8,
+"nearest_imagenet": "hatchet",
+"is_misc": false
+},
+"75": {
+"name": "well crafted#2",
+"super_cat": 77,
+"nearest_imagenet": "scabbard",
+"is_misc": false
+},
+"76": {
+"name": "woman",
+"super_cat": 105,
+"nearest_imagenet": "miniskirt",
+"is_misc": false
+},
+"77": {
+"name": "irregularly shaped#4",
+"super_cat": 228,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"78": {
+"name": "traffic cone",
+"super_cat": 145,
+"nearest_imagenet": "orange",
+"is_misc": false
+},
+"79": {
+"name": "sword#3",
+"super_cat": 161,
+"nearest_imagenet": "scabbard",
+"is_misc": false
+},
+"80": {
+"name": "vase",
+"super_cat": 203,
+"nearest_imagenet": "vase",
+"is_misc": false
+},
+"81": {
+"name": "visually appealing",
+"super_cat": 4,
+"nearest_imagenet": "confectionery",
+"is_misc": false
+},
+"82": {
+"name": "rusty",
+"super_cat": 21,
+"nearest_imagenet": "cannon",
+"is_misc": false
+},
+"83": {
+"name": "snowman",
+"super_cat": 84,
+"nearest_imagenet": "red-breasted merganser",
+"is_misc": false
+},
+"84": {
+"name": "frame",
+"super_cat": 97,
+"nearest_imagenet": "screen",
+"is_misc": false
+},
+"85": {
+"name": "woman#2",
+"super_cat": 157,
+"nearest_imagenet": "miniskirt",
+"is_misc": false
+},
+"86": {
+"name": "military tank",
+"super_cat": 0,
+"nearest_imagenet": "tank",
+"is_misc": false
+},
+"87": {
+"name": "vase#2",
+"super_cat": 203,
+"nearest_imagenet": "vase",
+"is_misc": false
+},
+"88": {
+"name": "house#2",
+"super_cat": 13,
+"nearest_imagenet": "church",
+"is_misc": false
+},
+"89": {
+"name": "human skull",
+"super_cat": 74,
+"nearest_imagenet": "football helmet",
+"is_misc": false
+},
+"90": {
+"name": "circular",
+"super_cat": 191,
+"nearest_imagenet": "manhole cover",
+"is_misc": false
+},
+"91": {
+"name": "pair",
+"super_cat": 239,
+"nearest_imagenet": "black swan",
+"is_misc": false
+},
+"92": {
+"name": "irregularly shaped#5",
+"super_cat": 48,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"93": {
+"name": "human head",
+"super_cat": 29,
+"nearest_imagenet": "mask",
+"is_misc": false
+},
+"94": {
+"name": "toy car",
+"super_cat": 57,
+"nearest_imagenet": "go-kart",
+"is_misc": false
+},
+"95": {
+"name": "irregularly shaped#6",
+"super_cat": 65,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"96": {
+"name": "box#5",
+"super_cat": 197,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"97": {
+"name": "statue#2",
+"super_cat": 16,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"98": {
+"name": "table#4",
+"super_cat": 51,
+"nearest_imagenet": "dining table",
+"is_misc": false
+},
+"99": {
+"name": "house#3",
+"super_cat": 135,
+"nearest_imagenet": "barn",
+"is_misc": false
+},
+"100": {
+"name": "box#6",
+"super_cat": 197,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"101": {
+"name": "tree#2",
+"super_cat": 172,
+"nearest_imagenet": "pineapple",
+"is_misc": false
+},
+"102": {
+"name": "cabinet#2",
+"super_cat": 208,
+"nearest_imagenet": "entertainment center",
+"is_misc": false
+},
+"103": {
+"name": "slim#2",
+"super_cat": 14,
+"nearest_imagenet": "television",
+"is_misc": false
+},
+"104": {
+"name": "circular#2",
+"super_cat": 191,
+"nearest_imagenet": "car wheel",
+"is_misc": false
+},
+"105": {
+"name": "computer tower",
+"super_cat": 206,
+"nearest_imagenet": "desktop computer",
+"is_misc": false
+},
+"106": {
+"name": "rifle#4",
+"super_cat": 75,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"107": {
+"name": "cylindrical#3",
+"super_cat": 87,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"108": {
+"name": "character#2",
+"super_cat": 234,
+"nearest_imagenet": "wood rabbit",
+"is_misc": false
+},
+"109": {
+"name": "table#5",
+"super_cat": 51,
+"nearest_imagenet": "desk",
+"is_misc": false
+},
+"110": {
+"name": "block",
+"super_cat": 177,
+"nearest_imagenet": "stone wall",
+"is_misc": false
+},
+"111": {
+"name": "toilet",
+"super_cat": 209,
+"nearest_imagenet": "toilet tissue",
+"is_misc": false
+},
+"112": {
+"name": "military truck",
+"super_cat": 237,
+"nearest_imagenet": "trailer truck",
+"is_misc": false
+},
+"113": {
+"name": "chair#2",
+"super_cat": 241,
+"nearest_imagenet": "rocking chair",
+"is_misc": false
+},
+"114": {
+"name": "box#7",
+"super_cat": 73,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"115": {
+"name": "crab",
+"super_cat": 20,
+"nearest_imagenet": "rock crab",
+"is_misc": false
+},
+"116": {
+"name": "crate",
+"super_cat": 107,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"117": {
+"name": "collection",
+"super_cat": 133,
+"nearest_imagenet": "web site",
+"is_misc": false
+},
+"118": {
+"name": "arcade game",
+"super_cat": 151,
+"nearest_imagenet": "desktop computer",
+"is_misc": false
+},
+"119": {
+"name": "pair#2",
+"super_cat": 176,
+"nearest_imagenet": "sunglass",
+"is_misc": false
+},
+"120": {
+"name": "fossilized bone#2",
+"super_cat": 225,
+"nearest_imagenet": "mushroom",
+"is_misc": false
+},
+"121": {
+"name": "chair#3",
+"super_cat": 152,
+"nearest_imagenet": "rocking chair",
+"is_misc": false
+},
+"122": {
+"name": "character#3",
+"super_cat": 210,
+"nearest_imagenet": "green snake",
+"is_misc": false
+},
+"123": {
+"name": "creature",
+"super_cat": 185,
+"nearest_imagenet": "ice bear",
+"is_misc": false
+},
+"124": {
+"name": "sphere",
+"super_cat": 236,
+"nearest_imagenet": "ping-pong ball",
+"is_misc": false
+},
+"125": {
+"name": "man#2",
+"super_cat": 55,
+"nearest_imagenet": "military uniform",
+"is_misc": false
+},
+"126": {
+"name": "cylindrical hand",
+"super_cat": 72,
+"nearest_imagenet": "green snake",
+"is_misc": false
+},
+"127": {
+"name": "sculpture#2",
+"super_cat": 193,
+"nearest_imagenet": "mask",
+"is_misc": false
+},
+"128": {
+"name": "weathered#3",
+"super_cat": 216,
+"nearest_imagenet": "wooden spoon",
+"is_misc": false
+},
+"129": {
+"name": "staircase",
+"super_cat": 89,
+"nearest_imagenet": "bannister",
+"is_misc": false
+},
+"130": {
+"name": "sports car#2",
+"super_cat": 34,
+"nearest_imagenet": "fire engine",
+"is_misc": false
+},
+"131": {
+"name": "ladder",
+"super_cat": 107,
+"nearest_imagenet": "wooden spoon",
+"is_misc": false
+},
+"132": {
+"name": "fish",
+"super_cat": 130,
+"nearest_imagenet": "goldfish",
+"is_misc": false
+},
+"133": {
+"name": "mask",
+"super_cat": 149,
+"nearest_imagenet": "mask",
+"is_misc": false
+},
+"134": {
+"name": "helmet",
+"super_cat": 153,
+"nearest_imagenet": "football helmet",
+"is_misc": false
+},
+"135": {
+"name": "base#3",
+"super_cat": 188,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"136": {
+"name": "humanoid robot#2",
+"super_cat": 217,
+"nearest_imagenet": "desktop computer",
+"is_misc": false
+},
+"137": {
+"name": "humanoid robot#3",
+"super_cat": 226,
+"nearest_imagenet": "brown bear",
+"is_misc": false
+},
+"138": {
+"name": "acoustic guitar",
+"super_cat": 50,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"139": {
+"name": "couch",
+"super_cat": 93,
+"nearest_imagenet": "studio couch",
+"is_misc": false
+},
+"140": {
+"name": "cylindrical#4",
+"super_cat": 87,
+"nearest_imagenet": "barrel",
+"is_misc": false
+},
+"141": {
+"name": "sphere#2",
+"super_cat": 181,
+"nearest_imagenet": "soccer ball",
+"is_misc": false
+},
+"142": {
+"name": "pair#3",
+"super_cat": 239,
+"nearest_imagenet": "radio",
+"is_misc": false
+},
+"143": {
+"name": "character#4",
+"super_cat": 7,
+"nearest_imagenet": "sulphur-crested cockatoo",
+"is_misc": false
+},
+"144": {
+"name": "fish#2",
+"super_cat": 214,
+"nearest_imagenet": "tiger shark",
+"is_misc": false
+},
+"145": {
+"name": "building#2",
+"super_cat": 231,
+"nearest_imagenet": "church",
+"is_misc": false
+},
+"146": {
+"name": "vase#3",
+"super_cat": 15,
+"nearest_imagenet": "brass",
+"is_misc": false
+},
+"147": {
+"name": "house#4",
+"super_cat": 49,
+"nearest_imagenet": "barn",
+"is_misc": false
+},
+"148": {
+"name": "brick wall",
+"super_cat": 53,
+"nearest_imagenet": "stone wall",
+"is_misc": false
+},
+"149": {
+"name": "skull",
+"super_cat": 74,
+"nearest_imagenet": "mask",
+"is_misc": false
+},
+"150": {
+"name": "figurine",
+"super_cat": 109,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"151": {
+"name": "sonic",
+"super_cat": 117,
+"nearest_imagenet": "echidna",
+"is_misc": false
+},
+"152": {
+"name": "office chair",
+"super_cat": 152,
+"nearest_imagenet": "rocking chair",
+"is_misc": false
+},
+"153": {
+"name": "human skull#2",
+"super_cat": 243,
+"nearest_imagenet": "mask",
+"is_misc": false
+},
+"154": {
+"name": "visually appealing#2",
+"super_cat": 4,
+"nearest_imagenet": "confectionery",
+"is_misc": false
+},
+"155": {
+"name": "desk",
+"super_cat": 51,
+"nearest_imagenet": "desk",
+"is_misc": false
+},
+"156": {
+"name": "plate",
+"super_cat": 140,
+"nearest_imagenet": "pizza",
+"is_misc": false
+},
+"157": {
+"name": "car",
+"super_cat": 148,
+"nearest_imagenet": "passenger car",
+"is_misc": false
+},
+"158": {
+"name": "ball#2",
+"super_cat": 30,
+"nearest_imagenet": "ping-pong ball",
+"is_misc": false
+},
+"159": {
+"name": "pair#4",
+"super_cat": 33,
+"nearest_imagenet": "brown bear",
+"is_misc": false
+},
+"160": {
+"name": "man#3",
+"super_cat": 55,
+"nearest_imagenet": "groom",
+"is_misc": false
+},
+"161": {
+"name": "irregularly shaped#7",
+"super_cat": 114,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"162": {
+"name": "brick building",
+"super_cat": 224,
+"nearest_imagenet": "barn",
+"is_misc": false
+},
+"163": {
+"name": "weathered#4",
+"super_cat": 40,
+"nearest_imagenet": "street sign",
+"is_misc": false
+},
+"164": {
+"name": "spaceship#2",
+"super_cat": 47,
+"nearest_imagenet": "space shuttle",
+"is_misc": false
+},
+"165": {
+"name": "castle",
+"super_cat": 83,
+"nearest_imagenet": "castle",
+"is_misc": false
+},
+"166": {
+"name": "bowl",
+"super_cat": 1,
+"nearest_imagenet": "pot",
+"is_misc": false
+},
+"167": {
+"name": "chair#4",
+"super_cat": 42,
+"nearest_imagenet": "rocking chair",
+"is_misc": false
+},
+"168": {
+"name": "door",
+"super_cat": 69,
+"nearest_imagenet": "sliding door",
+"is_misc": false
+},
+"169": {
+"name": "robot#2",
+"super_cat": 212,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"170": {
+"name": "brick building#2",
+"super_cat": 224,
+"nearest_imagenet": "barn",
+"is_misc": false
+},
+"171": {
+"name": "figurine#2",
+"super_cat": 82,
+"nearest_imagenet": "military uniform",
+"is_misc": false
+},
+"172": {
+"name": "building#3",
+"super_cat": 122,
+"nearest_imagenet": "church",
+"is_misc": false
+},
+"173": {
+"name": "sculpture#3",
+"super_cat": 174,
+"nearest_imagenet": "white wolf",
+"is_misc": false
+},
+"174": {
+"name": "humanoid robot#4",
+"super_cat": 217,
+"nearest_imagenet": "desktop computer",
+"is_misc": false
+},
+"175": {
+"name": "cart",
+"super_cat": 237,
+"nearest_imagenet": "trailer truck",
+"is_misc": false
+},
+"176": {
+"name": "box#8",
+"super_cat": 248,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"177": {
+"name": "statue#3",
+"super_cat": 35,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"178": {
+"name": "mug",
+"super_cat": 46,
+"nearest_imagenet": "coffee mug",
+"is_misc": false
+},
+"179": {
+"name": "sword#4",
+"super_cat": 54,
+"nearest_imagenet": "scabbard",
+"is_misc": false
+},
+"180": {
+"name": "creature#2",
+"super_cat": 104,
+"nearest_imagenet": "green lizard",
+"is_misc": false
+},
+"181": {
+"name": "figurine#3",
+"super_cat": 111,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"182": {
+"name": "cylindrical container#2",
+"super_cat": 112,
+"nearest_imagenet": "pot",
+"is_misc": false
+},
+"183": {
+"name": "bed frame",
+"super_cat": 146,
+"nearest_imagenet": "crib",
+"is_misc": false
+},
+"184": {
+"name": "dog",
+"super_cat": 209,
+"nearest_imagenet": "white wolf",
+"is_misc": false
+},
+"185": {
+"name": "robotic arm",
+"super_cat": 12,
+"nearest_imagenet": "tank",
+"is_misc": false
+},
+"186": {
+"name": "shield",
+"super_cat": 24,
+"nearest_imagenet": "shield",
+"is_misc": false
+},
+"187": {
+"name": "bird",
+"super_cat": 132,
+"nearest_imagenet": "crane bird",
+"is_misc": false
+},
+"188": {
+"name": "box#9",
+"super_cat": 162,
+"nearest_imagenet": "television",
+"is_misc": false
+},
+"189": {
+"name": "visually appealing#3",
+"super_cat": 222,
+"nearest_imagenet": "trifle",
+"is_misc": false
+},
+"190": {
+"name": "humanoid",
+"super_cat": 235,
+"nearest_imagenet": "upright",
+"is_misc": false
+},
+"191": {
+"name": "axe#2",
+"super_cat": 8,
+"nearest_imagenet": "hatchet",
+"is_misc": false
+},
+"192": {
+"name": "shed",
+"super_cat": 9,
+"nearest_imagenet": "barn",
+"is_misc": false
+},
+"193": {
+"name": "statue#4",
+"super_cat": 16,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"194": {
+"name": "toy car#2",
+"super_cat": 57,
+"nearest_imagenet": "go-kart",
+"is_misc": false
+},
+"195": {
+"name": "star wars",
+"super_cat": 160,
+"nearest_imagenet": "plane",
+"is_misc": false
+},
+"196": {
+"name": "cabinet#3",
+"super_cat": 208,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"197": {
+"name": "irregularly shaped#8",
+"super_cat": 228,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"198": {
+"name": "bird skull",
+"super_cat": 243,
+"nearest_imagenet": "ear",
+"is_misc": false
+},
+"199": {
+"name": "surface",
+"super_cat": 196,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"200": {
+"name": "house#5",
+"super_cat": 41,
+"nearest_imagenet": "boathouse",
+"is_misc": false
+},
+"201": {
+"name": "star trek",
+"super_cat": 50,
+"nearest_imagenet": "plane",
+"is_misc": false
+},
+"202": {
+"name": "creature#3",
+"super_cat": 211,
+"nearest_imagenet": "triceratops",
+"is_misc": false
+},
+"203": {
+"name": "sword#5",
+"super_cat": 54,
+"nearest_imagenet": "scabbard",
+"is_misc": false
+},
+"204": {
+"name": "friendly",
+"super_cat": 204,
+"nearest_imagenet": "brown bear",
+"is_misc": false
+},
+"205": {
+"name": "statue#5",
+"super_cat": 35,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"206": {
+"name": "building#4",
+"super_cat": 60,
+"nearest_imagenet": "mosque",
+"is_misc": false
+},
+"207": {
+"name": "shark",
+"super_cat": 214,
+"nearest_imagenet": "tiger shark",
+"is_misc": false
+},
+"208": {
+"name": "irregularly shaped#9",
+"super_cat": 65,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"209": {
+"name": "column",
+"super_cat": 120,
+"nearest_imagenet": "obelisk",
+"is_misc": false
+},
+"210": {
+"name": "fossilized shell",
+"super_cat": 143,
+"nearest_imagenet": "snail",
+"is_misc": false
+},
+"211": {
+"name": "car#2",
+"super_cat": 148,
+"nearest_imagenet": "sports car",
+"is_misc": false
+},
+"212": {
+"name": "sphere#3",
+"super_cat": 30,
+"nearest_imagenet": "ping-pong ball",
+"is_misc": false
+},
+"213": {
+"name": "rock#3",
+"super_cat": 50,
+"nearest_imagenet": "rule",
+"is_misc": false
+},
+"214": {
+"name": "fence",
+"super_cat": 96,
+"nearest_imagenet": "chainlink fence",
+"is_misc": false
+},
+"215": {
+"name": "humanoid#2",
+"super_cat": 235,
+"nearest_imagenet": "upright",
+"is_misc": false
+},
+"216": {
+"name": "statue#6",
+"super_cat": 245,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"217": {
+"name": "woman#3",
+"super_cat": 247,
+"nearest_imagenet": "ballpoint",
+"is_misc": false
+},
+"218": {
+"name": "gun#2",
+"super_cat": 209,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"219": {
+"name": "room",
+"super_cat": 103,
+"nearest_imagenet": "desk",
+"is_misc": false
+},
+"220": {
+"name": "blocky",
+"super_cat": 210,
+"nearest_imagenet": "military uniform",
+"is_misc": false
+},
+"221": {
+"name": "building#5",
+"super_cat": 233,
+"nearest_imagenet": "church",
+"is_misc": false
+},
+"222": {
+"name": "ball#3",
+"super_cat": 31,
+"nearest_imagenet": "ping-pong ball",
+"is_misc": false
+},
+"223": {
+"name": "collection#2",
+"super_cat": 129,
+"nearest_imagenet": "altar",
+"is_misc": false
+},
+"224": {
+"name": "bust#2",
+"super_cat": 173,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"225": {
+"name": "vase#4",
+"super_cat": 203,
+"nearest_imagenet": "vase",
+"is_misc": false
+},
+"226": {
+"name": "house#6",
+"super_cat": 135,
+"nearest_imagenet": "mobile home",
+"is_misc": false
+},
+"227": {
+"name": "tank",
+"super_cat": 50,
+"nearest_imagenet": "tank",
+"is_misc": false
+},
+"228": {
+"name": "tree#3",
+"super_cat": 92,
+"nearest_imagenet": "broccoli",
+"is_misc": false
+},
+"229": {
+"name": "box#10",
+"super_cat": 248,
+"nearest_imagenet": "packet",
+"is_misc": false
+},
+"230": {
+"name": "dog#2",
+"super_cat": 66,
+"nearest_imagenet": "wood rabbit",
+"is_misc": false
+},
+"231": {
+"name": "man#4",
+"super_cat": 55,
+"nearest_imagenet": "groom",
+"is_misc": false
+},
+"232": {
+"name": "character#5",
+"super_cat": 141,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"233": {
+"name": "lantern",
+"super_cat": 150,
+"nearest_imagenet": "table lamp",
+"is_misc": false
+},
+"234": {
+"name": "statue#7",
+"super_cat": 245,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"235": {
+"name": "house#7",
+"super_cat": 13,
+"nearest_imagenet": "church",
+"is_misc": false
+},
+"236": {
+"name": "box#11",
+"super_cat": 27,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"237": {
+"name": "bowl#2",
+"super_cat": 121,
+"nearest_imagenet": "soup bowl",
+"is_misc": false
+},
+"238": {
+"name": "building#6",
+"super_cat": 231,
+"nearest_imagenet": "church",
+"is_misc": false
+},
+"239": {
+"name": "box#12",
+"super_cat": 248,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"240": {
+"name": "irregularly shaped#10",
+"super_cat": 48,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"241": {
+"name": "ice cream",
+"super_cat": 50,
+"nearest_imagenet": "rule",
+"is_misc": false
+},
+"242": {
+"name": "fish#3",
+"super_cat": 50,
+"nearest_imagenet": "rule",
+"is_misc": false
+},
+"243": {
+"name": "cityscape",
+"super_cat": 91,
+"nearest_imagenet": "mosque",
+"is_misc": false
+},
+"244": {
+"name": "sculpture#4",
+"super_cat": 35,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"245": {
+"name": "box#13",
+"super_cat": 63,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"246": {
+"name": "mountain",
+"super_cat": 64,
+"nearest_imagenet": "volcano",
+"is_misc": false
+},
+"247": {
+"name": "building#7",
+"super_cat": 137,
+"nearest_imagenet": "dome",
+"is_misc": false
+},
+"248": {
+"name": "man#5",
+"super_cat": 210,
+"nearest_imagenet": "green mamba",
+"is_misc": false
+},
+"249": {
+"name": "character#6",
+"super_cat": 223,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"250": {
+"name": "spaceship#3",
+"super_cat": 81,
+"nearest_imagenet": "warplane",
+"is_misc": false
+},
+"251": {
+"name": "friendly#2",
+"super_cat": 204,
+"nearest_imagenet": "teddy",
+"is_misc": false
+},
+"252": {
+"name": "barrel",
+"super_cat": 88,
+"nearest_imagenet": "barrel",
+"is_misc": false
+},
+"253": {
+"name": "weathered#5",
+"super_cat": 110,
+"nearest_imagenet": "stone wall",
+"is_misc": false
+},
+"254": {
+"name": "sports car#3",
+"super_cat": 164,
+"nearest_imagenet": "sports car",
+"is_misc": false
+},
+"255": {
+"name": "character#7",
+"super_cat": 7,
+"nearest_imagenet": "sulphur-crested cockatoo",
+"is_misc": false
+},
+"256": {
+"name": "axe#3",
+"super_cat": 8,
+"nearest_imagenet": "hatchet",
+"is_misc": false
+},
+"257": {
+"name": "bookshelf#2",
+"super_cat": 3,
+"nearest_imagenet": "bookcase",
+"is_misc": false
+},
+"258": {
+"name": "sculpture#5",
+"super_cat": 38,
+"nearest_imagenet": "brown bear",
+"is_misc": false
+},
+"259": {
+"name": "platform",
+"super_cat": 71,
+"nearest_imagenet": "prison",
+"is_misc": false
+},
+"260": {
+"name": "friendly#3",
+"super_cat": 85,
+"nearest_imagenet": "piggy bank",
+"is_misc": false
+},
+"261": {
+"name": "figurine#4",
+"super_cat": 109,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"262": {
+"name": "birdhouse",
+"super_cat": 147,
+"nearest_imagenet": "birdhouse",
+"is_misc": false
+},
+"263": {
+"name": "handheld device",
+"super_cat": 14,
+"nearest_imagenet": "radio",
+"is_misc": false
+},
+"264": {
+"name": "irregularly shaped#11",
+"super_cat": 65,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"265": {
+"name": "bottle#2",
+"super_cat": 127,
+"nearest_imagenet": "wine bottle",
+"is_misc": false
+},
+"266": {
+"name": "cylindrical#5",
+"super_cat": 198,
+"nearest_imagenet": "milk can",
+"is_misc": false
+},
+"267": {
+"name": "person",
+"super_cat": 218,
+"nearest_imagenet": "military uniform",
+"is_misc": false
+},
+"268": {
+"name": "man#6",
+"super_cat": 223,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"269": {
+"name": "bowl#3",
+"super_cat": 1,
+"nearest_imagenet": "pot",
+"is_misc": false
+},
+"270": {
+"name": "geometric",
+"super_cat": 133,
+"nearest_imagenet": "prison",
+"is_misc": false
+},
+"271": {
+"name": "pottery vase",
+"super_cat": 156,
+"nearest_imagenet": "vase",
+"is_misc": false
+},
+"272": {
+"name": "fence#2",
+"super_cat": 187,
+"nearest_imagenet": "picket fence",
+"is_misc": false
+},
+"273": {
+"name": "circular#3",
+"super_cat": 196,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"274": {
+"name": "computer keyboard",
+"super_cat": 206,
+"nearest_imagenet": "computer keyboard",
+"is_misc": false
+},
+"275": {
+"name": "pair#5",
+"super_cat": 239,
+"nearest_imagenet": "iron",
+"is_misc": false
+},
+"276": {
+"name": "door#2",
+"super_cat": 5,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"277": {
+"name": "house#8",
+"super_cat": 41,
+"nearest_imagenet": "boathouse",
+"is_misc": false
+},
+"278": {
+"name": "sports car#4",
+"super_cat": 43,
+"nearest_imagenet": "sports car",
+"is_misc": false
+},
+"279": {
+"name": "house#9",
+"super_cat": 49,
+"nearest_imagenet": "barn",
+"is_misc": false
+},
+"280": {
+"name": "cylindrical#6",
+"super_cat": 87,
+"nearest_imagenet": "dome",
+"is_misc": false
+},
+"281": {
+"name": "cat figurine",
+"super_cat": 174,
+"nearest_imagenet": "white wolf",
+"is_misc": false
+},
+"282": {
+"name": "humanoid robot#5",
+"super_cat": 217,
+"nearest_imagenet": "desktop computer",
+"is_misc": false
+},
+"283": {
+"name": "cabinet#4",
+"super_cat": 232,
+"nearest_imagenet": "wardrobe",
+"is_misc": false
+},
+"284": {
+"name": "table#6",
+"super_cat": 44,
+"nearest_imagenet": "dining table",
+"is_misc": false
+},
+"285": {
+"name": "barrel#2",
+"super_cat": 88,
+"nearest_imagenet": "barrel",
+"is_misc": false
+},
+"286": {
+"name": "statue#8",
+"super_cat": 111,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"287": {
+"name": "vending machine",
+"super_cat": 192,
+"nearest_imagenet": "vending machine",
+"is_misc": false
+},
+"288": {
+"name": "character#8",
+"super_cat": 218,
+"nearest_imagenet": "military uniform",
+"is_misc": false
+},
+"289": {
+"name": "deer",
+"super_cat": 11,
+"nearest_imagenet": "lion",
+"is_misc": false
+},
+"290": {
+"name": "man#7",
+"super_cat": 141,
+"nearest_imagenet": "suit",
+"is_misc": false
+},
+"291": {
+"name": "man head",
+"super_cat": 169,
+"nearest_imagenet": "wig",
+"is_misc": false
+},
+"292": {
+"name": "rock#4",
+"super_cat": 215,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"293": {
+"name": "landscape",
+"super_cat": 227,
+"nearest_imagenet": "seashore",
+"is_misc": false
+},
+"294": {
+"name": "well crafted#3",
+"super_cat": 77,
+"nearest_imagenet": "scabbard",
+"is_misc": false
+},
+"295": {
+"name": "building#8",
+"super_cat": 122,
+"nearest_imagenet": "church",
+"is_misc": false
+},
+"296": {
+"name": "sword#6",
+"super_cat": 161,
+"nearest_imagenet": "scabbard",
+"is_misc": false
+},
+"297": {
+"name": "irregularly shaped#12",
+"super_cat": 228,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"298": {
+"name": "table#7",
+"super_cat": 94,
+"nearest_imagenet": "dining table",
+"is_misc": false
+},
+"299": {
+"name": "plant",
+"super_cat": 102,
+"nearest_imagenet": "pot",
+"is_misc": false
+},
+"300": {
+"name": "figurine#5",
+"super_cat": 109,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"301": {
+"name": "star wars#2",
+"super_cat": 50,
+"nearest_imagenet": "church",
+"is_misc": false
+},
+"302": {
+"name": "lantern#2",
+"super_cat": 150,
+"nearest_imagenet": "table lamp",
+"is_misc": false
+},
+"303": {
+"name": "ring",
+"super_cat": 125,
+"nearest_imagenet": "loupe",
+"is_misc": false
+},
+"304": {
+"name": "baseball cap",
+"super_cat": 199,
+"nearest_imagenet": "cowboy hat",
+"is_misc": false
+},
+"305": {
+"name": "tree stump#2",
+"super_cat": 68,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"306": {
+"name": "treasure chest",
+"super_cat": 73,
+"nearest_imagenet": "chest",
+"is_misc": false
+},
+"307": {
+"name": "vase#5",
+"super_cat": 203,
+"nearest_imagenet": "vase",
+"is_misc": false
+},
+"308": {
+"name": "pot",
+"super_cat": 1,
+"nearest_imagenet": "pot",
+"is_misc": false
+},
+"309": {
+"name": "plaque",
+"super_cat": 110,
+"nearest_imagenet": "stone wall",
+"is_misc": false
+},
+"310": {
+"name": "box#14",
+"super_cat": 162,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"311": {
+"name": "box#15",
+"super_cat": 166,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"312": {
+"name": "bowl#4",
+"super_cat": 1,
+"nearest_imagenet": "pot",
+"is_misc": false
+},
+"313": {
+"name": "lizard",
+"super_cat": 18,
+"nearest_imagenet": "amphibian",
+"is_misc": false
+},
+"314": {
+"name": "girl#2",
+"super_cat": 246,
+"nearest_imagenet": "flamingo",
+"is_misc": false
+},
+"315": {
+"name": "bench#2",
+"super_cat": 10,
+"nearest_imagenet": "park bench",
+"is_misc": false
+},
+"316": {
+"name": "gravestone",
+"super_cat": 61,
+"nearest_imagenet": "obelisk",
+"is_misc": false
+},
+"317": {
+"name": "birdhouse#2",
+"super_cat": 147,
+"nearest_imagenet": "birdhouse",
+"is_misc": false
+},
+"318": {
+"name": "bird#2",
+"super_cat": 160,
+"nearest_imagenet": "wing",
+"is_misc": false
+},
+"319": {
+"name": "sports car#5",
+"super_cat": 164,
+"nearest_imagenet": "sports car",
+"is_misc": false
+},
+"320": {
+"name": "boeing airplane",
+"super_cat": 170,
+"nearest_imagenet": "airliner",
+"is_misc": false
+},
+"321": {
+"name": "man#8",
+"super_cat": 36,
+"nearest_imagenet": "sulphur-crested cockatoo",
+"is_misc": false
+},
+"322": {
+"name": "sculpture#6",
+"super_cat": 70,
+"nearest_imagenet": "iron",
+"is_misc": false
+},
+"323": {
+"name": "couch#2",
+"super_cat": 93,
+"nearest_imagenet": "studio couch",
+"is_misc": false
+},
+"324": {
+"name": "humanoid#3",
+"super_cat": 126,
+"nearest_imagenet": "military uniform",
+"is_misc": false
+},
+"325": {
+"name": "toy airplane",
+"super_cat": 170,
+"nearest_imagenet": "warplane",
+"is_misc": false
+},
+"326": {
+"name": "figurine#6",
+"super_cat": 36,
+"nearest_imagenet": "sulphur-crested cockatoo",
+"is_misc": false
+},
+"327": {
+"name": "man#9",
+"super_cat": 55,
+"nearest_imagenet": "groom",
+"is_misc": false
+},
+"328": {
+"name": "display stand",
+"super_cat": 97,
+"nearest_imagenet": "entertainment center",
+"is_misc": false
+},
+"329": {
+"name": "mannequin head",
+"super_cat": 154,
+"nearest_imagenet": "wig",
+"is_misc": false
+},
+"330": {
+"name": "banana#2",
+"super_cat": 180,
+"nearest_imagenet": "banana",
+"is_misc": false
+},
+"331": {
+"name": "car#3",
+"super_cat": 205,
+"nearest_imagenet": "trailer truck",
+"is_misc": false
+},
+"332": {
+"name": "bird#3",
+"super_cat": 132,
+"nearest_imagenet": "crane bird",
+"is_misc": false
+},
+"333": {
+"name": "chair#5",
+"super_cat": 241,
+"nearest_imagenet": "rocking chair",
+"is_misc": false
+},
+"334": {
+"name": "aerodynamic",
+"super_cat": 43,
+"nearest_imagenet": "sports car",
+"is_misc": false
+},
+"335": {
+"name": "irregularly shaped#13",
+"super_cat": 48,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"336": {
+"name": "tree stump#3",
+"super_cat": 68,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"337": {
+"name": "box#16",
+"super_cat": 131,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"338": {
+"name": "computer desk",
+"super_cat": 206,
+"nearest_imagenet": "desktop computer",
+"is_misc": false
+},
+"339": {
+"name": "creature#4",
+"super_cat": 18,
+"nearest_imagenet": "amphibian",
+"is_misc": false
+},
+"340": {
+"name": "robot#3",
+"super_cat": 59,
+"nearest_imagenet": "lemon",
+"is_misc": false
+},
+"341": {
+"name": "platform#2",
+"super_cat": 71,
+"nearest_imagenet": "prison",
+"is_misc": false
+},
+"342": {
+"name": "bed",
+"super_cat": 146,
+"nearest_imagenet": "pillow",
+"is_misc": false
+},
+"343": {
+"name": "pair#6",
+"super_cat": 219,
+"nearest_imagenet": "red wine",
+"is_misc": false
+},
+"344": {
+"name": "rifle#5",
+"super_cat": 28,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"345": {
+"name": "weathered#6",
+"super_cat": 40,
+"nearest_imagenet": "street sign",
+"is_misc": false
+},
+"346": {
+"name": "helmet#2",
+"super_cat": 153,
+"nearest_imagenet": "football helmet",
+"is_misc": false
+},
+"347": {
+"name": "cauldron",
+"super_cat": 239,
+"nearest_imagenet": "pot",
+"is_misc": false
+},
+"348": {
+"name": "tower#2",
+"super_cat": 76,
+"nearest_imagenet": "water tower",
+"is_misc": false
+},
+"349": {
+"name": "figurine#7",
+"super_cat": 100,
+"nearest_imagenet": "white wolf",
+"is_misc": false
+},
+"350": {
+"name": "knife",
+"super_cat": 128,
+"nearest_imagenet": "letter opener",
+"is_misc": false
+},
+"351": {
+"name": "house#10",
+"super_cat": 135,
+"nearest_imagenet": "mobile home",
+"is_misc": false
+},
+"352": {
+"name": "pair#7",
+"super_cat": 33,
+"nearest_imagenet": "cowboy boot",
+"is_misc": false
+},
+"353": {
+"name": "box#17",
+"super_cat": 37,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"354": {
+"name": "irregularly shaped#14",
+"super_cat": 48,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"355": {
+"name": "creature#5",
+"super_cat": 185,
+"nearest_imagenet": "crane bird",
+"is_misc": false
+},
+"356": {
+"name": "frame#2",
+"super_cat": 165,
+"nearest_imagenet": "fire screen",
+"is_misc": false
+},
+"357": {
+"name": "building#9",
+"super_cat": 233,
+"nearest_imagenet": "church",
+"is_misc": false
+},
+"358": {
+"name": "sword#7",
+"super_cat": 246,
+"nearest_imagenet": "flamingo",
+"is_misc": false
+},
+"359": {
+"name": "sink",
+"super_cat": 249,
+"nearest_imagenet": "washbasin",
+"is_misc": false
+},
+"360": {
+"name": "statue#9",
+"super_cat": 16,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"361": {
+"name": "spaceship#4",
+"super_cat": 81,
+"nearest_imagenet": "airliner",
+"is_misc": false
+},
+"362": {
+"name": "seashell",
+"super_cat": 143,
+"nearest_imagenet": "snail",
+"is_misc": false
+},
+"363": {
+"name": "slender",
+"super_cat": 207,
+"nearest_imagenet": "pole",
+"is_misc": false
+},
+"364": {
+"name": "highly",
+"super_cat": 213,
+"nearest_imagenet": "military uniform",
+"is_misc": false
+},
+"365": {
+"name": "ball#4",
+"super_cat": 25,
+"nearest_imagenet": "lemon",
+"is_misc": false
+},
+"366": {
+"name": "complex irregularly",
+"super_cat": 48,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"367": {
+"name": "figurine#8",
+"super_cat": 109,
+"nearest_imagenet": "miniature schnauzer",
+"is_misc": false
+},
+"368": {
+"name": "pair#8",
+"super_cat": 158,
+"nearest_imagenet": "banana",
+"is_misc": false
+},
+"369": {
+"name": "rock#5",
+"super_cat": 177,
+"nearest_imagenet": "stone wall",
+"is_misc": false
+},
+"370": {
+"name": "pumpkin",
+"super_cat": 196,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"371": {
+"name": "gun#3",
+"super_cat": 221,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"372": {
+"name": "city",
+"super_cat": 244,
+"nearest_imagenet": "church",
+"is_misc": false
+},
+"373": {
+"name": "stick",
+"super_cat": 33,
+"nearest_imagenet": "wooden spoon",
+"is_misc": false
+},
+"374": {
+"name": "cylindrical#7",
+"super_cat": 90,
+"nearest_imagenet": "pole",
+"is_misc": false
+},
+"375": {
+"name": "pendant",
+"super_cat": 118,
+"nearest_imagenet": "table lamp",
+"is_misc": false
+},
+"376": {
+"name": "box#18",
+"super_cat": 188,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"377": {
+"name": "cup",
+"super_cat": 46,
+"nearest_imagenet": "coffee mug",
+"is_misc": false
+},
+"378": {
+"name": "humanoid#4",
+"super_cat": 56,
+"nearest_imagenet": "military uniform",
+"is_misc": false
+},
+"379": {
+"name": "fragment",
+"super_cat": 110,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"380": {
+"name": "building#10",
+"super_cat": 122,
+"nearest_imagenet": "church",
+"is_misc": false
+},
+"381": {
+"name": "lion statue",
+"super_cat": 202,
+"nearest_imagenet": "lion",
+"is_misc": false
+},
+"382": {
+"name": "gun#4",
+"super_cat": 221,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"383": {
+"name": "teddy bear#2",
+"super_cat": 230,
+"nearest_imagenet": "brown bear",
+"is_misc": false
+},
+"384": {
+"name": "collection#3",
+"super_cat": 4,
+"nearest_imagenet": "confectionery",
+"is_misc": false
+},
+"385": {
+"name": "well crafted#4",
+"super_cat": 77,
+"nearest_imagenet": "scabbard",
+"is_misc": false
+},
+"386": {
+"name": "sculpture#7",
+"super_cat": 80,
+"nearest_imagenet": "wood rabbit",
+"is_misc": false
+},
+"387": {
+"name": "humanoid robot#6",
+"super_cat": 101,
+"nearest_imagenet": "green lizard",
+"is_misc": false
+},
+"388": {
+"name": "box#19",
+"super_cat": 158,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"389": {
+"name": "church",
+"super_cat": 175,
+"nearest_imagenet": "church",
+"is_misc": false
+},
+"390": {
+"name": "block#2",
+"super_cat": 177,
+"nearest_imagenet": "prison",
+"is_misc": false
+},
+"391": {
+"name": "airplane",
+"super_cat": 209,
+"nearest_imagenet": "white wolf",
+"is_misc": false
+},
+"392": {
+"name": "humanoid creature",
+"super_cat": 18,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"393": {
+"name": "character#9",
+"super_cat": 56,
+"nearest_imagenet": "military uniform",
+"is_misc": false
+},
+"394": {
+"name": "handgun",
+"super_cat": 79,
+"nearest_imagenet": "holster",
+"is_misc": false
+},
+"395": {
+"name": "castle#2",
+"super_cat": 83,
+"nearest_imagenet": "castle",
+"is_misc": false
+},
+"396": {
+"name": "house#11",
+"super_cat": 212,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"397": {
+"name": "robotic arm#2",
+"super_cat": 12,
+"nearest_imagenet": "tripod",
+"is_misc": false
+},
+"398": {
+"name": "slice",
+"super_cat": 99,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"399": {
+"name": "car#4",
+"super_cat": 119,
+"nearest_imagenet": "school bus",
+"is_misc": false
+},
+"400": {
+"name": "mushroom",
+"super_cat": 136,
+"nearest_imagenet": "mushroom",
+"is_misc": false
+},
+"401": {
+"name": "handgun#2",
+"super_cat": 79,
+"nearest_imagenet": "holster",
+"is_misc": false
+},
+"402": {
+"name": "cylindrical bottle",
+"super_cat": 127,
+"nearest_imagenet": "pop bottle",
+"is_misc": false
+},
+"403": {
+"name": "dome shaped",
+"super_cat": 137,
+"nearest_imagenet": "dome",
+"is_misc": false
+},
+"404": {
+"name": "arabic calligraphy",
+"super_cat": 145,
+"nearest_imagenet": "orange",
+"is_misc": false
+},
+"405": {
+"name": "box#20",
+"super_cat": 248,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"406": {
+"name": "surface#2",
+"super_cat": 25,
+"nearest_imagenet": "ping-pong ball",
+"is_misc": false
+},
+"407": {
+"name": "rifle#6",
+"super_cat": 28,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"408": {
+"name": "rock#6",
+"super_cat": 58,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"409": {
+"name": "structural framework",
+"super_cat": 71,
+"nearest_imagenet": "viaduct",
+"is_misc": false
+},
+"410": {
+"name": "bowl#5",
+"super_cat": 121,
+"nearest_imagenet": "soup bowl",
+"is_misc": false
+},
+"411": {
+"name": "well crafted#5",
+"super_cat": 128,
+"nearest_imagenet": "letter opener",
+"is_misc": false
+},
+"412": {
+"name": "fountain",
+"super_cat": 139,
+"nearest_imagenet": "fountain",
+"is_misc": false
+},
+"413": {
+"name": "cylindrical container#3",
+"super_cat": 184,
+"nearest_imagenet": "milk can",
+"is_misc": false
+},
+"414": {
+"name": "top hat",
+"super_cat": 199,
+"nearest_imagenet": "cowboy hat",
+"is_misc": false
+},
+"415": {
+"name": "sculpture#8",
+"super_cat": 201,
+"nearest_imagenet": "green lizard",
+"is_misc": false
+},
+"416": {
+"name": "human head#2",
+"super_cat": 29,
+"nearest_imagenet": "mask",
+"is_misc": false
+},
+"417": {
+"name": "mountain#2",
+"super_cat": 64,
+"nearest_imagenet": "volcano",
+"is_misc": false
+},
+"418": {
+"name": "stuffed animal#2",
+"super_cat": 66,
+"nearest_imagenet": "giant panda",
+"is_misc": false
+},
+"419": {
+"name": "well crafted#6",
+"super_cat": 77,
+"nearest_imagenet": "scabbard",
+"is_misc": false
+},
+"420": {
+"name": "cylindrical#8",
+"super_cat": 86,
+"nearest_imagenet": "torch",
+"is_misc": false
+},
+"421": {
+"name": "irregularly shaped#15",
+"super_cat": 87,
+"nearest_imagenet": "cup",
+"is_misc": false
+},
+"422": {
+"name": "trash can",
+"super_cat": 112,
+"nearest_imagenet": "barrel",
+"is_misc": false
+},
+"423": {
+"name": "car#5",
+"super_cat": 164,
+"nearest_imagenet": "sports car",
+"is_misc": false
+},
+"424": {
+"name": "rifle#7",
+"super_cat": 75,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"425": {
+"name": "sculpture#9",
+"super_cat": 80,
+"nearest_imagenet": "wood rabbit",
+"is_misc": false
+},
+"426": {
+"name": "cityscape#2",
+"super_cat": 91,
+"nearest_imagenet": "mosque",
+"is_misc": false
+},
+"427": {
+"name": "fish#4",
+"super_cat": 130,
+"nearest_imagenet": "goldfish",
+"is_misc": false
+},
+"428": {
+"name": "mushroom#2",
+"super_cat": 136,
+"nearest_imagenet": "mushroom",
+"is_misc": false
+},
+"429": {
+"name": "mask#2",
+"super_cat": 149,
+"nearest_imagenet": "mask",
+"is_misc": false
+},
+"430": {
+"name": "box#21",
+"super_cat": 167,
+"nearest_imagenet": "envelope",
+"is_misc": false
+},
+"431": {
+"name": "pair#9",
+"super_cat": 183,
+"nearest_imagenet": "dial telephone",
+"is_misc": false
+},
+"432": {
+"name": "lifelike#3",
+"super_cat": 200,
+"nearest_imagenet": "brown bear",
+"is_misc": false
+},
+"433": {
+"name": "donut",
+"super_cat": 246,
+"nearest_imagenet": "flamingo",
+"is_misc": false
+},
+"434": {
+"name": "pair#10",
+"super_cat": 19,
+"nearest_imagenet": "hatchet",
+"is_misc": false
+},
+"435": {
+"name": "box#22",
+"super_cat": 37,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"436": {
+"name": "birdhouse#3",
+"super_cat": 147,
+"nearest_imagenet": "birdhouse",
+"is_misc": false
+},
+"437": {
+"name": "pillar",
+"super_cat": 163,
+"nearest_imagenet": "obelisk",
+"is_misc": false
+},
+"438": {
+"name": "cake",
+"super_cat": 222,
+"nearest_imagenet": "trifle",
+"is_misc": false
+},
+"439": {
+"name": "irregularly shaped#16",
+"super_cat": 228,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"440": {
+"name": "accurate",
+"super_cat": 52,
+"nearest_imagenet": "castle",
+"is_misc": false
+},
+"441": {
+"name": "figurine#9",
+"super_cat": 100,
+"nearest_imagenet": "white wolf",
+"is_misc": false
+},
+"442": {
+"name": "box#23",
+"super_cat": 166,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"443": {
+"name": "box#24",
+"super_cat": 168,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"444": {
+"name": "complex",
+"super_cat": 242,
+"nearest_imagenet": "desktop computer",
+"is_misc": false
+},
+"445": {
+"name": "human skeleton",
+"super_cat": 243,
+"nearest_imagenet": "hip",
+"is_misc": false
+},
+"446": {
+"name": "deer skull",
+"super_cat": 178,
+"nearest_imagenet": "triceratops",
+"is_misc": false
+},
+"447": {
+"name": "radio",
+"super_cat": 183,
+"nearest_imagenet": "radio",
+"is_misc": false
+},
+"448": {
+"name": "sculpture#10",
+"super_cat": 22,
+"nearest_imagenet": "toilet tissue",
+"is_misc": false
+},
+"449": {
+"name": "sphere#4",
+"super_cat": 30,
+"nearest_imagenet": "ping-pong ball",
+"is_misc": false
+},
+"450": {
+"name": "castle#3",
+"super_cat": 83,
+"nearest_imagenet": "castle",
+"is_misc": false
+},
+"451": {
+"name": "cylindrical#9",
+"super_cat": 90,
+"nearest_imagenet": "screw",
+"is_misc": false
+},
+"452": {
+"name": "tree#4",
+"super_cat": 92,
+"nearest_imagenet": "broccoli",
+"is_misc": false
+},
+"453": {
+"name": "dragon",
+"super_cat": 159,
+"nearest_imagenet": "triceratops",
+"is_misc": false
+},
+"454": {
+"name": "sword#8",
+"super_cat": 247,
+"nearest_imagenet": "ballpoint",
+"is_misc": false
+},
+"455": {
+"name": "frog",
+"super_cat": 23,
+"nearest_imagenet": "green lizard",
+"is_misc": false
+},
+"456": {
+"name": "box#25",
+"super_cat": 73,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"457": {
+"name": "humanoid robot#7",
+"super_cat": 217,
+"nearest_imagenet": "suit",
+"is_misc": false
+},
+"458": {
+"name": "pair#11",
+"super_cat": 2,
+"nearest_imagenet": "running shoe",
+"is_misc": false
+},
+"459": {
+"name": "house#12",
+"super_cat": 9,
+"nearest_imagenet": "barn",
+"is_misc": false
+},
+"460": {
+"name": "sculpture#11",
+"super_cat": 22,
+"nearest_imagenet": "white wolf",
+"is_misc": false
+},
+"461": {
+"name": "tank#2",
+"super_cat": 23,
+"nearest_imagenet": "green snake",
+"is_misc": false
+},
+"462": {
+"name": "cube#2",
+"super_cat": 34,
+"nearest_imagenet": "red wine",
+"is_misc": false
+},
+"463": {
+"name": "rock#7",
+"super_cat": 215,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"464": {
+"name": "weathered#7",
+"super_cat": 216,
+"nearest_imagenet": "wooden spoon",
+"is_misc": false
+},
+"465": {
+"name": "key",
+"super_cat": 19,
+"nearest_imagenet": "hatchet",
+"is_misc": false
+},
+"466": {
+"name": "beetle",
+"super_cat": 20,
+"nearest_imagenet": "long-horned beetle",
+"is_misc": false
+},
+"467": {
+"name": "character#10",
+"super_cat": 26,
+"nearest_imagenet": "cowboy hat",
+"is_misc": false
+},
+"468": {
+"name": "ball#5",
+"super_cat": 31,
+"nearest_imagenet": "ping-pong ball",
+"is_misc": false
+},
+"469": {
+"name": "leaf",
+"super_cat": 102,
+"nearest_imagenet": "green snake",
+"is_misc": false
+},
+"470": {
+"name": "sculpture#12",
+"super_cat": 70,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"471": {
+"name": "aerodynamic#2",
+"super_cat": 81,
+"nearest_imagenet": "warplane",
+"is_misc": false
+},
+"472": {
+"name": "cylindrical fire",
+"super_cat": 86,
+"nearest_imagenet": "barrel",
+"is_misc": false
+},
+"473": {
+"name": "plate#2",
+"super_cat": 140,
+"nearest_imagenet": "pizza",
+"is_misc": false
+},
+"474": {
+"name": "cylindrical#10",
+"super_cat": 198,
+"nearest_imagenet": "water bottle",
+"is_misc": false
+},
+"475": {
+"name": "terrain",
+"super_cat": 244,
+"nearest_imagenet": "valley",
+"is_misc": false
+},
+"476": {
+"name": "teapot",
+"super_cat": 6,
+"nearest_imagenet": "teapot",
+"is_misc": false
+},
+"477": {
+"name": "irregularly shaped#17",
+"super_cat": 65,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"478": {
+"name": "boat",
+"super_cat": 155,
+"nearest_imagenet": "canoe",
+"is_misc": false
+},
+"479": {
+"name": "weathered#8",
+"super_cat": 171,
+"nearest_imagenet": "triumphal arch",
+"is_misc": false
+},
+"480": {
+"name": "man#10",
+"super_cat": 194,
+"nearest_imagenet": "military uniform",
+"is_misc": false
+},
+"481": {
+"name": "man#11",
+"super_cat": 223,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"482": {
+"name": "bow",
+"super_cat": 240,
+"nearest_imagenet": "bow",
+"is_misc": false
+},
+"483": {
+"name": "cat#2",
+"super_cat": 5,
+"nearest_imagenet": "white wolf",
+"is_misc": false
+},
+"484": {
+"name": "rifle#8",
+"super_cat": 28,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"485": {
+"name": "spaceship#5",
+"super_cat": 81,
+"nearest_imagenet": "airliner",
+"is_misc": false
+},
+"486": {
+"name": "spaceship#6",
+"super_cat": 81,
+"nearest_imagenet": "space shuttle",
+"is_misc": false
+},
+"487": {
+"name": "woman#4",
+"super_cat": 157,
+"nearest_imagenet": "miniskirt",
+"is_misc": false
+},
+"488": {
+"name": "sword#9",
+"super_cat": 23,
+"nearest_imagenet": "green snake",
+"is_misc": false
+},
+"489": {
+"name": "irregularly shaped#18",
+"super_cat": 48,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"490": {
+"name": "irregularly shaped#19",
+"super_cat": 65,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"491": {
+"name": "table#8",
+"super_cat": 116,
+"nearest_imagenet": "desk",
+"is_misc": false
+},
+"492": {
+"name": "building#11",
+"super_cat": 122,
+"nearest_imagenet": "church",
+"is_misc": false
+},
+"493": {
+"name": "dragon#2",
+"super_cat": 159,
+"nearest_imagenet": "dragonfly",
+"is_misc": false
+},
+"494": {
+"name": "church#2",
+"super_cat": 175,
+"nearest_imagenet": "church",
+"is_misc": false
+},
+"495": {
+"name": "sculpture#13",
+"super_cat": 193,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"496": {
+"name": "castle#4",
+"super_cat": 83,
+"nearest_imagenet": "castle",
+"is_misc": false
+},
+"497": {
+"name": "plant#2",
+"super_cat": 102,
+"nearest_imagenet": "pot",
+"is_misc": false
+},
+"498": {
+"name": "cylindrical#11",
+"super_cat": 158,
+"nearest_imagenet": "banana",
+"is_misc": false
+},
+"499": {
+"name": "bookshelf#3",
+"super_cat": 3,
+"nearest_imagenet": "bookcase",
+"is_misc": false
+},
+"500": {
+"name": "house#13",
+"super_cat": 9,
+"nearest_imagenet": "barn",
+"is_misc": false
+},
+"501": {
+"name": "house#14",
+"super_cat": 9,
+"nearest_imagenet": "barn",
+"is_misc": false
+},
+"502": {
+"name": "topographical map",
+"super_cat": 39,
+"nearest_imagenet": "valley",
+"is_misc": false
+},
+"503": {
+"name": "penguin",
+"super_cat": 66,
+"nearest_imagenet": "giant panda",
+"is_misc": false
+},
+"504": {
+"name": "sculpture#14",
+"super_cat": 80,
+"nearest_imagenet": "wood rabbit",
+"is_misc": false
+},
+"505": {
+"name": "bird#4",
+"super_cat": 132,
+"nearest_imagenet": "crane bird",
+"is_misc": false
+},
+"506": {
+"name": "cylindrical#12",
+"super_cat": 163,
+"nearest_imagenet": "obelisk",
+"is_misc": false
+},
+"507": {
+"name": "terrain#2",
+"super_cat": 244,
+"nearest_imagenet": "valley",
+"is_misc": false
+},
+"508": {
+"name": "rabbit",
+"super_cat": 11,
+"nearest_imagenet": "lion",
+"is_misc": false
+},
+"509": {
+"name": "box#26",
+"super_cat": 63,
+"nearest_imagenet": "green snake",
+"is_misc": false
+},
+"510": {
+"name": "birdhouse#4",
+"super_cat": 147,
+"nearest_imagenet": "birdhouse",
+"is_misc": false
+},
+"511": {
+"name": "boat#2",
+"super_cat": 155,
+"nearest_imagenet": "speedboat",
+"is_misc": false
+},
+"512": {
+"name": "humanoid robot#8",
+"super_cat": 12,
+"nearest_imagenet": "tank",
+"is_misc": false
+},
+"513": {
+"name": "irregularly shaped#20",
+"super_cat": 45,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"514": {
+"name": "tree#5",
+"super_cat": 92,
+"nearest_imagenet": "broccoli",
+"is_misc": false
+},
+"515": {
+"name": "room#2",
+"super_cat": 103,
+"nearest_imagenet": "desk",
+"is_misc": false
+},
+"516": {
+"name": "knife#2",
+"super_cat": 128,
+"nearest_imagenet": "cleaver",
+"is_misc": false
+},
+"517": {
+"name": "sports car#6",
+"super_cat": 145,
+"nearest_imagenet": "orange",
+"is_misc": false
+},
+"518": {
+"name": "airplane#2",
+"super_cat": 170,
+"nearest_imagenet": "airliner",
+"is_misc": false
+},
+"519": {
+"name": "cylindrical container#4",
+"super_cat": 198,
+"nearest_imagenet": "milk can",
+"is_misc": false
+},
+"520": {
+"name": "hammer",
+"super_cat": 19,
+"nearest_imagenet": "hatchet",
+"is_misc": false
+},
+"521": {
+"name": "rock#8",
+"super_cat": 50,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"522": {
+"name": "motorcycle",
+"super_cat": 142,
+"nearest_imagenet": "tricycle",
+"is_misc": false
+},
+"523": {
+"name": "dragon#3",
+"super_cat": 159,
+"nearest_imagenet": "dragonfly",
+"is_misc": false
+},
+"524": {
+"name": "woman#5",
+"super_cat": 190,
+"nearest_imagenet": "gown",
+"is_misc": false
+},
+"525": {
+"name": "robot#4",
+"super_cat": 211,
+"nearest_imagenet": "llama",
+"is_misc": false
+},
+"526": {
+"name": "floating island",
+"super_cat": 227,
+"nearest_imagenet": "mountain tent",
+"is_misc": false
+},
+"527": {
+"name": "creature#6",
+"super_cat": 18,
+"nearest_imagenet": "amphibian",
+"is_misc": false
+},
+"528": {
+"name": "chair#6",
+"super_cat": 42,
+"nearest_imagenet": "rocking chair",
+"is_misc": false
+},
+"529": {
+"name": "visually appealing#4",
+"super_cat": 62,
+"nearest_imagenet": "altar",
+"is_misc": false
+},
+"530": {
+"name": "rifle#9",
+"super_cat": 75,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"531": {
+"name": "table#9",
+"super_cat": 94,
+"nearest_imagenet": "dining table",
+"is_misc": false
+},
+"532": {
+"name": "humanoid creature#2",
+"super_cat": 104,
+"nearest_imagenet": "green lizard",
+"is_misc": false
+},
+"533": {
+"name": "monument",
+"super_cat": 177,
+"nearest_imagenet": "stone wall",
+"is_misc": false
+},
+"534": {
+"name": "coin",
+"super_cat": 191,
+"nearest_imagenet": "bottlecap",
+"is_misc": false
+},
+"535": {
+"name": "gun#5",
+"super_cat": 221,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"536": {
+"name": "island",
+"super_cat": 78,
+"nearest_imagenet": "seashore",
+"is_misc": false
+},
+"537": {
+"name": "box#27",
+"super_cat": 166,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"538": {
+"name": "woman head",
+"super_cat": 169,
+"nearest_imagenet": "wig",
+"is_misc": false
+},
+"539": {
+"name": "airplane#3",
+"super_cat": 212,
+"nearest_imagenet": "plane",
+"is_misc": false
+},
+"540": {
+"name": "rock#9",
+"super_cat": 215,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"541": {
+"name": "sphere#5",
+"super_cat": 236,
+"nearest_imagenet": "bubble",
+"is_misc": false
+},
+"542": {
+"name": "house#15",
+"super_cat": 49,
+"nearest_imagenet": "barn",
+"is_misc": false
+},
+"543": {
+"name": "box#28",
+"super_cat": 166,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"544": {
+"name": "irregularly shaped#21",
+"super_cat": 228,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"545": {
+"name": "pair#12",
+"super_cat": 2,
+"nearest_imagenet": "running shoe",
+"is_misc": false
+},
+"546": {
+"name": "cylindrical#13",
+"super_cat": 17,
+"nearest_imagenet": "green snake",
+"is_misc": false
+},
+"547": {
+"name": "leather bound",
+"super_cat": 33,
+"nearest_imagenet": "wallet",
+"is_misc": false
+},
+"548": {
+"name": "plant#3",
+"super_cat": 102,
+"nearest_imagenet": "pot",
+"is_misc": false
+},
+"549": {
+"name": "room#3",
+"super_cat": 103,
+"nearest_imagenet": "desk",
+"is_misc": false
+},
+"550": {
+"name": "dog#3",
+"super_cat": 172,
+"nearest_imagenet": "lion",
+"is_misc": false
+},
+"551": {
+"name": "figurine#10",
+"super_cat": 189,
+"nearest_imagenet": "red-breasted merganser",
+"is_misc": false
+},
+"552": {
+"name": "cylindrical street",
+"super_cat": 207,
+"nearest_imagenet": "pole",
+"is_misc": false
+},
+"553": {
+"name": "car#6",
+"super_cat": 212,
+"nearest_imagenet": "sports car",
+"is_misc": false
+},
+"554": {
+"name": "toy gun",
+"super_cat": 221,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"555": {
+"name": "cart#2",
+"super_cat": 237,
+"nearest_imagenet": "horse cart",
+"is_misc": false
+},
+"556": {
+"name": "house#16",
+"super_cat": 9,
+"nearest_imagenet": "barn",
+"is_misc": false
+},
+"557": {
+"name": "creature#7",
+"super_cat": 18,
+"nearest_imagenet": "amphibian",
+"is_misc": false
+},
+"558": {
+"name": "mountain#3",
+"super_cat": 64,
+"nearest_imagenet": "volcano",
+"is_misc": false
+},
+"559": {
+"name": "irregularly shaped#22",
+"super_cat": 65,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"560": {
+"name": "weathered#9",
+"super_cat": 67,
+"nearest_imagenet": "stone wall",
+"is_misc": false
+},
+"561": {
+"name": "humanoid robot#9",
+"super_cat": 101,
+"nearest_imagenet": "green lizard",
+"is_misc": false
+},
+"562": {
+"name": "bowl#6",
+"super_cat": 121,
+"nearest_imagenet": "soup bowl",
+"is_misc": false
+},
+"563": {
+"name": "female mannequin",
+"super_cat": 154,
+"nearest_imagenet": "suit",
+"is_misc": false
+},
+"564": {
+"name": "sink#2",
+"super_cat": 249,
+"nearest_imagenet": "washbasin",
+"is_misc": false
+},
+"565": {
+"name": "house#17",
+"super_cat": 13,
+"nearest_imagenet": "church",
+"is_misc": false
+},
+"566": {
+"name": "house#18",
+"super_cat": 49,
+"nearest_imagenet": "boathouse",
+"is_misc": false
+},
+"567": {
+"name": "rock#10",
+"super_cat": 95,
+"nearest_imagenet": "tennis ball",
+"is_misc": false
+},
+"568": {
+"name": "woman#6",
+"super_cat": 157,
+"nearest_imagenet": "abaya",
+"is_misc": false
+},
+"569": {
+"name": "rubber duck#2",
+"super_cat": 182,
+"nearest_imagenet": "lemon",
+"is_misc": false
+},
+"570": {
+"name": "skateboard ramp",
+"super_cat": 187,
+"nearest_imagenet": "picket fence",
+"is_misc": false
+},
+"571": {
+"name": "brick building#3",
+"super_cat": 224,
+"nearest_imagenet": "barn",
+"is_misc": false
+},
+"572": {
+"name": "tree#6",
+"super_cat": 229,
+"nearest_imagenet": "broccoli",
+"is_misc": false
+},
+"573": {
+"name": "statue#10",
+"super_cat": 245,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"574": {
+"name": "pair#13",
+"super_cat": 14,
+"nearest_imagenet": "remote control",
+"is_misc": false
+},
+"575": {
+"name": "human heart",
+"super_cat": 50,
+"nearest_imagenet": "rule",
+"is_misc": false
+},
+"576": {
+"name": "cityscape#3",
+"super_cat": 52,
+"nearest_imagenet": "castle",
+"is_misc": false
+},
+"577": {
+"name": "box#29",
+"super_cat": 63,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"578": {
+"name": "sphere#6",
+"super_cat": 95,
+"nearest_imagenet": "tennis ball",
+"is_misc": false
+},
+"579": {
+"name": "figurine#11",
+"super_cat": 109,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"580": {
+"name": "ring#2",
+"super_cat": 125,
+"nearest_imagenet": "buckle",
+"is_misc": false
+},
+"581": {
+"name": "box#30",
+"super_cat": 166,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"582": {
+"name": "man#12",
+"super_cat": 190,
+"nearest_imagenet": "suit",
+"is_misc": false
+},
+"583": {
+"name": "tire",
+"super_cat": 191,
+"nearest_imagenet": "car wheel",
+"is_misc": false
+},
+"584": {
+"name": "chair#7",
+"super_cat": 241,
+"nearest_imagenet": "rocking chair",
+"is_misc": false
+},
+"585": {
+"name": "apple",
+"super_cat": 34,
+"nearest_imagenet": "strawberry",
+"is_misc": false
+},
+"586": {
+"name": "box#31",
+"super_cat": 63,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"587": {
+"name": "house#19",
+"super_cat": 135,
+"nearest_imagenet": "greenhouse",
+"is_misc": false
+},
+"588": {
+"name": "cube#3",
+"super_cat": 180,
+"nearest_imagenet": "lemon",
+"is_misc": false
+},
+"589": {
+"name": "character#11",
+"super_cat": 234,
+"nearest_imagenet": "jack-o'-lantern",
+"is_misc": false
+},
+"590": {
+"name": "humanoid#5",
+"super_cat": 235,
+"nearest_imagenet": "upright",
+"is_misc": false
+},
+"591": {
+"name": "pair#14",
+"super_cat": 19,
+"nearest_imagenet": "hatchet",
+"is_misc": false
+},
+"592": {
+"name": "spherical",
+"super_cat": 25,
+"nearest_imagenet": "ping-pong ball",
+"is_misc": false
+},
+"593": {
+"name": "house#20",
+"super_cat": 41,
+"nearest_imagenet": "boathouse",
+"is_misc": false
+},
+"594": {
+"name": "door#3",
+"super_cat": 69,
+"nearest_imagenet": "sliding door",
+"is_misc": false
+},
+"595": {
+"name": "spaceship#7",
+"super_cat": 81,
+"nearest_imagenet": "airliner",
+"is_misc": false
+},
+"596": {
+"name": "woman#7",
+"super_cat": 157,
+"nearest_imagenet": "miniskirt",
+"is_misc": false
+},
+"597": {
+"name": "box#32",
+"super_cat": 158,
+"nearest_imagenet": "banana",
+"is_misc": false
+},
+"598": {
+"name": "building#12",
+"super_cat": 231,
+"nearest_imagenet": "prison",
+"is_misc": false
+},
+"599": {
+"name": "sword#10",
+"super_cat": 34,
+"nearest_imagenet": "red wine",
+"is_misc": false
+},
+"600": {
+"name": "sculpture#15",
+"super_cat": 35,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"601": {
+"name": "barrel#3",
+"super_cat": 88,
+"nearest_imagenet": "barrel",
+"is_misc": false
+},
+"602": {
+"name": "bowl#7",
+"super_cat": 138,
+"nearest_imagenet": "pot",
+"is_misc": false
+},
+"603": {
+"name": "vase#6",
+"super_cat": 156,
+"nearest_imagenet": "vase",
+"is_misc": false
+},
+"604": {
+"name": "row",
+"super_cat": 181,
+"nearest_imagenet": "soccer ball",
+"is_misc": false
+},
+"605": {
+"name": "axe#4",
+"super_cat": 8,
+"nearest_imagenet": "hatchet",
+"is_misc": false
+},
+"606": {
+"name": "camera",
+"super_cat": 14,
+"nearest_imagenet": "radio",
+"is_misc": false
+},
+"607": {
+"name": "sculpture#16",
+"super_cat": 80,
+"nearest_imagenet": "wood rabbit",
+"is_misc": false
+},
+"608": {
+"name": "barrel#4",
+"super_cat": 107,
+"nearest_imagenet": "barrel",
+"is_misc": false
+},
+"609": {
+"name": "mural#2",
+"super_cat": 113,
+"nearest_imagenet": "stone wall",
+"is_misc": false
+},
+"610": {
+"name": "stack",
+"super_cat": 129,
+"nearest_imagenet": "bookcase",
+"is_misc": false
+},
+"611": {
+"name": "irregularly shaped#23",
+"super_cat": 236,
+"nearest_imagenet": "bubble",
+"is_misc": false
+},
+"612": {
+"name": "table#10",
+"super_cat": 44,
+"nearest_imagenet": "dining table",
+"is_misc": false
+},
+"613": {
+"name": "island#2",
+"super_cat": 78,
+"nearest_imagenet": "seashore",
+"is_misc": false
+},
+"614": {
+"name": "bed#2",
+"super_cat": 146,
+"nearest_imagenet": "desk",
+"is_misc": false
+},
+"615": {
+"name": "sword#11",
+"super_cat": 161,
+"nearest_imagenet": "scabbard",
+"is_misc": false
+},
+"616": {
+"name": "box#33",
+"super_cat": 162,
+"nearest_imagenet": "television",
+"is_misc": false
+},
+"617": {
+"name": "sculpture#17",
+"super_cat": 193,
+"nearest_imagenet": "mask",
+"is_misc": false
+},
+"618": {
+"name": "car#7",
+"super_cat": 5,
+"nearest_imagenet": "sports car",
+"is_misc": false
+},
+"619": {
+"name": "statue#11",
+"super_cat": 16,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"620": {
+"name": "sonic#2",
+"super_cat": 50,
+"nearest_imagenet": "rule",
+"is_misc": false
+},
+"621": {
+"name": "robot#5",
+"super_cat": 59,
+"nearest_imagenet": "black and gold garden spider",
+"is_misc": false
+},
+"622": {
+"name": "plant#4",
+"super_cat": 102,
+"nearest_imagenet": "pot",
+"is_misc": false
+},
+"623": {
+"name": "rock formation#2",
+"super_cat": 114,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"624": {
+"name": "box#34",
+"super_cat": 145,
+"nearest_imagenet": "orange",
+"is_misc": false
+},
+"625": {
+"name": "cabinet#5",
+"super_cat": 232,
+"nearest_imagenet": "refrigerator",
+"is_misc": false
+},
+"626": {
+"name": "spherical#2",
+"super_cat": 236,
+"nearest_imagenet": "bubble",
+"is_misc": false
+},
+"627": {
+"name": "flower",
+"super_cat": 247,
+"nearest_imagenet": "vase",
+"is_misc": false
+},
+"628": {
+"name": "table#11",
+"super_cat": 94,
+"nearest_imagenet": "dining table",
+"is_misc": false
+},
+"629": {
+"name": "fountain#2",
+"super_cat": 139,
+"nearest_imagenet": "fountain",
+"is_misc": false
+},
+"630": {
+"name": "cylindrical#14",
+"super_cat": 163,
+"nearest_imagenet": "obelisk",
+"is_misc": false
+},
+"631": {
+"name": "toy tank",
+"super_cat": 0,
+"nearest_imagenet": "tank",
+"is_misc": false
+},
+"632": {
+"name": "humanoid robot#10",
+"super_cat": 12,
+"nearest_imagenet": "harvester",
+"is_misc": false
+},
+"633": {
+"name": "complex#2",
+"super_cat": 133,
+"nearest_imagenet": "maze",
+"is_misc": false
+},
+"634": {
+"name": "frog#2",
+"super_cat": 201,
+"nearest_imagenet": "green lizard",
+"is_misc": false
+},
+"635": {
+"name": "character#12",
+"super_cat": 210,
+"nearest_imagenet": "green snake",
+"is_misc": false
+},
+"636": {
+"name": "slender#2",
+"super_cat": 19,
+"nearest_imagenet": "wooden spoon",
+"is_misc": false
+},
+"637": {
+"name": "bottle#3",
+"super_cat": 23,
+"nearest_imagenet": "green snake",
+"is_misc": false
+},
+"638": {
+"name": "box#35",
+"super_cat": 32,
+"nearest_imagenet": "flamingo",
+"is_misc": false
+},
+"639": {
+"name": "visually appealing#5",
+"super_cat": 72,
+"nearest_imagenet": "green snake",
+"is_misc": false
+},
+"640": {
+"name": "box#36",
+"super_cat": 73,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"641": {
+"name": "creature#8",
+"super_cat": 104,
+"nearest_imagenet": "green lizard",
+"is_misc": false
+},
+"642": {
+"name": "hamburger",
+"super_cat": 140,
+"nearest_imagenet": "cheeseburger",
+"is_misc": false
+},
+"643": {
+"name": "house#21",
+"super_cat": 247,
+"nearest_imagenet": "ballpoint",
+"is_misc": false
+},
+"644": {
+"name": "box#37",
+"super_cat": 27,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"645": {
+"name": "box#38",
+"super_cat": 37,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"646": {
+"name": "chair#8",
+"super_cat": 42,
+"nearest_imagenet": "rocking chair",
+"is_misc": false
+},
+"647": {
+"name": "skyscraper#2",
+"super_cat": 50,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"648": {
+"name": "sculpture#18",
+"super_cat": 70,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"649": {
+"name": "well crafted#7",
+"super_cat": 77,
+"nearest_imagenet": "scabbard",
+"is_misc": false
+},
+"650": {
+"name": "cylindrical#15",
+"super_cat": 90,
+"nearest_imagenet": "missile",
+"is_misc": false
+},
+"651": {
+"name": "humanoid#6",
+"super_cat": 235,
+"nearest_imagenet": "upright",
+"is_misc": false
+},
+"652": {
+"name": "house#22",
+"super_cat": 246,
+"nearest_imagenet": "flamingo",
+"is_misc": false
+},
+"653": {
+"name": "sphere#7",
+"super_cat": 30,
+"nearest_imagenet": "soccer ball",
+"is_misc": false
+},
+"654": {
+"name": "irregularly shaped#24",
+"super_cat": 87,
+"nearest_imagenet": "pot",
+"is_misc": false
+},
+"655": {
+"name": "triceratops",
+"super_cat": 124,
+"nearest_imagenet": "triceratops",
+"is_misc": false
+},
+"656": {
+"name": "dinosaur",
+"super_cat": 124,
+"nearest_imagenet": "triceratops",
+"is_misc": false
+},
+"657": {
+"name": "humanoid robot#11",
+"super_cat": 126,
+"nearest_imagenet": "military uniform",
+"is_misc": false
+},
+"658": {
+"name": "seashell#2",
+"super_cat": 143,
+"nearest_imagenet": "snail",
+"is_misc": false
+},
+"659": {
+"name": "archway",
+"super_cat": 171,
+"nearest_imagenet": "triumphal arch",
+"is_misc": false
+},
+"660": {
+"name": "tree#7",
+"super_cat": 229,
+"nearest_imagenet": "broccoli",
+"is_misc": false
+},
+"661": {
+"name": "building#13",
+"super_cat": 233,
+"nearest_imagenet": "restaurant",
+"is_misc": false
+},
+"662": {
+"name": "house#23",
+"super_cat": 49,
+"nearest_imagenet": "barn",
+"is_misc": false
+},
+"663": {
+"name": "block#3",
+"super_cat": 99,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"664": {
+"name": "archway#2",
+"super_cat": 171,
+"nearest_imagenet": "triumphal arch",
+"is_misc": false
+},
+"665": {
+"name": "arrowhead",
+"super_cat": 195,
+"nearest_imagenet": "projectile",
+"is_misc": false
+},
+"666": {
+"name": "cylindrical#16",
+"super_cat": 216,
+"nearest_imagenet": "barrel",
+"is_misc": false
+},
+"667": {
+"name": "box#39",
+"super_cat": 248,
+"nearest_imagenet": "carton",
+"is_misc": false
+},
+"668": {
+"name": "chair#9",
+"super_cat": 42,
+"nearest_imagenet": "rocking chair",
+"is_misc": false
+},
+"669": {
+"name": "spaceship#8",
+"super_cat": 47,
+"nearest_imagenet": "space shuttle",
+"is_misc": false
+},
+"670": {
+"name": "tire#2",
+"super_cat": 50,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"671": {
+"name": "rock#11",
+"super_cat": 58,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"672": {
+"name": "cylindrical bottle#2",
+"super_cat": 127,
+"nearest_imagenet": "pop bottle",
+"is_misc": false
+},
+"673": {
+"name": "boat#3",
+"super_cat": 155,
+"nearest_imagenet": "canoe",
+"is_misc": false
+},
+"674": {
+"name": "collection#4",
+"super_cat": 231,
+"nearest_imagenet": "web site",
+"is_misc": false
+},
+"675": {
+"name": "robotic spider",
+"super_cat": 12,
+"nearest_imagenet": "tripod",
+"is_misc": false
+},
+"676": {
+"name": "box#40",
+"super_cat": 32,
+"nearest_imagenet": "flamingo",
+"is_misc": false
+},
+"677": {
+"name": "statue#12",
+"super_cat": 35,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"678": {
+"name": "irregularly shaped#25",
+"super_cat": 195,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"679": {
+"name": "key#2",
+"super_cat": 15,
+"nearest_imagenet": "brass",
+"is_misc": false
+},
+"680": {
+"name": "table lamp",
+"super_cat": 118,
+"nearest_imagenet": "table lamp",
+"is_misc": false
+},
+"681": {
+"name": "helmet#3",
+"super_cat": 153,
+"nearest_imagenet": "football helmet",
+"is_misc": false
+},
+"682": {
+"name": "vase#7",
+"super_cat": 156,
+"nearest_imagenet": "vase",
+"is_misc": false
+},
+"683": {
+"name": "box#41",
+"super_cat": 188,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"684": {
+"name": "bowl#8",
+"super_cat": 121,
+"nearest_imagenet": "soup bowl",
+"is_misc": false
+},
+"685": {
+"name": "box#42",
+"super_cat": 131,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"686": {
+"name": "silhouette#2",
+"super_cat": 134,
+"nearest_imagenet": "black swan",
+"is_misc": false
+},
+"687": {
+"name": "building#14",
+"super_cat": 137,
+"nearest_imagenet": "dome",
+"is_misc": false
+},
+"688": {
+"name": "desk lamp",
+"super_cat": 150,
+"nearest_imagenet": "table lamp",
+"is_misc": false
+},
+"689": {
+"name": "spherical#3",
+"super_cat": 25,
+"nearest_imagenet": "ping-pong ball",
+"is_misc": false
+},
+"690": {
+"name": "character#13",
+"super_cat": 26,
+"nearest_imagenet": "cowboy hat",
+"is_misc": false
+},
+"691": {
+"name": "man#13",
+"super_cat": 50,
+"nearest_imagenet": "rule",
+"is_misc": false
+},
+"692": {
+"name": "gravestone#2",
+"super_cat": 61,
+"nearest_imagenet": "obelisk",
+"is_misc": false
+},
+"693": {
+"name": "airplane#4",
+"super_cat": 170,
+"nearest_imagenet": "airliner",
+"is_misc": false
+},
+"694": {
+"name": "landscape#2",
+"super_cat": 227,
+"nearest_imagenet": "mountain tent",
+"is_misc": false
+},
+"695": {
+"name": "military tank#2",
+"super_cat": 0,
+"nearest_imagenet": "tank",
+"is_misc": false
+},
+"696": {
+"name": "bowl#9",
+"super_cat": 1,
+"nearest_imagenet": "pot",
+"is_misc": false
+},
+"697": {
+"name": "car#8",
+"super_cat": 5,
+"nearest_imagenet": "sports car",
+"is_misc": false
+},
+"698": {
+"name": "humanoid robot#12",
+"super_cat": 12,
+"nearest_imagenet": "suit",
+"is_misc": false
+},
+"699": {
+"name": "island#3",
+"super_cat": 78,
+"nearest_imagenet": "seashore",
+"is_misc": false
+},
+"700": {
+"name": "knife#3",
+"super_cat": 128,
+"nearest_imagenet": "cleaver",
+"is_misc": false
+},
+"701": {
+"name": "cylindrical#17",
+"super_cat": 179,
+"nearest_imagenet": "banana",
+"is_misc": false
+},
+"702": {
+"name": "pair#15",
+"super_cat": 19,
+"nearest_imagenet": "hatchet",
+"is_misc": false
+},
+"703": {
+"name": "man head#2",
+"super_cat": 50,
+"nearest_imagenet": "rule",
+"is_misc": false
+},
+"704": {
+"name": "visually appealing#6",
+"super_cat": 62,
+"nearest_imagenet": "vase",
+"is_misc": false
+},
+"705": {
+"name": "friendly#4",
+"super_cat": 115,
+"nearest_imagenet": "banana",
+"is_misc": false
+},
+"706": {
+"name": "staircase#2",
+"super_cat": 89,
+"nearest_imagenet": "bannister",
+"is_misc": false
+},
+"707": {
+"name": "bottle#4",
+"super_cat": 127,
+"nearest_imagenet": "pop bottle",
+"is_misc": false
+},
+"708": {
+"name": "complex abstract",
+"super_cat": 133,
+"nearest_imagenet": "spider web",
+"is_misc": false
+},
+"709": {
+"name": "complex abstract#2",
+"super_cat": 242,
+"nearest_imagenet": "drum",
+"is_misc": false
+},
+"710": {
+"name": "well crafted#8",
+"super_cat": 8,
+"nearest_imagenet": "hatchet",
+"is_misc": false
+},
+"711": {
+"name": "human hand",
+"super_cat": 98,
+"nearest_imagenet": "hand-held computer",
+"is_misc": false
+},
+"712": {
+"name": "visually appealing#7",
+"super_cat": 138,
+"nearest_imagenet": "vase",
+"is_misc": false
+},
+"713": {
+"name": "cylindrical#18",
+"super_cat": 158,
+"nearest_imagenet": "banana",
+"is_misc": false
+},
+"714": {
+"name": "car#9",
+"super_cat": 172,
+"nearest_imagenet": "plane",
+"is_misc": false
+},
+"715": {
+"name": "furry creature",
+"super_cat": 204,
+"nearest_imagenet": "brown bear",
+"is_misc": false
+},
+"716": {
+"name": "rusty#2",
+"super_cat": 21,
+"nearest_imagenet": "barrel",
+"is_misc": false
+},
+"717": {
+"name": "room#4",
+"super_cat": 103,
+"nearest_imagenet": "entertainment center",
+"is_misc": false
+},
+"718": {
+"name": "room#5",
+"super_cat": 103,
+"nearest_imagenet": "desk",
+"is_misc": false
+},
+"719": {
+"name": "knight",
+"super_cat": 213,
+"nearest_imagenet": "cuirass",
+"is_misc": false
+},
+"720": {
+"name": "flag",
+"super_cat": 220,
+"nearest_imagenet": "flagpole",
+"is_misc": false
+},
+"721": {
+"name": "military tank#3",
+"super_cat": 0,
+"nearest_imagenet": "tank",
+"is_misc": false
+},
+"722": {
+"name": "pair#16",
+"super_cat": 2,
+"nearest_imagenet": "running shoe",
+"is_misc": false
+},
+"723": {
+"name": "irregularly shaped#26",
+"super_cat": 48,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"724": {
+"name": "rock#12",
+"super_cat": 58,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"725": {
+"name": "seashell#3",
+"super_cat": 143,
+"nearest_imagenet": "snail",
+"is_misc": false
+},
+"726": {
+"name": "box#43",
+"super_cat": 168,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"727": {
+"name": "character#14",
+"super_cat": 210,
+"nearest_imagenet": "wood rabbit",
+"is_misc": false
+},
+"728": {
+"name": "off road",
+"super_cat": 237,
+"nearest_imagenet": "trailer truck",
+"is_misc": false
+},
+"729": {
+"name": "leather",
+"super_cat": 33,
+"nearest_imagenet": "purse",
+"is_misc": false
+},
+"730": {
+"name": "irregularly shaped#27",
+"super_cat": 45,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"731": {
+"name": "plaque#2",
+"super_cat": 165,
+"nearest_imagenet": "fire screen",
+"is_misc": false
+},
+"732": {
+"name": "cylindrical#19",
+"super_cat": 179,
+"nearest_imagenet": "lemon",
+"is_misc": false
+},
+"733": {
+"name": "creature#9",
+"super_cat": 185,
+"nearest_imagenet": "snail",
+"is_misc": false
+},
+"734": {
+"name": "snowman#2",
+"super_cat": 11,
+"nearest_imagenet": "lion",
+"is_misc": false
+},
+"735": {
+"name": "building#15",
+"super_cat": 60,
+"nearest_imagenet": "mosque",
+"is_misc": false
+},
+"736": {
+"name": "cylindrical container#5",
+"super_cat": 112,
+"nearest_imagenet": "barrel",
+"is_misc": false
+},
+"737": {
+"name": "ring#3",
+"super_cat": 125,
+"nearest_imagenet": "bagel",
+"is_misc": false
+},
+"738": {
+"name": "handheld device#2",
+"super_cat": 180,
+"nearest_imagenet": "banana",
+"is_misc": false
+},
+"739": {
+"name": "motorcycle#2",
+"super_cat": 219,
+"nearest_imagenet": "motor scooter",
+"is_misc": false
+},
+"740": {
+"name": "lower jawbone",
+"super_cat": 225,
+"nearest_imagenet": "ear",
+"is_misc": false
+},
+"741": {
+"name": "pair#17",
+"super_cat": 2,
+"nearest_imagenet": "running shoe",
+"is_misc": false
+},
+"742": {
+"name": "rock#13",
+"super_cat": 45,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"743": {
+"name": "spaceship#9",
+"super_cat": 81,
+"nearest_imagenet": "airliner",
+"is_misc": false
+},
+"744": {
+"name": "building#16",
+"super_cat": 91,
+"nearest_imagenet": "castle",
+"is_misc": false
+},
+"745": {
+"name": "sword#12",
+"super_cat": 161,
+"nearest_imagenet": "scabbard",
+"is_misc": false
+},
+"746": {
+"name": "chair#10",
+"super_cat": 241,
+"nearest_imagenet": "rocking chair",
+"is_misc": false
+},
+"747": {
+"name": "toy car#3",
+"super_cat": 57,
+"nearest_imagenet": "go-kart",
+"is_misc": false
+},
+"748": {
+"name": "complex geometric",
+"super_cat": 133,
+"nearest_imagenet": "prison",
+"is_misc": false
+},
+"749": {
+"name": "complex geometric#2",
+"super_cat": 133,
+"nearest_imagenet": "spider web",
+"is_misc": false
+},
+"750": {
+"name": "sports car#7",
+"super_cat": 164,
+"nearest_imagenet": "sports car",
+"is_misc": false
+},
+"751": {
+"name": "humanoid robot#13",
+"super_cat": 226,
+"nearest_imagenet": "steam locomotive",
+"is_misc": false
+},
+"752": {
+"name": "visually appealing#8",
+"super_cat": 247,
+"nearest_imagenet": "ballpoint",
+"is_misc": false
+},
+"753": {
+"name": "tower#3",
+"super_cat": 76,
+"nearest_imagenet": "water tower",
+"is_misc": false
+},
+"754": {
+"name": "frame#3",
+"super_cat": 97,
+"nearest_imagenet": "screen",
+"is_misc": false
+},
+"755": {
+"name": "prism",
+"super_cat": 99,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"756": {
+"name": "box#44",
+"super_cat": 168,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"757": {
+"name": "cylindrical container#6",
+"super_cat": 184,
+"nearest_imagenet": "milk can",
+"is_misc": false
+},
+"758": {
+"name": "gun#6",
+"super_cat": 186,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"759": {
+"name": "humanoid robot#14",
+"super_cat": 211,
+"nearest_imagenet": "wood rabbit",
+"is_misc": false
+},
+"760": {
+"name": "matte",
+"super_cat": 22,
+"nearest_imagenet": "white wolf",
+"is_misc": false
+},
+"761": {
+"name": "building#17",
+"super_cat": 122,
+"nearest_imagenet": "church",
+"is_misc": false
+},
+"762": {
+"name": "house#24",
+"super_cat": 135,
+"nearest_imagenet": "mobile home",
+"is_misc": false
+},
+"763": {
+"name": "cylindrical#20",
+"super_cat": 196,
+"nearest_imagenet": "web site",
+"is_misc": false
+},
+"764": {
+"name": "bone like",
+"super_cat": 225,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"765": {
+"name": "crab#2",
+"super_cat": 20,
+"nearest_imagenet": "rock crab",
+"is_misc": false
+},
+"766": {
+"name": "abstract",
+"super_cat": 22,
+"nearest_imagenet": "white wolf",
+"is_misc": false
+},
+"767": {
+"name": "spacecraft",
+"super_cat": 47,
+"nearest_imagenet": "space shuttle",
+"is_misc": false
+},
+"768": {
+"name": "building#18",
+"super_cat": 60,
+"nearest_imagenet": "mosque",
+"is_misc": false
+},
+"769": {
+"name": "cylindrical#21",
+"super_cat": 90,
+"nearest_imagenet": "missile",
+"is_misc": false
+},
+"770": {
+"name": "circular#4",
+"super_cat": 191,
+"nearest_imagenet": "car wheel",
+"is_misc": false
+},
+"771": {
+"name": "book",
+"super_cat": 197,
+"nearest_imagenet": "envelope",
+"is_misc": false
+},
+"772": {
+"name": "house#25",
+"super_cat": 49,
+"nearest_imagenet": "boathouse",
+"is_misc": false
+},
+"773": {
+"name": "man#14",
+"super_cat": 50,
+"nearest_imagenet": "suit",
+"is_misc": false
+},
+"774": {
+"name": "skull#2",
+"super_cat": 74,
+"nearest_imagenet": "football helmet",
+"is_misc": false
+},
+"775": {
+"name": "handgun#3",
+"super_cat": 79,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"776": {
+"name": "fish#5",
+"super_cat": 130,
+"nearest_imagenet": "goldfish",
+"is_misc": false
+},
+"777": {
+"name": "block#4",
+"super_cat": 177,
+"nearest_imagenet": "stone wall",
+"is_misc": false
+},
+"778": {
+"name": "spherical#4",
+"super_cat": 181,
+"nearest_imagenet": "soccer ball",
+"is_misc": false
+},
+"779": {
+"name": "robot#6",
+"super_cat": 182,
+"nearest_imagenet": "banana",
+"is_misc": false
+},
+"780": {
+"name": "character#15",
+"super_cat": 7,
+"nearest_imagenet": "maillot tank suit",
+"is_misc": false
+},
+"781": {
+"name": "rifle#10",
+"super_cat": 75,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"782": {
+"name": "cylindrical#22",
+"super_cat": 90,
+"nearest_imagenet": "torch",
+"is_misc": false
+},
+"783": {
+"name": "skyscraper#3",
+"super_cat": 106,
+"nearest_imagenet": "water tower",
+"is_misc": false
+},
+"784": {
+"name": "cylindrical container#7",
+"super_cat": 112,
+"nearest_imagenet": "pot",
+"is_misc": false
+},
+"785": {
+"name": "silhouette#3",
+"super_cat": 134,
+"nearest_imagenet": "abaya",
+"is_misc": false
+},
+"786": {
+"name": "vending machine#2",
+"super_cat": 192,
+"nearest_imagenet": "vending machine",
+"is_misc": false
+},
+"787": {
+"name": "hammer#2",
+"super_cat": 8,
+"nearest_imagenet": "hammer",
+"is_misc": false
+},
+"788": {
+"name": "bench#3",
+"super_cat": 10,
+"nearest_imagenet": "park bench",
+"is_misc": false
+},
+"789": {
+"name": "ball#6",
+"super_cat": 31,
+"nearest_imagenet": "ping-pong ball",
+"is_misc": false
+},
+"790": {
+"name": "visually appealing#9",
+"super_cat": 32,
+"nearest_imagenet": "flamingo",
+"is_misc": false
+},
+"791": {
+"name": "playful",
+"super_cat": 108,
+"nearest_imagenet": "flamingo",
+"is_misc": false
+},
+"792": {
+"name": "pair#18",
+"super_cat": 2,
+"nearest_imagenet": "running shoe",
+"is_misc": false
+},
+"793": {
+"name": "axe#5",
+"super_cat": 8,
+"nearest_imagenet": "hatchet",
+"is_misc": false
+},
+"794": {
+"name": "box#45",
+"super_cat": 37,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"795": {
+"name": "knife#4",
+"super_cat": 128,
+"nearest_imagenet": "cleaver",
+"is_misc": false
+},
+"796": {
+"name": "box#46",
+"super_cat": 168,
+"nearest_imagenet": "envelope",
+"is_misc": false
+},
+"797": {
+"name": "block#5",
+"super_cat": 188,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"798": {
+"name": "arrowhead#2",
+"super_cat": 195,
+"nearest_imagenet": "missile",
+"is_misc": false
+},
+"799": {
+"name": "stick#2",
+"super_cat": 216,
+"nearest_imagenet": "wooden spoon",
+"is_misc": false
+},
+"800": {
+"name": "well crafted#9",
+"super_cat": 77,
+"nearest_imagenet": "scabbard",
+"is_misc": false
+},
+"801": {
+"name": "sword#13",
+"super_cat": 182,
+"nearest_imagenet": "banana",
+"is_misc": false
+},
+"802": {
+"name": "box#47",
+"super_cat": 179,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"803": {
+"name": "fire truck",
+"super_cat": 219,
+"nearest_imagenet": "fire engine",
+"is_misc": false
+},
+"804": {
+"name": "statue#13",
+"super_cat": 245,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"805": {
+"name": "character#16",
+"super_cat": 32,
+"nearest_imagenet": "flamingo",
+"is_misc": false
+},
+"806": {
+"name": "well crafted#10",
+"super_cat": 77,
+"nearest_imagenet": "scabbard",
+"is_misc": false
+},
+"807": {
+"name": "snowman#3",
+"super_cat": 84,
+"nearest_imagenet": "jack-o'-lantern",
+"is_misc": false
+},
+"808": {
+"name": "gramophone",
+"super_cat": 183,
+"nearest_imagenet": "dial telephone",
+"is_misc": false
+},
+"809": {
+"name": "car#10",
+"super_cat": 205,
+"nearest_imagenet": "trailer truck",
+"is_misc": false
+},
+"810": {
+"name": "female character",
+"super_cat": 218,
+"nearest_imagenet": "military uniform",
+"is_misc": false
+},
+"811": {
+"name": "dog#4",
+"super_cat": 11,
+"nearest_imagenet": "lion",
+"is_misc": false
+},
+"812": {
+"name": "fence#3",
+"super_cat": 187,
+"nearest_imagenet": "picket fence",
+"is_misc": false
+},
+"813": {
+"name": "human hand#2",
+"super_cat": 200,
+"nearest_imagenet": "organ",
+"is_misc": false
+},
+"814": {
+"name": "house#26",
+"super_cat": 13,
+"nearest_imagenet": "castle",
+"is_misc": false
+},
+"815": {
+"name": "microwave oven",
+"super_cat": 14,
+"nearest_imagenet": "television",
+"is_misc": false
+},
+"816": {
+"name": "vibrant",
+"super_cat": 62,
+"nearest_imagenet": "coral reef",
+"is_misc": false
+},
+"817": {
+"name": "uneven surface",
+"super_cat": 65,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"818": {
+"name": "fountain#3",
+"super_cat": 139,
+"nearest_imagenet": "fountain",
+"is_misc": false
+},
+"819": {
+"name": "helmet#4",
+"super_cat": 153,
+"nearest_imagenet": "football helmet",
+"is_misc": false
+},
+"820": {
+"name": "wheel",
+"super_cat": 191,
+"nearest_imagenet": "car wheel",
+"is_misc": false
+},
+"821": {
+"name": "topographical map#2",
+"super_cat": 39,
+"nearest_imagenet": "valley",
+"is_misc": false
+},
+"822": {
+"name": "weathered#10",
+"super_cat": 61,
+"nearest_imagenet": "obelisk",
+"is_misc": false
+},
+"823": {
+"name": "stack#2",
+"super_cat": 129,
+"nearest_imagenet": "altar",
+"is_misc": false
+},
+"824": {
+"name": "motorcycle#3",
+"super_cat": 142,
+"nearest_imagenet": "motor scooter",
+"is_misc": false
+},
+"825": {
+"name": "hat",
+"super_cat": 199,
+"nearest_imagenet": "cowboy hat",
+"is_misc": false
+},
+"826": {
+"name": "building#19",
+"super_cat": 224,
+"nearest_imagenet": "barn",
+"is_misc": false
+},
+"827": {
+"name": "pair#19",
+"super_cat": 15,
+"nearest_imagenet": "brass",
+"is_misc": false
+},
+"828": {
+"name": "rock#14",
+"super_cat": 114,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"829": {
+"name": "box#48",
+"super_cat": 168,
+"nearest_imagenet": "envelope",
+"is_misc": false
+},
+"830": {
+"name": "camera#2",
+"super_cat": 183,
+"nearest_imagenet": "reflex camera",
+"is_misc": false
+},
+"831": {
+"name": "sculpture#19",
+"super_cat": 202,
+"nearest_imagenet": "lion",
+"is_misc": false
+},
+"832": {
+"name": "van",
+"super_cat": 205,
+"nearest_imagenet": "police van",
+"is_misc": false
+},
+"833": {
+"name": "handgun#4",
+"super_cat": 221,
+"nearest_imagenet": "revolver",
+"is_misc": false
+},
+"834": {
+"name": "ball#7",
+"super_cat": 25,
+"nearest_imagenet": "ping-pong ball",
+"is_misc": false
+},
+"835": {
+"name": "fence#4",
+"super_cat": 96,
+"nearest_imagenet": "grille",
+"is_misc": false
+},
+"836": {
+"name": "dragon#4",
+"super_cat": 159,
+"nearest_imagenet": "triceratops",
+"is_misc": false
+},
+"837": {
+"name": "cabinet#6",
+"super_cat": 208,
+"nearest_imagenet": "china cabinet",
+"is_misc": false
+},
+"838": {
+"name": "rubik cube",
+"super_cat": 238,
+"nearest_imagenet": "crossword puzzle",
+"is_misc": false
+},
+"839": {
+"name": "figurine#12",
+"super_cat": 85,
+"nearest_imagenet": "piggy bank",
+"is_misc": false
+},
+"840": {
+"name": "woman#8",
+"super_cat": 157,
+"nearest_imagenet": "miniskirt",
+"is_misc": false
+},
+"841": {
+"name": "cube#4",
+"super_cat": 247,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"842": {
+"name": "box#49",
+"super_cat": 27,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"843": {
+"name": "cylindrical#23",
+"super_cat": 90,
+"nearest_imagenet": "missile",
+"is_misc": false
+},
+"844": {
+"name": "boat#4",
+"super_cat": 155,
+"nearest_imagenet": "speedboat",
+"is_misc": false
+},
+"845": {
+"name": "dragon#5",
+"super_cat": 211,
+"nearest_imagenet": "triceratops",
+"is_misc": false
+},
+"846": {
+"name": "car#11",
+"super_cat": 5,
+"nearest_imagenet": "white wolf",
+"is_misc": false
+},
+"847": {
+"name": "slender#3",
+"super_cat": 48,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"848": {
+"name": "cylindrical can",
+"super_cat": 184,
+"nearest_imagenet": "milk can",
+"is_misc": false
+},
+"849": {
+"name": "cylindrical#24",
+"super_cat": 207,
+"nearest_imagenet": "pole",
+"is_misc": false
+},
+"850": {
+"name": "pair#20",
+"super_cat": 19,
+"nearest_imagenet": "hatchet",
+"is_misc": false
+},
+"851": {
+"name": "irregularly shaped#28",
+"super_cat": 48,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"852": {
+"name": "sponge character",
+"super_cat": 115,
+"nearest_imagenet": "banana",
+"is_misc": false
+},
+"853": {
+"name": "table#12",
+"super_cat": 116,
+"nearest_imagenet": "table lamp",
+"is_misc": false
+},
+"854": {
+"name": "building#20",
+"super_cat": 122,
+"nearest_imagenet": "barn",
+"is_misc": false
+},
+"855": {
+"name": "geometric#2",
+"super_cat": 133,
+"nearest_imagenet": "prison",
+"is_misc": false
+},
+"856": {
+"name": "frame#4",
+"super_cat": 165,
+"nearest_imagenet": "fire screen",
+"is_misc": false
+},
+"857": {
+"name": "cylindrical container#8",
+"super_cat": 184,
+"nearest_imagenet": "milk can",
+"is_misc": false
+},
+"858": {
+"name": "forest",
+"super_cat": 227,
+"nearest_imagenet": "seashore",
+"is_misc": false
+},
+"859": {
+"name": "terrain#3",
+"super_cat": 244,
+"nearest_imagenet": "valley",
+"is_misc": false
+},
+"860": {
+"name": "shield#2",
+"super_cat": 24,
+"nearest_imagenet": "shield",
+"is_misc": false
+},
+"861": {
+"name": "house#27",
+"super_cat": 41,
+"nearest_imagenet": "yurt",
+"is_misc": false
+},
+"862": {
+"name": "sculpture#20",
+"super_cat": 70,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"863": {
+"name": "humanoid#7",
+"super_cat": 126,
+"nearest_imagenet": "military uniform",
+"is_misc": false
+},
+"864": {
+"name": "story apartment",
+"super_cat": 233,
+"nearest_imagenet": "church",
+"is_misc": false
+},
+"865": {
+"name": "toy car#4",
+"super_cat": 57,
+"nearest_imagenet": "go-kart",
+"is_misc": false
+},
+"866": {
+"name": "circular#5",
+"super_cat": 67,
+"nearest_imagenet": "stone wall",
+"is_misc": false
+},
+"867": {
+"name": "couch#3",
+"super_cat": 93,
+"nearest_imagenet": "studio couch",
+"is_misc": false
+},
+"868": {
+"name": "sports car#8",
+"super_cat": 164,
+"nearest_imagenet": "sports car",
+"is_misc": false
+},
+"869": {
+"name": "character#17",
+"super_cat": 234,
+"nearest_imagenet": "ice bear",
+"is_misc": false
+},
+"870": {
+"name": "topographical map#3",
+"super_cat": 39,
+"nearest_imagenet": "valley",
+"is_misc": false
+},
+"871": {
+"name": "toy car#5",
+"super_cat": 43,
+"nearest_imagenet": "sports car",
+"is_misc": false
+},
+"872": {
+"name": "table#13",
+"super_cat": 51,
+"nearest_imagenet": "dining table",
+"is_misc": false
+},
+"873": {
+"name": "cat#3",
+"super_cat": 123,
+"nearest_imagenet": "West Highland white terrier",
+"is_misc": false
+},
+"874": {
+"name": "sphere#8",
+"super_cat": 247,
+"nearest_imagenet": "basketball",
+"is_misc": false
+},
+"875": {
+"name": "chair#11",
+"super_cat": 42,
+"nearest_imagenet": "rocking chair",
+"is_misc": false
+},
+"876": {
+"name": "table#14",
+"super_cat": 94,
+"nearest_imagenet": "dining table",
+"is_misc": false
+},
+"877": {
+"name": "carved",
+"super_cat": 110,
+"nearest_imagenet": "stone wall",
+"is_misc": false
+},
+"878": {
+"name": "brick wall#2",
+"super_cat": 53,
+"nearest_imagenet": "stone wall",
+"is_misc": false
+},
+"879": {
+"name": "well crafted#11",
+"super_cat": 77,
+"nearest_imagenet": "scabbard",
+"is_misc": false
+},
+"880": {
+"name": "floating island#2",
+"super_cat": 227,
+"nearest_imagenet": "mountain tent",
+"is_misc": false
+},
+"881": {
+"name": "group",
+"super_cat": 4,
+"nearest_imagenet": "confectionery",
+"is_misc": false
+},
+"882": {
+"name": "cylindrical#25",
+"super_cat": 17,
+"nearest_imagenet": "green snake",
+"is_misc": false
+},
+"883": {
+"name": "box#50",
+"super_cat": 162,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"884": {
+"name": "bust#3",
+"super_cat": 173,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"885": {
+"name": "cylindrical container#9",
+"super_cat": 196,
+"nearest_imagenet": "pot",
+"is_misc": false
+},
+"886": {
+"name": "teapot#2",
+"super_cat": 6,
+"nearest_imagenet": "teapot",
+"is_misc": false
+},
+"887": {
+"name": "brick wall#3",
+"super_cat": 53,
+"nearest_imagenet": "stone wall",
+"is_misc": false
+},
+"888": {
+"name": "cylindrical#26",
+"super_cat": 72,
+"nearest_imagenet": "green snake",
+"is_misc": false
+},
+"889": {
+"name": "chair#12",
+"super_cat": 116,
+"nearest_imagenet": "folding chair",
+"is_misc": false
+},
+"890": {
+"name": "irregularly shaped#29",
+"super_cat": 144,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"891": {
+"name": "rounded",
+"super_cat": 25,
+"nearest_imagenet": "ping-pong ball",
+"is_misc": false
+},
+"892": {
+"name": "block#6",
+"super_cat": 27,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"893": {
+"name": "house#28",
+"super_cat": 41,
+"nearest_imagenet": "boathouse",
+"is_misc": false
+},
+"894": {
+"name": "handgun#5",
+"super_cat": 79,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"895": {
+"name": "cube#5",
+"super_cat": 242,
+"nearest_imagenet": "honeycomb",
+"is_misc": false
+},
+"896": {
+"name": "cactus",
+"super_cat": 102,
+"nearest_imagenet": "broccoli",
+"is_misc": false
+},
+"897": {
+"name": "column#2",
+"super_cat": 120,
+"nearest_imagenet": "obelisk",
+"is_misc": false
+},
+"898": {
+"name": "knife#5",
+"super_cat": 128,
+"nearest_imagenet": "cleaver",
+"is_misc": false
+},
+"899": {
+"name": "bow#2",
+"super_cat": 240,
+"nearest_imagenet": "bow",
+"is_misc": false
+},
+"900": {
+"name": "fire hydrant",
+"super_cat": 34,
+"nearest_imagenet": "red wine",
+"is_misc": false
+},
+"901": {
+"name": "friendly#5",
+"super_cat": 85,
+"nearest_imagenet": "wood rabbit",
+"is_misc": false
+},
+"902": {
+"name": "sculpture#21",
+"super_cat": 110,
+"nearest_imagenet": "stone wall",
+"is_misc": false
+},
+"903": {
+"name": "knife#6",
+"super_cat": 128,
+"nearest_imagenet": "cleaver",
+"is_misc": false
+},
+"904": {
+"name": "motorcycle#4",
+"super_cat": 142,
+"nearest_imagenet": "motor scooter",
+"is_misc": false
+},
+"905": {
+"name": "helicopter",
+"super_cat": 170,
+"nearest_imagenet": "warplane",
+"is_misc": false
+},
+"906": {
+"name": "sculpture#22",
+"super_cat": 16,
+"nearest_imagenet": "pedestal",
+"is_misc": false
+},
+"907": {
+"name": "matte#2",
+"super_cat": 22,
+"nearest_imagenet": "white wolf",
+"is_misc": false
+},
+"908": {
+"name": "compact submachine",
+"super_cat": 28,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"909": {
+"name": "box#51",
+"super_cat": 37,
+"nearest_imagenet": "red wine",
+"is_misc": false
+},
+"910": {
+"name": "handgun#6",
+"super_cat": 79,
+"nearest_imagenet": "holster",
+"is_misc": false
+},
+"911": {
+"name": "leg bone",
+"super_cat": 225,
+"nearest_imagenet": "crutch",
+"is_misc": false
+},
+"912": {
+"name": "fish#6",
+"super_cat": 130,
+"nearest_imagenet": "goldfish",
+"is_misc": false
+},
+"913": {
+"name": "rock#15",
+"super_cat": 144,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"914": {
+"name": "humanoid robot#15",
+"super_cat": 217,
+"nearest_imagenet": "desktop computer",
+"is_misc": false
+},
+"915": {
+"name": "urban area",
+"super_cat": 244,
+"nearest_imagenet": "valley",
+"is_misc": false
+},
+"916": {
+"name": "chandelier",
+"super_cat": 118,
+"nearest_imagenet": "lampshade",
+"is_misc": false
+},
+"917": {
+"name": "gun#7",
+"super_cat": 186,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"918": {
+"name": "cylindrical#27",
+"super_cat": 196,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"919": {
+"name": "christmas tree",
+"super_cat": 23,
+"nearest_imagenet": "green lizard",
+"is_misc": false
+},
+"920": {
+"name": "cabinet#7",
+"super_cat": 208,
+"nearest_imagenet": "chiffonier",
+"is_misc": false
+},
+"921": {
+"name": "house#29",
+"super_cat": 49,
+"nearest_imagenet": "barn",
+"is_misc": false
+},
+"922": {
+"name": "bird#5",
+"super_cat": 160,
+"nearest_imagenet": "plane",
+"is_misc": false
+},
+"923": {
+"name": "computer monitor",
+"super_cat": 206,
+"nearest_imagenet": "desktop computer",
+"is_misc": false
+},
+"924": {
+"name": "japanese torii",
+"super_cat": 219,
+"nearest_imagenet": "fire engine",
+"is_misc": false
+},
+"925": {
+"name": "lifelike#4",
+"super_cat": 200,
+"nearest_imagenet": "African crocodile",
+"is_misc": false
+},
+"926": {
+"name": "car#12",
+"super_cat": 246,
+"nearest_imagenet": "flamingo",
+"is_misc": false
+},
+"927": {
+"name": "table#15",
+"super_cat": 94,
+"nearest_imagenet": "dining table",
+"is_misc": false
+},
+"928": {
+"name": "rock#16",
+"super_cat": 215,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"929": {
+"name": "deer skull#2",
+"super_cat": 178,
+"nearest_imagenet": "triceratops",
+"is_misc": false
+},
+"930": {
+"name": "human head#3",
+"super_cat": 29,
+"nearest_imagenet": "mask",
+"is_misc": false
+},
+"931": {
+"name": "ring#4",
+"super_cat": 125,
+"nearest_imagenet": "bagel",
+"is_misc": false
+},
+"932": {
+"name": "cluster",
+"super_cat": 242,
+"nearest_imagenet": "desktop computer",
+"is_misc": false
+},
+"933": {
+"name": "door#4",
+"super_cat": 69,
+"nearest_imagenet": "sliding door",
+"is_misc": false
+},
+"934": {
+"name": "barrel#5",
+"super_cat": 88,
+"nearest_imagenet": "barrel",
+"is_misc": false
+},
+"935": {
+"name": "woman#9",
+"super_cat": 190,
+"nearest_imagenet": "gown",
+"is_misc": false
+},
+"936": {
+"name": "woman#10",
+"super_cat": 194,
+"nearest_imagenet": "green mamba",
+"is_misc": false
+},
+"937": {
+"name": "well crafted#12",
+"super_cat": 77,
+"nearest_imagenet": "scabbard",
+"is_misc": false
+},
+"938": {
+"name": "vase#8",
+"super_cat": 156,
+"nearest_imagenet": "vase",
+"is_misc": false
+},
+"939": {
+"name": "sphere#9",
+"super_cat": 181,
+"nearest_imagenet": "soccer ball",
+"is_misc": false
+},
+"940": {
+"name": "structural framework#2",
+"super_cat": 71,
+"nearest_imagenet": "prison",
+"is_misc": false
+},
+"941": {
+"name": "bird#6",
+"super_cat": 132,
+"nearest_imagenet": "crane bird",
+"is_misc": false
+},
+"942": {
+"name": "mug#2",
+"super_cat": 46,
+"nearest_imagenet": "coffee mug",
+"is_misc": false
+},
+"943": {
+"name": "frame#5",
+"super_cat": 165,
+"nearest_imagenet": "fire screen",
+"is_misc": false
+},
+"944": {
+"name": "city#2",
+"super_cat": 52,
+"nearest_imagenet": "castle",
+"is_misc": false
+},
+"945": {
+"name": "sports car#9",
+"super_cat": 164,
+"nearest_imagenet": "sports car",
+"is_misc": false
+},
+"946": {
+"name": "coin#2",
+"super_cat": 15,
+"nearest_imagenet": "brass",
+"is_misc": false
+},
+"947": {
+"name": "city#3",
+"super_cat": 91,
+"nearest_imagenet": "castle",
+"is_misc": false
+},
+"948": {
+"name": "rubik cube#2",
+"super_cat": 238,
+"nearest_imagenet": "crossword puzzle",
+"is_misc": false
+},
+"949": {
+"name": "rifle#11",
+"super_cat": 28,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"950": {
+"name": "pottery vase#2",
+"super_cat": 156,
+"nearest_imagenet": "vase",
+"is_misc": false
+},
+"951": {
+"name": "church#3",
+"super_cat": 175,
+"nearest_imagenet": "church",
+"is_misc": false
+},
+"952": {
+"name": "boat#5",
+"super_cat": 209,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"953": {
+"name": "complex#3",
+"super_cat": 71,
+"nearest_imagenet": "viaduct",
+"is_misc": false
+},
+"954": {
+"name": "circular#6",
+"super_cat": 138,
+"nearest_imagenet": "drum",
+"is_misc": false
+},
+"955": {
+"name": "freshly baked",
+"super_cat": 25,
+"nearest_imagenet": "French loaf",
+"is_misc": false
+},
+"956": {
+"name": "sign",
+"super_cat": 40,
+"nearest_imagenet": "street sign",
+"is_misc": false
+},
+"957": {
+"name": "man#15",
+"super_cat": 141,
+"nearest_imagenet": "suit",
+"is_misc": false
+},
+"958": {
+"name": "damaged",
+"super_cat": 205,
+"nearest_imagenet": "passenger car",
+"is_misc": false
+},
+"959": {
+"name": "spherical#5",
+"super_cat": 87,
+"nearest_imagenet": "dome",
+"is_misc": false
+},
+"960": {
+"name": "barrel#6",
+"super_cat": 88,
+"nearest_imagenet": "barrel",
+"is_misc": false
+},
+"961": {
+"name": "pumpkin#2",
+"super_cat": 145,
+"nearest_imagenet": "jack-o'-lantern",
+"is_misc": false
+},
+"962": {
+"name": "cabinet#8",
+"super_cat": 232,
+"nearest_imagenet": "refrigerator",
+"is_misc": false
+},
+"963": {
+"name": "humanoid#8",
+"super_cat": 134,
+"nearest_imagenet": "abaya",
+"is_misc": false
+},
+"964": {
+"name": "girl#3",
+"super_cat": 32,
+"nearest_imagenet": "flamingo",
+"is_misc": false
+},
+"965": {
+"name": "panel",
+"super_cat": 188,
+"nearest_imagenet": "file",
+"is_misc": false
+},
+"966": {
+"name": "guitar",
+"super_cat": 33,
+"nearest_imagenet": "acoustic guitar",
+"is_misc": false
+},
+"967": {
+"name": "aerodynamic#3",
+"super_cat": 148,
+"nearest_imagenet": "sports car",
+"is_misc": false
+},
+"968": {
+"name": "house#30",
+"super_cat": 49,
+"nearest_imagenet": "thatch",
+"is_misc": false
+},
+"969": {
+"name": "box#52",
+"super_cat": 167,
+"nearest_imagenet": "crate",
+"is_misc": false
+},
+"970": {
+"name": "visually appealing#10",
+"super_cat": 62,
+"nearest_imagenet": "desktop computer",
+"is_misc": false
+},
+"971": {
+"name": "chair#13",
+"super_cat": 152,
+"nearest_imagenet": "rocking chair",
+"is_misc": false
+},
+"972": {
+"name": "rifle#12",
+"super_cat": 28,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"973": {
+"name": "ceiling fan",
+"super_cat": 118,
+"nearest_imagenet": "lampshade",
+"is_misc": false
+},
+"974": {
+"name": "vase#9",
+"super_cat": 156,
+"nearest_imagenet": "vase",
+"is_misc": false
+},
+"975": {
+"name": "lifelike#5",
+"super_cat": 38,
+"nearest_imagenet": "brown bear",
+"is_misc": false
+},
+"976": {
+"name": "snowman#4",
+"super_cat": 84,
+"nearest_imagenet": "jack-o'-lantern",
+"is_misc": false
+},
+"977": {
+"name": "couch#4",
+"super_cat": 93,
+"nearest_imagenet": "studio couch",
+"is_misc": false
+},
+"978": {
+"name": "rugged",
+"super_cat": 228,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"979": {
+"name": "faucet",
+"super_cat": 249,
+"nearest_imagenet": "washbasin",
+"is_misc": false
+},
+"980": {
+"name": "man#16",
+"super_cat": 55,
+"nearest_imagenet": "groom",
+"is_misc": false
+},
+"981": {
+"name": "sculpture#23",
+"super_cat": 202,
+"nearest_imagenet": "lion",
+"is_misc": false
+},
+"982": {
+"name": "flag#2",
+"super_cat": 220,
+"nearest_imagenet": "flagpole",
+"is_misc": false
+},
+"983": {
+"name": "cylindrical#28",
+"super_cat": 90,
+"nearest_imagenet": "rifle",
+"is_misc": false
+},
+"984": {
+"name": "revolver",
+"super_cat": 221,
+"nearest_imagenet": "revolver",
+"is_misc": false
+},
+"985": {
+"name": "sword#14",
+"super_cat": 77,
+"nearest_imagenet": "scabbard",
+"is_misc": false
+},
+"986": {
+"name": "cylindrical#29",
+"super_cat": 88,
+"nearest_imagenet": "barrel",
+"is_misc": false
+},
+"987": {
+"name": "apple#2",
+"super_cat": 136,
+"nearest_imagenet": "orange",
+"is_misc": false
+},
+"988": {
+"name": "teapot#3",
+"super_cat": 6,
+"nearest_imagenet": "teapot",
+"is_misc": false
+},
+"989": {
+"name": "cylindrical fire#2",
+"super_cat": 86,
+"nearest_imagenet": "fire engine",
+"is_misc": false
+},
+"990": {
+"name": "tree#8",
+"super_cat": 92,
+"nearest_imagenet": "broccoli",
+"is_misc": false
+},
+"991": {
+"name": "slice#2",
+"super_cat": 140,
+"nearest_imagenet": "pizza",
+"is_misc": false
+},
+"992": {
+"name": "pair#21",
+"super_cat": 239,
+"nearest_imagenet": "vase",
+"is_misc": false
+},
+"993": {
+"name": "pair#22",
+"super_cat": 2,
+"nearest_imagenet": "running shoe",
+"is_misc": false
+},
+"994": {
+"name": "handgun#7",
+"super_cat": 221,
+"nearest_imagenet": "revolver",
+"is_misc": false
+},
+"995": {
+"name": "man#17",
+"super_cat": 34,
+"nearest_imagenet": "red wine",
+"is_misc": false
+},
+"996": {
+"name": "character#18",
+"super_cat": 56,
+"nearest_imagenet": "military uniform",
+"is_misc": false
+},
+"997": {
+"name": "irregularly shaped#30",
+"super_cat": 65,
+"nearest_imagenet": "rock beauty",
+"is_misc": false
+},
+"998": {
+"name": "humanoid#9",
+"super_cat": 235,
+"nearest_imagenet": "upright",
+"is_misc": false
+},
+"999": {
+"name": "misc",
+"super_cat": -1,
+"nearest_imagenet": "",
+"is_misc": true
+}
+}

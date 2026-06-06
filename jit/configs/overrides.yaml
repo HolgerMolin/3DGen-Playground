@@ -13,6 +13,8 @@
 #                    trade refinement signal (steeper loss-vs-t) vs Chamfer permutation tolerance.
 # chamfer_rev_weight: multiplier on the backward (GT-as-query) Chamfer term (1 = symmetric). Sweep
 #                    >1 live to test how much coverage-upweighting steepens loss-vs-t / cuts collapse.
+# huber_delta is NOT here on purpose: it's a launch-time-only knob (--huber_delta / main config),
+#   not hot-reloadable — set it once per run.
 
 lr_scale: 1.0
 max_grad_norm: 4.0  # 2026-05-26: 1.0 -> 4.0 after cw=0.07 rebalance. With sinkhorn 14x smaller and render still ramping in, raw grad norms ran ~0.7-1.5 — 1.0 was clipping every step. 4.0 keeps a safety ceiling without throttling typical steps.

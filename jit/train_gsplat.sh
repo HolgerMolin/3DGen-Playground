@@ -1,6 +1,19 @@
 #!/bin/bash
 
+# Capture caller-provided launch overrides BEFORE sourcing .env, because .env
+# unconditionally assigns some of these (e.g. `NUM_GPUS=`) and would otherwise clobber
+# an inline `NUM_GPUS=1 ./jit/train_gsplat.sh`. We re-apply them after sourcing so the
+# command line always wins over .env.
+_REQ_NUM_GPUS="${NUM_GPUS:-}"
+_REQ_RESULTS_DIR="${RESULTS_DIR:-}"
+_REQ_CLASS_MAP_PATH="${CLASS_MAP_PATH:-}"
+
 source .env
+
+# Re-apply caller overrides that .env may have reset to its own defaults.
+[ -n "$_REQ_NUM_GPUS" ] && NUM_GPUS="$_REQ_NUM_GPUS"
+[ -n "$_REQ_RESULTS_DIR" ] && RESULTS_DIR="$_REQ_RESULTS_DIR"
+[ -n "$_REQ_CLASS_MAP_PATH" ] && CLASS_MAP_PATH="$_REQ_CLASS_MAP_PATH"
 
 # Usage: ./jit/train_gsplat.sh [JiT-S/8|JiT-B/8|JiT-L/8|JiT-XL/8|...]
 #
@@ -8,10 +21,16 @@ source .env
 #   Path inputs:
 #     OBJ_LIST, GS_DATA_PATH, MEAN_FILE, STD_FILE, TEXT_EMBED_PATH,
 #     SPHERE2PLANE_PATH, REF_CAMERA_TAR, RESULTS_DIR, RESUME,
+#     CLASS_MAP_PATH (optional; enables discrete class conditioning),
 #     RANK_TRANSFORM_FILE (optional), VAL_PROMPTS_FILE (optional)
 #   Launch overrides:
 #     NUM_GPUS, NUM_MACHINES, MIXED_PRECISION, DYNAMO_BACKEND
 #   Hyperparameters:
+#     HUBER_DELTA — pseudo-Huber radius for the recon ground cost (unset = use config;
+#       0 = force off / squared-L2; >0 robust)
+#     LOG_RESIDUAL_MAD — truthy (1/true/yes) => log median/MAD/p90/p99 of the matched-residual
+#       radius (train/recon_residual_*) to inform HUBER_DELTA. Pair with HUBER_DELTA=0 to measure
+#       the natural (un-clipped) distribution. Unset/0 = off (zero overhead).
 #     JIT_TRAIN_CONFIG — YAML for train_gsplat.py (default: jit/configs/jit_train_gsplat.yaml)
 #     JIT_OVERRIDES_YAML — hot-reload overrides (default: jit/configs/overrides.yaml).
 #       Set to empty to disable:  JIT_OVERRIDES_YAML= ./jit/train_gsplat.sh
@@ -23,7 +42,17 @@ JIT_TRAIN_CONFIG=${JIT_TRAIN_CONFIG:-jit/configs/jit_train_gsplat.yaml}
 # Unset → default path; explicitly empty → no --overrides_yaml
 JIT_OVERRIDES_YAML="${JIT_OVERRIDES_YAML-jit/configs/overrides.yaml}"
 
-NUM_GPUS=${NUM_GPUS:-$(nvidia-smi -L 2>/dev/null | wc -l)}
+# Resolve GPU count. Precedence: explicit NUM_GPUS > #GPUs pinned via CUDA_VISIBLE_DEVICES
+# > all physical GPUs. nvidia-smi -L ignores CUDA_VISIBLE_DEVICES (always lists every
+# physical GPU), so without this a `CUDA_VISIBLE_DEVICES=1 ./...` would auto-detect 2 and
+# launch accelerate --multi_gpu on a device that isn't visible → "invalid device ordinal".
+if [ -z "${NUM_GPUS:-}" ]; then
+    if [ -n "${CUDA_VISIBLE_DEVICES:-}" ]; then
+        NUM_GPUS=$(printf '%s' "$CUDA_VISIBLE_DEVICES" | tr ',' '\n' | grep -c '[0-9]')
+    else
+        NUM_GPUS=$(nvidia-smi -L 2>/dev/null | wc -l)
+    fi
+fi
 if [ "$NUM_GPUS" -le 0 ]; then
     NUM_GPUS=1
 fi
@@ -102,9 +131,13 @@ fi
 RUN_TS=$(date +%Y%m%d_%H%M%S)
 RUN_STEM="train_${RUN_TS}_$$"
 
-# Default dir gets a timestamp suffix so each launch is isolated. Set RESULTS_DIR
-# explicitly (e.g. to resume into an existing run dir) to override.
-RESULTS_DIR="${RESULTS_DIR:-output/jit_${EFFECTIVE_MODEL}_${RUN_TS}}"
+# RESULTS_DIR is a BASE; every fresh launch gets a timestamp suffix so it lands in a
+# UNIQUE dir and never clobbers a previous run's checkpoints/logs. When resuming, keep
+# the dir as-is so we write back into the run being continued.
+RESULTS_DIR="${RESULTS_DIR:-output/jit_${EFFECTIVE_MODEL}}"
+if [ -z "$RESUME" ]; then
+    RESULTS_DIR="${RESULTS_DIR%/}_${RUN_TS}"
+fi
 
 LOG_DIR="${RESULTS_DIR}"
 mkdir -p "$LOG_DIR"
@@ -172,6 +205,32 @@ fi
 
 if [ "$OVERFIT" -gt 0 ] 2>/dev/null; then
     PY_ARGS+=(--overfit "$OVERFIT")
+fi
+
+# Pseudo-Huber radius for the within-patch ground cost. Inline HUBER_DELTA=<x> overrides
+# the config's huber_delta (launch-time only; 0 = off / squared-L2). Lets you sweep delta
+# per run without editing the YAML.
+if [ -n "${HUBER_DELTA:-}" ]; then
+    PY_ARGS+=(--huber_delta "$HUBER_DELTA")
+fi
+
+# Residual-radius diagnostics: when LOG_RESIDUAL_MAD is truthy, log median/MAD/p90/p99 of the
+# matched-residual radius r=||pred-tgt|| (train/recon_residual_*) for the sinkhorn recon modes,
+# in the same units as huber_delta. Pair with HUBER_DELTA=0 to read off a principled delta.
+case "${LOG_RESIDUAL_MAD:-}" in
+    ""|0|false|False|no|No) ;;
+    *) PY_ARGS+=(--log_residual_mad) ;;
+esac
+
+# Discrete class conditioning. When CLASS_MAP_PATH is set, forward it so the model trains
+# with a learnable per-class AdaLN embedding (LabelEmbedder) instead of CLIP text. Without
+# it, train_gsplat.py defaults to text conditioning and never sees the classes.
+if [ -n "${CLASS_MAP_PATH:-}" ]; then
+    if [ ! -e "$CLASS_MAP_PATH" ]; then
+        echo "Configured CLASS_MAP_PATH does not exist: $CLASS_MAP_PATH" >&2
+        exit 1
+    fi
+    PY_ARGS+=(--class_map_path "$CLASS_MAP_PATH")
 fi
 
 if [ -n "$JIT_OVERRIDES_YAML" ]; then

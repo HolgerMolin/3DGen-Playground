@@ -1,0 +1,31 @@
+{
+  "method": "hierarchical_semantic_then_visual",
+  "N": 254337,
+  "image_embeddings": "object_classification/image_embeddings.npz",
+  "caption_embeddings": "object_classification/caption_clip_text_embeddings.npz",
+  "k_target": 1000,
+  "k_real": 999,
+  "super_cats": 250,
+  "misc_frac": 0.05,
+  "misc_count": 12717,
+  "w_visual": 1.0,
+  "w_text": 1.0,
+  "floor": 127,
+  "cap": 382,
+  "target": 254.337,
+  "seed": 42,
+  "real_size_stats": {
+    "k": 999,
+    "total": 241620,
+    "min": 128,
+    "max": 449,
+    "mean": 241.86186186186185,
+    "median": 235.0,
+    "std": 59.89965697600262,
+    "cv": 0.24766061302469422,
+    "p10": 165,
+    "p90": 325
+  },
+  "mean_visual_coh": 0.7235712981200194,
+  "mean_caption_coh": 0.7786279619038403
+}

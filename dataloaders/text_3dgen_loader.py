@@ -315,11 +315,19 @@ class Text3DGenDataset(Dataset):
         cache_dtype: torch.dtype = torch.float32,
         preload_max_samples: int = 0,
         preload_workers: int = 0,
+        class_map: Optional[dict] = None,
     ):
-        if base_dataset.text_pooled is None:
+        # Two conditioning modes:
+        #  - class_map given  -> DISCRETE class conditioning: __getitem__ returns a
+        #    (scalar long) class id in place of text_pooled (model uses LabelEmbedder).
+        #  - else             -> text conditioning: base_dataset must carry text_pooled.
+        self.class_map = class_map
+        self.label_mode = class_map is not None
+        if not self.label_mode and base_dataset.text_pooled is None:
             raise ValueError(
                 "Text3DGenDataset requires Standard3DGenDataset to be constructed "
-                "with text_embed_path set; got base_dataset.text_pooled=None."
+                "with text_embed_path set (or pass class_map for class conditioning); "
+                "got base_dataset.text_pooled=None."
             )
         if preload_to_cpu and lazy_cache_to_cpu:
             raise ValueError("preload_to_cpu and lazy_cache_to_cpu are mutually exclusive")
@@ -336,7 +344,7 @@ class Text3DGenDataset(Dataset):
         self.cache_dtype = cache_dtype
         self.preload_max_samples = preload_max_samples
         self.preload_workers = preload_workers
-        self.text_dim = int(base_dataset.text_pooled.shape[1])
+        self.text_dim = None if self.label_mode else int(base_dataset.text_pooled.shape[1])
 
         self._feature_indices_np = (
             self.feature_indices.cpu().numpy() if self.feature_indices is not None else None
@@ -758,15 +766,29 @@ class Text3DGenDataset(Dataset):
     def _build_sample_uncached(self, idx: int):
         sample = self.base_dataset[idx]
         pc_full = sample['point_cloud']
-        text_pooled = sample['text_pooled']
         hash_key = sample['hash_key']
+        cond = self._fetch_cond(hash_key, sample)
 
         pc = _select_features_torch(pc_full, self.feature_indices)
         pc = _plane_to_grid_torch(pc)
         if self.return_full_for_render:
             pc_full_grid = _plane_to_grid_torch(pc_full)
-            return pc, text_pooled, pc_full_grid, hash_key
-        return pc, text_pooled, hash_key
+            return pc, cond, pc_full_grid, hash_key
+        return pc, cond, hash_key
+
+    def _fetch_cond(self, hash_key: str, sample: Optional[dict] = None):
+        """Per-object conditioning: a (scalar long) class id in label mode, else
+        the (D,) text_pooled vector (reused from ``sample`` if already loaded)."""
+        if self.label_mode:
+            return self._fetch_label(hash_key)
+        if sample is not None and 'text_pooled' in sample:
+            return sample['text_pooled']
+        return self._fetch_text_pooled(hash_key)
+
+    def _fetch_label(self, hash_key: str):
+        path = self.base_dataset.obj_data[hash_key]
+        stem = path.split('.tar.gz')[0]
+        return torch.tensor(int(self.class_map[stem]), dtype=torch.long)
 
     def _fetch_text_pooled(self, hash_key: str):
         path = self.base_dataset.obj_data[hash_key]
@@ -801,9 +823,9 @@ class Text3DGenDataset(Dataset):
             if self.lazy_cache_to_cpu and int(self.cached_ready[idx]) == 0:
                 self._ensure_lazy_cached(idx)
             hash_key = self.cached_hash_keys[idx]
-            pooled = self._fetch_text_pooled(hash_key)
+            cond = self._fetch_cond(hash_key)
             if self.return_full_for_render:
-                return self.cached_pc[idx], pooled, self.cached_pc_full[idx], hash_key
-            return self.cached_pc[idx], pooled, hash_key
+                return self.cached_pc[idx], cond, self.cached_pc_full[idx], hash_key
+            return self.cached_pc[idx], cond, hash_key
 
         return self._build_sample_uncached(idx)
