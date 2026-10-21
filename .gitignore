@@ -1,5 +1,7 @@
 # Custom directories
 helper/
+output/
+vae2d/
 
 # macOS
 .DS_Store
@@ -36,6 +38,7 @@ ENV/
 
 # Logs
 *.log
+*.out
 
 # Environment variables
 .env
@@ -55,7 +58,6 @@ config.env.example
 *.bak
 
 # Training outputs and generated assets
-output/
 datasets/
 wandb/
 .worktrees/
