@@ -53,6 +53,27 @@ The code base was tested on torch==2.4.0, but may also work on other pytorch var
 pip install -r requirements.txt
 ```
 
+## Train the default model
+
+The main training path is the **Gaussian Splat Diffusion baseline**: a text-conditioned diffusion
+transformer over raw Gaussian splats. Its default configuration follows the
+best-scoring reference run, with EMA decay 0.999 from the first step. Sampling uses the
+tuned CFG of 4.0 and exact final-step prediction.
+
+After installing the [training dependencies and supplying the data and local assets](docs/training.md):
+
+```bash
+cp configs/local.example.yml configs/local.yml
+# Edit configs/local.yml to point to your dataset and output directories.
+python prepare.py --config-file configs/local.yml
+bash train.sh --config-file configs/local.yml
+```
+
+The launcher reads `.env`, uses the visible GPUs, and chooses gradient accumulation
+to preserve a global batch of 512. The canonical configuration is
+[`configs/train.yml`](configs/train.yml). See [training, sampling, evaluation, and
+checkpoint resume instructions](docs/training.md) for the full workflow.
+
 ## Configuration
 
 Before proceeding, all your environment variables & download paths need to be configured at `.env`. Please first copy the file `.env.example` and set up your paths accordingly:
