@@ -86,8 +86,7 @@ def load_checkpoint_if_available(cfg: TrainConfig, model, ema_model, device):
     if not path.exists():
         raise FileNotFoundError(f"resume checkpoint not found: {path}")
     ck = torch.load(path, map_location=device, weights_only=False)
-    # Normalise both wrapper prefixes. A silent no-op load here leaves the model
-    # at init and looks exactly like "training restarted badly" -- so be strict.
+    # Strip DDP/compile prefixes and load strictly to catch checkpoint mismatches.
     sd = {k.replace("_orig_mod.", "").replace("module.", ""): v for k, v in ck["model"].items()}
     model.load_state_dict(sd, strict=True)
     ema_model.load_state_dict(
@@ -188,10 +187,7 @@ def train(cfg: TrainConfig) -> None:
     if is_main():
         logger.info(t5.describe())
 
-    # return_full_for_render stays FALSE even with the render loss on: the render
-    # loss uses the 14-channel DC-only ground truth (see aux_losses.render_terms
-    # for the measured colour-order mismatch), and hauling the 59-channel payload
-    # would be 4x the per-sample bytes for information that gets sliced away.
+    # Rendering uses the same 14-channel DC targets, so full SH payloads are unnecessary.
     train_ds = build_dataset(cfg, "train", t5_store=t5, return_full_for_render=False)
     loader = make_loader(cfg, train_ds, shuffle=True, distributed=world_size() > 1)
 
@@ -200,9 +196,7 @@ def train(cfg: TrainConfig) -> None:
     if is_main():
         logger.info("MMJiT3D: %.1fM params, %d image tokens + %d text tokens, time_cond=%s",
                     n_params / 1e6, model.num_tokens, cfg.prompt_length, cfg.time_cond)
-        # Effective batch depends on how the job was LAUNCHED, not just the config,
-        # so print what is actually happening. A config tuned for 4 GPUs quietly
-        # becomes a different experiment on 1 or 8.
+        # Log the resolved global batch and sample budget.
         eff = cfg.micro_batch_size * cfg.grad_accum_steps * world_size()
         seen = eff * cfg.num_steps
         logger.info("effective batch = %d x %d x %d ranks = %d | %d steps = %.0fM samples "
@@ -225,9 +219,7 @@ def train(cfg: TrainConfig) -> None:
     ctx = None
     if (aux_losses.needs_render(cfg) or cfg.sample_every > 0
             or cfg.render_metrics_every > 0):
-        # want_lpips must also be True when only the METRIC needs it. Keying it
-        # off lpips_loss_weight alone means the faithful arm (weight 0) gets
-        # lpips_fn=None and its comparable LPIPS metric logs a silent 0.0.
+        # Metrics require LPIPS even when its training loss is disabled.
         ctx = build_render_context(
             cfg, device,
             want_lpips=(cfg.lpips_loss_weight > 0 or cfg.render_metrics_every > 0),

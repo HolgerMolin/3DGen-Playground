@@ -242,13 +242,7 @@ class PlainTextBlock(nn.Module):
 
 
 class DoubleStreamBlock(nn.Module):
-    """Joint attention over ``[txt ; img]`` with per-stream weights (MMDiT).
-
-    This is the structural answer to our cross-attention attention-sink: there is
-    no separate KV pathway for the caption to degenerate into. Text tokens are
-    first-class queries that update themselves, and image tokens attend to text
-    and to each other in a single softmax.
-    """
+    """Joint attention over [text; image] tokens with separate stream weights."""
 
     def __init__(self, hidden_size: int, num_heads: int, head_dim: int, mlp_ratio: float,
                  image_tokens: int, text_tokens: int, token_order: str = "hilbert1d",
@@ -264,14 +258,8 @@ class DoubleStreamBlock(nn.Module):
         self.image_grid = image_grid
         self.text_tokens = text_tokens
         self.time_cond = time_cond
-        # The final layer reads the IMAGE stream only, so in the last block the
-        # text stream's own output path -- txt_proj / txt_norm2 / txt_mlp -- can
-        # never influence the loss. Those weights receive no gradient at all,
-        # which is a hard error under DDP. MiniT2I works around it with
-        # find_unused_parameters=True (a full graph traversal every step,
-        # forever); removing the dead path instead is mathematically identical,
-        # saves ~5.3M params, and saves a text-stream MLP of FLOPs per step.
-        # txt_qkv / txt_norm1 stay: they produce the K/V the image queries read.
+        # Skip unused text output weights to avoid parameters without gradients in DDP.
+        # Text Q/K/V remain available to image attention.
         self.skip_txt_output = bool(skip_txt_output)
         inner = num_heads * head_dim
 
@@ -290,19 +278,8 @@ class DoubleStreamBlock(nn.Module):
             self.txt_proj = nn.Linear(inner, hidden_size)
             self.txt_mlp = SwiGLU(hidden_size, int(hidden_size * mlp_ratio))
 
-        # AdaLN modulation. shift/scale always start at 0 (no modulation), but the
-        # RESIDUAL GATE init is a real choice and the two options are not the same
-        # model at step 0:
-        #   "one"  -- gate=1, so the block is EXACTLY a MiniT2I block at init and
-        #             `adaln_img` is a strict superset of `time_cond=none`. This is
-        #             what makes the none-vs-adaln A/B interpretable: the only
-        #             difference is the ABILITY to modulate, not the starting point.
-        #   "zero" -- classic DiT AdaLN-Zero: gate=0 makes the whole block an
-        #             identity at init and training opens it up. Well-proven, but it
-        #             is a DIFFERENT starting point from MiniT2I, which has no gates
-        #             at all and passes residuals at full strength through depth 17.
-        # Default "one". Output is still zero at init via the zero-init final layer,
-        # so stability does not depend on closed gates.
+        # AdaLN shift/scale start at zero. Gate initialization "one" preserves the
+        # unmodulated block; "zero" makes its residual branches initially inactive.
         self.img_adaLN = None
         self.txt_adaLN = None
         self.img_adaLN_offset = None
@@ -311,13 +288,8 @@ class DoubleStreamBlock(nn.Module):
         if time_cond == "adaln_both" and not self.skip_txt_output:
             self.txt_adaLN = self._make_adaLN(hidden_size, adaln_gate_init)
         if time_cond == "adaln_shared":
-            # PixArt-alpha's adaLN-single. The 768->6*768 map is owned by the
-            # PARENT and shared by every block; each block keeps only a bias on
-            # its output. 17 x 3.54M -> 3.54M + 17 x 4608, i.e. 60.2M -> 3.62M.
-            # Zero-init means the block starts EXACTLY at the shared modulation
-            # and has to earn any per-block deviation -- and, combined with
-            # adaln_gate_init="one" on the shared map, it starts at the same
-            # point as the per-block arm, so the A/B isolates sharing alone.
+            # The parent owns the shared AdaLN projection; each block learns an offset.
+            # Zero offsets preserve the shared initialization.
             self.img_adaLN_offset = nn.Parameter(torch.zeros(6 * hidden_size))
 
     @staticmethod
@@ -474,11 +446,8 @@ class MMJiT3D(nn.Module):
         self.register_buffer("pos_embed", pos.unsqueeze(0), persistent=False)
 
         self.txt_embed = nn.Linear(txt_input_size, hidden_size, bias=False)
-        # CFG lives here: every position whose attention mask is 0 is REPLACED by
-        # this learned token, and the unconditional branch is simply an all-zero
-        # mask. That removes the cached-null-encoding machinery in jit/ entirely
-        # (null_tokens / null_mask / TextEmbedder.null_emb and their loader), which
-        # is where the silent `_orig_mod.`-prefix no-op bug lived.
+        # Replace masked text positions with a learned token.
+        # An all-zero mask selects unconditional conditioning for CFG.
         self.mask_token = nn.Parameter(torch.zeros(1, 1, txt_input_size))
         nn.init.normal_(self.mask_token, std=0.02)
 
@@ -495,16 +464,9 @@ class MMJiT3D(nn.Module):
                            attention_impl=attention_impl)
             for _ in range(text_preamble_depth)
         ])
-        # How many LEADING double blocks may rewrite the text stream. Blocks at or
-        # past this index keep txt_qkv/txt_norm1 -- so text still produces the K/V
-        # that image queries read, at full strength, in every block -- but lose
-        # txt_proj/txt_mlp/txt_norm2, i.e. the ability to update THEMSELVES. The
-        # architecture past this point is per-layer cross-attention into a frozen
-        # text memory. None reproduces the historical behaviour: everything but the
-        # last block refines (the last block's text output is read by nothing).
-        # Note text is still refined by the text_preamble_depth PlainTextBlocks
-        # regardless, so even txt_refine_depth=0 is not "no refinement" -- it is
-        # "no refinement that co-adapts with the image".
+        # Only the first txt_refine_depth joint blocks update the text stream;
+        # later blocks still provide text K/V to image attention. None skips only
+        # the final block's unused text output. The text preamble always runs.
         _txt_refine = depth_double - 1 if txt_refine_depth is None else int(txt_refine_depth)
         if not 0 <= _txt_refine <= depth_double:
             raise ValueError(f"txt_refine_depth must be in [0, {depth_double}], got {_txt_refine}")

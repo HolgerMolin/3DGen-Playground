@@ -1,25 +1,11 @@
-"""Text-conditional 3DGS dataset wrapper.
+"""Text-conditioned Gaussian splats with shared CPU caching.
 
-Wraps Standard3DGenDataset to pair each sample with its precomputed CLIP-text
-embedding (produced by object_classification/encode_text_embeddings.py),
-optionally select a subset of feature channels, and reshape plane-ordered rows
-into ``(C, H, W)`` tensors for training.
+Pairs Standard3DGenDataset samples with precomputed CLIP embeddings, optionally
+selecting feature channels. T5 conditioning is supplied by a subclass.
 
-Replaces the legacy ``dataloaders/class_3dgen_loader.py``. The shared CPU
-preload / lazy-cache machinery is ported in a simplified form: text
-embeddings live in the base dataset's already-shared (~370 MB) in-memory
-``.npz`` so we only cache the *point clouds*, which is the disk-bound piece.
-
-Cache layout (per cache_dir, under ~/3dgen_cache/preload by default):
-  - pc.dat        memmap of the (N, C_eff, H, W) plane grids in cache_dtype.
-  - pc_full.dat   (optional) memmap of the full (N, 59, H, W) grids when
-                  return_full_for_render is on. Used for render-loss GT.
-  - ready.dat     uint8 flags (0/1) for lazy mode; preload mode sets all 1s.
-  - hash_keys.json  list[str], length N, paired with rows above.
-  - meta.json     versioned descriptor; cache_key is hashed from all inputs
-                  that would change the cache content, so swapping mean/std
-                  or feature_indices forces a rebuild.
-"""
+Cache files: pc.dat (selected grids), optional pc_full.dat (full SH grids),
+ready.dat (lazy-fill flags), hash_keys.json (row keys), and meta.json (layout).
+Cache keys include preprocessing inputs and feature selection."""
 
 from __future__ import annotations
 
@@ -53,22 +39,12 @@ except ImportError:  # pragma: no cover - optional dependency
 logger = logging.getLogger(__name__)
 
 FULL_3DGS_FEATURE_DIM = 59
-# DC-only mode: keep xyz, opacity, 3 DC SH coefficients, log-scales (3), quat (4).
-# NOTE the SH colour channels are listed in the order 36, 20, 4 (f_dc_2, f_dc_1, f_dc_0),
-# NOT ascending. GaussianVerse plys store SH colour in **BGR** order — verified against ground
-# truth: of 60 objects whose caption begins "a red ...", only 8.3% peak in f_dc_0 while they do
-# peak in f_dc_2; "blue" captions are the mirror image (5.0%); "green" is 86.7% correct because
-# it is the middle channel and an R/B swap leaves it fixed. Reading the data as RGB made red
-# objects render blue and blue objects render orange (which is why "a blue phone booth" came out
-# orange at every CFG scale).
-# Listing the indices in this order fixes it at the source: DC-14 positions 4,5,6 become true
-# R,G,B. Per-channel stats follow automatically because they are gathered as
-# mean_full[feature_indices], and the preload cache key hashes feature_indices, so changing this
-# constant invalidates the old BGR cache rather than silently reusing it.
+# DC-only features: xyz, opacity, RGB DC coefficients, log-scales, quaternion.
+# GaussianVerse stores DC colour in BGR order; indices 36,20,4 restore RGB.
+# Statistics and cache keys use the same feature indices.
 DC_ONLY_FEATURE_INDICES = (0, 1, 2, 3, 36, 20, 4, 52, 53, 54, 55, 56, 57, 58)
 
-# Bumped relative to class_3dgen_loader to force a rebuild — layout no longer
-# contains class labels.
+# Text caches omit class labels and include clipping thresholds in their keys.
 PRELOAD_CACHE_VERSION = 2  # bumped: clip thresholds now part of the cache key
 LAZY_CACHE_LOCK_STRIPES = 256
 _PRELOAD_WORKER_STATE: dict = {}

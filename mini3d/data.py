@@ -24,16 +24,10 @@ logger = logging.getLogger(__name__)
 
 
 class T5Text3DGenDataset(Text3DGenDataset):
-    """``Text3DGenDataset`` conditioned on FLAN-T5 tokens instead of CLIP.
+    """Use frozen T5 tokens through the shared text-dataset cache.
 
-    ``class_map={}`` is passed to the parent deliberately. The parent validates
-    that a CLIP ``text_embed_path`` was supplied UNLESS it is in label mode; we
-    have no CLIP embeddings and do not want the parent loading a 30 GB array we
-    will never read, so we enter label mode to skip that check and then override
-    ``_fetch_cond`` -- the only method label mode actually changes -- before it
-    can be called. ``label_mode`` is reset to False afterwards so nothing else
-    mistakes this for a class-conditioned dataset.
-    """
+    An empty class map bypasses the parent's CLIP requirement. Reset label mode
+    afterwards; _fetch_cond supplies T5 conditioning."""
 
     def __init__(self, base_dataset, t5_store: T5TokenStore, **kwargs):
         super().__init__(base_dataset, class_map={}, **kwargs)
@@ -47,23 +41,12 @@ class T5Text3DGenDataset(Text3DGenDataset):
 
 
 def caption_key_for(base_dataset, hash_key: str) -> str:
-    """Map a dataset key to its caption stem.
-
-    These are two different key spaces and the difference is invisible until
-    something silently matches nothing: ``base.keys`` are obj_list dict KEYS,
-    while captions and text encodings are keyed by the tar path (obj_list VALUES)
-    with ".tar.gz" stripped. The playground does this same split internally.
-    """
+    """Map an object hash to its caption key: the archive path without .tar.gz."""
     return base_dataset.obj_data[hash_key].split(".tar.gz")[0]
 
 
 def _split_keys(keys: list[str], heldout_size: int) -> tuple[list[str], list[str]]:
-    """Deterministic train/held-out split.
-
-    The tail of the SORTED key list, so the split is reproducible from the key
-    list alone -- no seed, no stored split file to drift out of sync with the
-    object list.
-    """
+    """Reserve the last heldout_size sorted keys for validation."""
     if heldout_size <= 0:
         return list(keys), []
     if heldout_size >= len(keys):
@@ -90,12 +73,7 @@ def build_base_dataset(cfg: TrainConfig) -> Standard3DGenDataset:
 
 def build_dataset(cfg: TrainConfig, split: str = "train", *, t5_store: T5TokenStore | None = None,
                   return_full_for_render: bool = False):
-    """Build the train or held-out dataset.
-
-    Objects lacking a T5 encoding are dropped up front rather than skipped at
-    ``__getitem__`` time, so an incomplete encode shows up as a loud count in the
-    log instead of a silently smaller effective epoch.
-    """
+    """Build a deterministic split from objects with cached T5 tokens."""
     if t5_store is None:
         t5_store = T5TokenStore(cfg.t5_token_dir, expect_len=cfg.prompt_length,
                                 expect_dim=cfg.txt_input_size)
