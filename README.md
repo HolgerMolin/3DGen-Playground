@@ -242,6 +242,7 @@ This project builds upon the excellent work of the open-source community:
 
 * We utilize 3D parameterizations from [GaussianVerse](https://gaussianverse.stanford.edu/), 2D renderings from [GObjaverse](https://aigc3d.github.io/gobjaverse/), and captions from [3DTopia](https://github.com/3DTopia/3DTopia) and [Cap3D](https://cap3d-um.github.io/).
 * Parts of the codebase were inspired by [GaussianAtlas](https://cs.stanford.edu/~xtiange/projects/gaussianatlas/), [GaussianCube](https://gaussiancube.github.io/), and [LGM](https://me.kiui.moe/lgm/).
+* We thank the authors of [MiniT2I](https://github.com/Hope7Happiness/minit2i-torch) for their open-source implementation, which the model and flow-matching code in our [mini3d implementation](mini3d/) build upon.
 * Our web rendering is powered by [Spark](https://github.com/sparkjsdev/spark) @ [World Labs](https://www.worldlabs.ai/).
 * We thank [Ryan Zhijie Rong](https://ryan-rong-24.github.io/) for his contributions to part of this project.
 
